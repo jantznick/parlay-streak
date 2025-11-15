@@ -121,7 +121,7 @@ Insurance protects your streak. If you buy insurance and your picks miss, you on
 **Example:**
 - Current streak: 20
 - Select 4-pick parlay (+8)
-- Insurance costs: 5
+- Insurance costs: 5 (streak 15-24 tier)
 - **Parlay hits:** 20 - 5 + 8 = **23** (+3 net)
 - **Parlay misses:** 20 - 5 = **15** (survived!)
 
@@ -131,15 +131,15 @@ Insurance becomes more expensive as your streak grows:
 
 | Streak Level | Cost Multiplier | +8 Parlay Cost | +8 Net Result | +16 Parlay Cost | +16 Net Result |
 |--------------|-----------------|----------------|---------------|-----------------|----------------|
-| 0-9          | 1.0x            | 5              | Win: +3 / Lose: -5 ✓ | 9 | Win: +7 / Lose: -9 ✓ |
-| 10-24        | 1.25x           | 6              | Win: +2 / Lose: -6 ✓ | 11 | Win: +5 / Lose: -11 ✓ |
-| 25-34        | 1.5x            | 8              | Win: 0 / Lose: -8 ⚠️ | 14 | Win: +2 / Lose: -14 ⚠️ |
-| 35-44        | 2.0x            | 10             | Win: -2 / Lose: -10 ❌ | 18 | Win: -2 / Lose: -18 ❌ |
-| 45+          | 2.5x            | 13             | Win: -5 / Lose: -13 ❌ | 23 | Win: -7 / Lose: -23 ❌ |
+| 0-14         | 1.0x            | 3              | Win: +5 / Lose: -3 ✓ | 5 | Win: +11 / Lose: -5 ✓ |
+| 15-24        | 1.67x           | 5              | Win: +3 / Lose: -5 ✓ | 8 | Win: +8 / Lose: -8 ✓ |
+| 25-34        | 2.0x            | 6              | Win: +2 / Lose: -6 ⚠️ | 10 | Win: +6 / Lose: -10 ⚠️ |
+| 35-44        | 2.67x           | 8              | Win: 0 / Lose: -8 ⚠️ | 13 | Win: +3 / Lose: -13 ⚠️ |
+| 45+          | 3.0x            | 9              | Win: -1 / Lose: -9 ❌ | 15 | Win: +1 / Lose: -15 ❌ |
 
 **Base Insurance Costs:**
-- +8 parlay (4 picks): 5 (×multiplier, rounded to whole number)
-- +16 parlay (5 picks): 9 (×multiplier, rounded to whole number)
+- +8 parlay (4 picks): 3 (×multiplier, rounded to whole number)
+- +16 parlay (5 picks): 5 (×multiplier, rounded to whole number)
 
 ### Insurance Unlock Mechanic
 
@@ -178,41 +178,44 @@ You can only have **ONE insured parlay active at a time**. After an insured parl
 
 The insurance scaling creates natural phases of gameplay:
 
-### Phase 1: Early Growth (Streak 0-9)
+### Phase 1: Early Growth (Streak 0-14)
 - **Insurance is affordable** (1.0x base cost)
 - Can build momentum safely with insured parlays
-- +8 insured parlay nets +3 to streak
-- +16 insured parlay nets +7 to streak
+- +8 insured parlay nets +5 to streak
+- +16 insured parlay nets +11 to streak
 - But must alternate with uninsured bets
 - Strategy: Use insurance aggressively to build foundation
 
-### Phase 2: Steady Climb (Streak 10-24)
-- **Insurance still profitable** (1.25x)
-- +8 insured parlay nets +2 to streak
-- +16 insured parlay nets +5 to streak
+### Phase 2: Steady Climb (Streak 15-24)
+- **Insurance still profitable** (1.67x)
+- +8 insured parlay nets +3 to streak
+- +16 insured parlay nets +8 to streak
 - Sweet spot for consistent growth
 - Strategy: Balance insured big parlays with uninsured singles
 
 ### Phase 3: The Decision Point (Streak 25-34)
-- **Insurance at break-even** (1.5x)
-- +8 insured parlay nets 0 (just protection)
-- +16 insured parlay nets +2 (marginal gain)
+- **Insurance still positive but costly** (2.0x)
+- +8 insured parlay nets +2 (marginal gain)
+- +16 insured parlay nets +6 (decent gain)
 - Must decide: Pay for protection or risk it?
 - Strategy: Careful consideration of each insurance decision, might opt for smaller uninsured parlays
 
 ### Phase 4: High Stakes (Streak 35-44)
-- **Insurance is unprofitable** (2.0x)
-- Using insurance means going backwards even if you win
-- Must play uninsured or accept losses
+- **Insurance barely profitable** (2.67x)
+- +8 insured parlay nets 0 (just protection)
+- +16 insured parlay nets +3 (small gain)
+- Must play uninsured or accept minimal gains
 - Strategy: Either play safe 1-3 pick parlays uninsured, or go for broke on big uninsured parlays
 
 ### Phase 5: The Gauntlet (Streak 45+)
-- **Insurance is completely worthless** (2.5x)
+- **Insurance is unprofitable** (3.0x)
+- +8 insured parlay nets -1 (losing even if you win)
+- +16 insured parlay nets +1 (barely worth it)
 - No viable safety net
 - Every pick is life or death
 - Strategy: Pure skill and guts - this is where legends are made
 
-**The Beauty:** The game naturally prevents runaway leaders. Insurance remains viable much longer (up to streak 24), giving players a real path to build momentum. But as streaks climb higher, insurance becomes a tough decision (25-34), then unprofitable (35+). At 45+ streak, you're playing pure risk - no insurance can save you.
+**The Beauty:** The game naturally prevents runaway leaders. Insurance remains strongly viable up to streak 24, giving players a real path to build momentum. At 25-34, insurance is still positive but expensive. At 35-44, it's barely worth it. At 45+ streak, you're playing with minimal safety nets - this is where legends are made.
 
 ---
 
@@ -262,7 +265,7 @@ The insurance scaling creates natural phases of gameplay:
 - Bucks vs Heat (7pm): Select "Bucks ML"
 - Click into game, add "Giannis over 30.5", "Bucks -5", "Over 225"
 - Start Parlay C: [Bucks ML, Giannis over 30.5, Bucks -5, Over 225] (4 bets, +8)
-- Insurance offered: 5 cost (but streak only at 1, maybe not worth it)
+- Insurance offered: 3 cost (streak 0-14 tier, but streak only at 1, maybe not worth it)
 - Lock Parlay C **WITHOUT** insurance
 
 **3:30 PM:**
@@ -305,7 +308,7 @@ The insurance scaling creates natural phases of gameplay:
 
 **11:00 AM:**
 - Parlay A: [Warriors ML (3pm), Bucks ML (7pm), Heat over 210 (7:30pm), Nuggets -3 (9pm)] 
-- 4 bets, +8, Insurance: 5 cost
+- 4 bets, +8, Insurance: 5 cost (streak 15-24 tier)
 - Lock with insurance → Streak: 20 - 5 = **15**, Insurance LOCKED
 
 **12:00 PM:**
@@ -691,15 +694,15 @@ Resolution Timeline:
 - All bets in parlay must hit to advance streak
 
 ### Insurance Costs (Base)
-- +8 parlay (4 bets): 5
-- +16 parlay (5 bets): 9
+- +8 parlay (4 bets): 3
+- +16 parlay (5 bets): 5
 
 ### Insurance Streak Multipliers
-- Streak 0-9: 1.0x (profitable)
-- Streak 10-24: 1.25x (still profitable)
-- Streak 25-34: 1.5x (break-even)
-- Streak 35-44: 2.0x (unprofitable)
-- Streak 45+: 2.5x (very unprofitable)
+- Streak 0-14: 1.0x (highly profitable)
+- Streak 15-24: 1.67x (still profitable)
+- Streak 25-34: 2.0x (moderately profitable)
+- Streak 35-44: 2.67x (barely profitable)
+- Streak 45+: 3.0x (minimal profit)
 
 ### Insurance Rules
 - Only available on 4-bet (+8) and 5-bet (+16) parlays

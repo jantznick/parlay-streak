@@ -1,0 +1,29 @@
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import { Pool } from 'pg';
+
+const PgSession = connectPgSimple(session);
+
+// Create PostgreSQL connection pool for sessions
+const pgPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+export const sessionConfig: session.SessionOptions = {
+  store: new PgSession({
+    pool: pgPool,
+    tableName: 'session', // Must match Prisma schema
+    createTableIfMissing: false, // Prisma handles table creation
+  }),
+  secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
+  resave: false,
+  saveUninitialized: false,
+  name: 'parlay.sid', // Custom session cookie name
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // true in production (requires HTTPS)
+    httpOnly: true, // Prevent client-side JS from accessing cookie
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: 'lax', // CSRF protection
+  },
+};
+

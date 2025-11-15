@@ -1,0 +1,176 @@
+// Prisma Schema for Parlay Streak
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users Table
+// TODO: Add monthly/weekly streak tracking tables for historical data
+// See FUTURE_ENHANCEMENTS.md for planned schema additions
+model User {
+  id                 String   @id @default(uuid())
+  username           String   @unique @db.VarChar(50)
+  email              String   @unique @db.VarChar(255)
+  passwordHash       String?  @map("password_hash") @db.VarChar(255) // Nullable for magic link only users
+  currentStreak      Int      @default(0) @map("current_streak")
+  longestStreak      Int      @default(0) @map("longest_streak")
+  totalPointsEarned  Int      @default(0) @map("total_points_earned")
+  insuranceLocked    Boolean  @default(false) @map("insurance_locked")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  parlays        Parlay[]
+  streakHistory  StreakHistory[]
+  authTokens     AuthToken[]
+  sessions       Session[]
+
+  @@map("users")
+}
+
+// Sessions Table (for express-session storage)
+model Session {
+  sid       String   @id @db.VarChar(255)
+  sess      Json     @db.JsonB
+  expire    DateTime @db.Timestamp(6)
+  userId    String?  @map("user_id")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expire])
+  @@index([userId])
+  @@map("session")
+}
+
+// Games Table
+model Game {
+  id         String    @id @default(uuid())
+  externalId String?   @unique @map("external_id") @db.VarChar(255) // ID from sports data source
+  sport      String    @db.VarChar(50) // 'NBA', 'NFL', 'NHL', 'MLB', 'EPL', etc.
+  homeTeam   String    @map("home_team") @db.VarChar(255)
+  awayTeam   String    @map("away_team") @db.VarChar(255)
+  startTime  DateTime  @map("start_time")
+  endTime    DateTime? @map("end_time") // Null until game ends
+  status     String    @default("scheduled") @db.VarChar(20) // 'scheduled', 'in_progress', 'completed', 'postponed', 'canceled'
+  homeScore  Int?      @map("home_score")
+  awayScore  Int?      @map("away_score")
+  metadata   Json?     @db.JsonB // Additional game data
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  bets Bet[]
+
+  @@index([startTime])
+  @@index([status])
+  @@map("games")
+}
+
+// Bets Table
+model Bet {
+  id          String    @id @default(uuid())
+  gameId      String    @map("game_id")
+  betType     String    @map("bet_type") @db.VarChar(50) // 'moneyline', 'spread', 'over_under', 'player_prop', etc.
+  description String    @db.VarChar(255) // "Lakers ML", "Curry over 28.5 pts"
+  betValue    String    @map("bet_value") @db.VarChar(100) // The specific value (spread number, points, etc.)
+  outcome     String    @default("pending") @db.VarChar(20) // 'pending', 'win', 'loss', 'push', 'void'
+  priority    Int       @default(2) // 1 = main bet, 2+ = side bets
+  resolvedAt  DateTime? @map("resolved_at")
+  metadata    Json?     @db.JsonB // Additional bet data
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  game        Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  parlayBets  ParlayBet[]
+
+  @@index([gameId])
+  @@index([outcome])
+  @@map("bets")
+}
+
+// Parlays Table
+model Parlay {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  betCount          Int       @map("bet_count") // 1-5
+  parlayValue       Int       @map("parlay_value") // +1, +2, +4, +8, +16
+  insured           Boolean   @default(false)
+  insuranceCost     Int       @default(0) @map("insurance_cost")
+  status            String    @default("building") @db.VarChar(20) // 'building', 'locked', 'pending', 'won', 'lost', 'resolution_failed'
+  lockedAt          DateTime? @map("locked_at")
+  resolvedAt        DateTime? @map("resolved_at")
+  lastGameEndTime   DateTime? @map("last_game_end_time") // When the last game in this parlay ends
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parlayBets    ParlayBet[]
+  streakHistory StreakHistory[]
+
+  @@index([userId, status])
+  @@index([lastGameEndTime])
+  @@map("parlays")
+}
+
+// Parlay Bets Junction Table
+model ParlayBet {
+  id        String   @id @default(uuid())
+  parlayId  String   @map("parlay_id")
+  betId     String   @map("bet_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  parlay Parlay @relation(fields: [parlayId], references: [id], onDelete: Cascade)
+  bet    Bet    @relation(fields: [betId], references: [id], onDelete: Cascade)
+
+  @@unique([parlayId, betId])
+  @@index([parlayId])
+  @@index([betId])
+  @@map("parlay_bets")
+}
+
+// Streak History Table
+model StreakHistory {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  parlayId     String?  @map("parlay_id")
+  oldStreak    Int      @map("old_streak")
+  newStreak    Int      @map("new_streak")
+  changeAmount Int      @map("change_amount")
+  changeType   String   @map("change_type") @db.VarChar(20) // 'parlay_win', 'parlay_loss', 'insurance_deducted'
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parlay Parlay? @relation(fields: [parlayId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("streak_history")
+}
+
+// Auth Tokens Table (for magic links, password reset, etc.)
+model AuthToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique @db.VarChar(500)
+  tokenType String    @map("token_type") @db.VarChar(20) // 'magic_link', 'password_reset'
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("auth_tokens")
+}
+
