@@ -4,6 +4,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { VerifyMagicLink } from './pages/VerifyMagicLink';
+import { BetManagement } from './pages/admin/BetManagement';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -50,6 +51,16 @@ function App() {
             element={
               <PrivateRoute>
                 <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          
+          {/* Admin Routes */}
+          <Route
+            path="/admin/bets"
+            element={
+              <PrivateRoute>
+                <BetManagement />
               </PrivateRoute>
             }
           />

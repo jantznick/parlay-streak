@@ -74,6 +74,24 @@ class ApiService {
   async verifyMagicLink(token: string) {
     return this.request(`/api/auth/magic-link/verify?token=${token}`);
   }
+
+  // Admin endpoints
+  async fetchGamesFromApi(date: string) {
+    return this.request('/api/admin/games/fetch', {
+      method: 'POST',
+      body: JSON.stringify({ date }),
+    });
+  }
+
+  async getGames(date: string, sport?: string) {
+    const params = new URLSearchParams({ date });
+    if (sport) params.append('sport', sport);
+    return this.request(`/api/admin/games?${params.toString()}`);
+  }
+
+  async getSupportedSports() {
+    return this.request('/api/admin/sports');
+  }
 }
 
 export const api = new ApiService();

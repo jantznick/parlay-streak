@@ -14,6 +14,7 @@ import { errorHandler } from './middleware/errorHandler';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
+import adminRoutes from './routes/admin.routes';
 // import gameRoutes from './routes/game.routes';
 // import parlayRoutes from './routes/parlay.routes';
 
@@ -68,6 +69,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 
 // Mount routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 // app.use('/api/games', gameRoutes);
 // app.use('/api/parlays', parlayRoutes);
 
