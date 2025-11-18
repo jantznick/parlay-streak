@@ -145,6 +145,52 @@ class ApiService {
       body: JSON.stringify({ bet_ids: betIds }),
     });
   }
+
+  // Parlay endpoints
+  async startParlay(betId: string, selectedSide: string, existingSelectionId?: string) {
+    return this.request('/api/parlays/start', {
+      method: 'POST',
+      body: JSON.stringify({ betId, selectedSide, existingSelectionId }),
+    });
+  }
+
+  async addSelectionToParlay(parlayId: string, betId: string, selectedSide: string, existingSelectionId?: string) {
+    return this.request(`/api/parlays/${parlayId}/add-selection`, {
+      method: 'POST',
+      body: JSON.stringify({ betId, selectedSide, existingSelectionId }),
+    });
+  }
+
+  async removeSelectionFromParlay(parlayId: string, selectionId: string) {
+    return this.request(`/api/parlays/${parlayId}/selections/${selectionId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getParlays(status?: string, includeSelections: boolean = true) {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (!includeSelections) params.append('includeSelections', 'false');
+    const query = params.toString();
+    return this.request(`/api/parlays${query ? `?${query}` : ''}`);
+  }
+
+  async getParlay(parlayId: string) {
+    return this.request(`/api/parlays/${parlayId}`);
+  }
+
+  async updateParlay(parlayId: string, updates: { insured?: boolean }) {
+    return this.request(`/api/parlays/${parlayId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteParlay(parlayId: string) {
+    return this.request(`/api/parlays/${parlayId}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const api = new ApiService();

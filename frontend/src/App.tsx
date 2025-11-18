@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ParlayProvider } from './context/ParlayContext';
+import { BetsProvider } from './context/BetsContext';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
@@ -44,7 +46,9 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
+        <ParlayProvider>
+          <BetsProvider>
+            <Routes>
           {/* Private Routes */}
           <Route
             path="/"
@@ -83,7 +87,9 @@ function App() {
             }
           />
           <Route path="/auth/verify" element={<VerifyMagicLink />} />
-        </Routes>
+            </Routes>
+          </BetsProvider>
+        </ParlayProvider>
       </AuthProvider>
     </BrowserRouter>
   );

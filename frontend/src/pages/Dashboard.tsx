@@ -1,17 +1,23 @@
 import { useAuth } from '../context/AuthContext';
+import { useParlay } from '../context/ParlayContext';
 import { Header } from '../components/layout/Header';
 import { TodaysBetsSection } from '../components/dashboard/TodaysBetsSection';
 import { MyBetsSection } from '../components/dashboard/MyBetsSection';
+import { ParlayBuilder } from '../components/parlay/ParlayBuilder';
 
 export function Dashboard() {
   const { user } = useAuth();
+  const { isParlayBuilderOpen } = useParlay();
 
   return (
     <div className="min-h-screen bg-slate-950">
       <Header />
 
+      {/* Parlay Builder - Sticky */}
+      <ParlayBuilder />
+
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ${isParlayBuilderOpen ? 'mr-96' : ''}`}>
         {/* Streak Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Current Streak */}

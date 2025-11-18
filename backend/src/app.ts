@@ -17,8 +17,8 @@ import { checkMaintenanceMode } from './middleware/featureFlags';
 import authRoutes from './routes/auth.routes';
 import adminRoutes from './routes/admin.routes';
 import betsRoutes from './routes/bets.routes';
+import parlayRoutes from './routes/parlay.routes';
 // import gameRoutes from './routes/game.routes';
-// import parlayRoutes from './routes/parlay.routes';
 
 const app = express();
 const httpServer = createServer(app);
@@ -81,8 +81,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/bets', betsRoutes);
+app.use('/api/parlays', parlayRoutes);
 // app.use('/api/games', gameRoutes);
-// app.use('/api/parlays', parlayRoutes);
 
 // Error handling
 app.use(errorHandler);

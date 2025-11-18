@@ -21,6 +21,7 @@ model User {
   longestStreak      Int      @default(0) @map("longest_streak")
   totalPointsEarned  Int      @default(0) @map("total_points_earned")
   insuranceLocked    Boolean  @default(false) @map("insurance_locked")
+  lastInsuredParlayId String? @map("last_insured_parlay_id") // Track which parlay locked insurance
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
@@ -96,7 +97,6 @@ model Bet {
 
   // Relations
   game        Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  parlayBets  ParlayBet[]
   selections  UserBetSelection[]
 
   @@index([gameId])
@@ -109,8 +109,8 @@ model Bet {
 model Parlay {
   id                String    @id @default(uuid())
   userId            String    @map("user_id")
-  betCount          Int       @map("bet_count") // 1-5
-  parlayValue       Int       @map("parlay_value") // +1, +2, +4, +8, +16
+  betCount          Int       @map("bet_count") // 2-5 (NOT 1 - single bets aren't parlays)
+  parlayValue       Int       @map("parlay_value") // +2, +4, +8, +16
   insured           Boolean   @default(false)
   insuranceCost     Int       @default(0) @map("insurance_cost")
   status            String    @default("building") @db.VarChar(20) // 'building', 'locked', 'pending', 'won', 'lost', 'resolution_failed'
@@ -122,30 +122,12 @@ model Parlay {
 
   // Relations
   user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parlayBets    ParlayBet[]
   selections    UserBetSelection[] // Direct relation - parlay contains these selections
   streakHistory StreakHistory[]
 
   @@index([userId, status])
   @@index([lastGameEndTime])
   @@map("parlays")
-}
-
-// Parlay Bets Junction Table
-model ParlayBet {
-  id        String   @id @default(uuid())
-  parlayId  String   @map("parlay_id")
-  betId     String   @map("bet_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  parlay Parlay @relation(fields: [parlayId], references: [id], onDelete: Cascade)
-  bet    Bet    @relation(fields: [betId], references: [id], onDelete: Cascade)
-
-  @@unique([parlayId, betId])
-  @@index([parlayId])
-  @@index([betId])
-  @@map("parlay_bets")
 }
 
 // Streak History Table

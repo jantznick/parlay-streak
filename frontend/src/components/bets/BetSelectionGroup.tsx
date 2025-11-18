@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { BetSelectionCard } from './BetSelectionCard';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useParlay } from '../../context/ParlayContext';
+import { useBets } from '../../context/BetsContext';
+import { ConfirmModal } from '../common/ConfirmModal';
 import type { BetConfig } from '@shared/types/bets';
 
 interface Bet {
@@ -112,10 +115,13 @@ function getBetSideLabels(bet: Bet, game: Game): { side1: { value: string; label
 
 export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionGroupProps) {
   const { user } = useAuth();
+  const { activeParlay, setActiveParlay, isParlayBuilderOpen, setIsParlayBuilderOpen, refreshActiveParlay } = useParlay();
+  const { triggerRefresh } = useBets();
   const [selectedSide, setSelectedSide] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [showNewParlayWarning, setShowNewParlayWarning] = useState(false);
 
   const sideLabels = getBetSideLabels(bet, game);
   const gameStarted = game.status !== 'scheduled';
@@ -137,6 +143,7 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
       const response = await api.selectBet(bet.id, selectedSide);
       if (response.success) {
         setSaved(true);
+        triggerRefresh(); // Auto-refresh My Bets section
         if (onSelectionSaved) {
           onSelectionSaved();
         }
@@ -145,6 +152,109 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
       }
     } catch (err: any) {
       setError(err.message || 'Failed to save bet selection');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const performStartParlay = async () => {
+    if (!selectedSide || disabled) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // If builder is closed but activeParlay is still set, clear it first
+      if (activeParlay && !isParlayBuilderOpen) {
+        setActiveParlay(null);
+      }
+
+      // If there's an existing active parlay with 1 bet, convert it back to a single bet first
+      if (activeParlay && activeParlay.betCount === 1 && isParlayBuilderOpen) {
+        try {
+          await api.deleteParlay(activeParlay.id);
+          triggerRefresh(); // Refresh to show the converted single bet
+        } catch (err) {
+          console.error('Error converting old parlay to single bet:', err);
+        }
+      }
+
+      const response = await api.startParlay(bet.id, selectedSide);
+      if (response.success && response.data) {
+        const data = response.data as { parlay?: any };
+        if (data.parlay) {
+          setActiveParlay(data.parlay);
+          setIsParlayBuilderOpen(true);
+          setSaved(true);
+          triggerRefresh(); // Auto-refresh My Bets section
+          if (onSelectionSaved) {
+            onSelectionSaved();
+          }
+        } else {
+          setError('Failed to start parlay');
+        }
+      } else {
+        const errorMsg = response.error?.message || 'Failed to start parlay';
+        if (errorMsg.includes('already in a parlay')) {
+          setError('This bet is already in a parlay. Please remove it from the parlay first.');
+        } else {
+          setError(errorMsg);
+        }
+      }
+    } catch (err: any) {
+      if (err.message?.includes('already in a parlay')) {
+        setError('This bet is already in a parlay. Please remove it from the parlay first.');
+      } else {
+        setError(err.message || 'Failed to start parlay');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartParlay = () => {
+    if (!selectedSide || disabled) return;
+
+    // If there's an active parlay AND the builder is open, show warning modal
+    if (activeParlay && isParlayBuilderOpen) {
+      setShowNewParlayWarning(true);
+    } else {
+      performStartParlay();
+    }
+  };
+
+  const handleAddToParlay = async () => {
+    if (!selectedSide || disabled) return;
+
+    // If builder is not open, start a new parlay instead
+    if (!isParlayBuilderOpen || !activeParlay) {
+      handleStartParlay();
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await api.addSelectionToParlay(activeParlay.id, bet.id, selectedSide);
+      if (response.success && response.data) {
+        const data = response.data as { parlay?: any };
+        if (data.parlay) {
+          setActiveParlay(data.parlay);
+          await refreshActiveParlay();
+          setSaved(true);
+          triggerRefresh(); // Auto-refresh My Bets section
+          if (onSelectionSaved) {
+            onSelectionSaved();
+          }
+        } else {
+          setError('Failed to add bet to parlay');
+        }
+      } else {
+        setError(response.error?.message || 'Failed to add bet to parlay');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to add bet to parlay');
     } finally {
       setLoading(false);
     }
@@ -208,21 +318,52 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
         />
       </div>
 
-      {/* Save Button - appears when a side is selected */}
+      {/* Action Buttons - appear when a side is selected */}
       {selectedSide && !saved && (
-        <button
-          onClick={handleSave}
-          disabled={loading || gameStarted}
-          className={`
-            w-full px-4 py-2 rounded-lg font-medium transition
-            ${loading || gameStarted
-              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-              : 'bg-orange-600 hover:bg-orange-700 text-white'
-            }
-          `}
-        >
-          {loading ? 'Saving...' : 'Save Bet'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleSave}
+            disabled={loading || gameStarted}
+            className={`
+              flex-1 px-4 py-2 rounded-lg font-medium transition
+              ${loading || gameStarted
+                ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                : 'bg-orange-600 hover:bg-orange-700 text-white'
+              }
+            `}
+          >
+            {loading ? 'Saving...' : 'Save Bet'}
+          </button>
+          {isParlayBuilderOpen && activeParlay ? (
+            <button
+              onClick={handleAddToParlay}
+              disabled={loading || gameStarted || activeParlay.betCount >= 5}
+              className={`
+                flex-1 px-4 py-2 rounded-lg font-medium transition
+                ${loading || gameStarted || activeParlay.betCount >= 5
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }
+              `}
+            >
+              {loading ? 'Adding...' : 'Add to Parlay'}
+            </button>
+          ) : (
+            <button
+              onClick={handleStartParlay}
+              disabled={loading || gameStarted}
+              className={`
+                flex-1 px-4 py-2 rounded-lg font-medium transition
+                ${loading || gameStarted
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }
+              `}
+            >
+              {loading ? 'Starting...' : 'Start Parlay'}
+            </button>
+          )}
+        </div>
       )}
 
       {/* Success Message */}
@@ -245,6 +386,21 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
           Game has started - bets can no longer be selected
         </div>
       )}
+
+      {/* New Parlay Warning Modal */}
+      <ConfirmModal
+        isOpen={showNewParlayWarning}
+        title="Start New Parlay?"
+        message="You have a parlay builder open. Starting a new parlay will close the current one. Continue?"
+        confirmText="Continue"
+        cancelText="Cancel"
+        variant="default"
+        onConfirm={() => {
+          setShowNewParlayWarning(false);
+          performStartParlay();
+        }}
+        onCancel={() => setShowNewParlayWarning(false)}
+      />
     </div>
   );
 }
