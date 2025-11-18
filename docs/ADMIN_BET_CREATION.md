@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document outlines the admin dashboard system for creating bets from game data fetched via the api-sports.io API. The system allows admins to manually create and configure bets for upcoming games, with automatic bet generation options for common bet types.
+This document outlines the admin dashboard system for creating bets from game data fetched via the **ESPN API**. The system allows admins to manually create and configure bets for upcoming games, with automatic bet generation options for common bet types.
+
+**Note:** The system was migrated from api-sports.io to ESPN API for better availability and no authentication requirements. See the API Integration section for details.
 
 ---
 
@@ -466,108 +468,112 @@ export const SPORT_CONFIGS: Record<string, SportConfig> = {
 
 ## API Integration
 
-### api-sports.io Endpoints
+### ESPN API Endpoints
 
-Based on [api-sports.io NFL documentation](https://api-sports.io/documentation/nfl/v1#tag/Games):
+**Current Implementation:** Using ESPN's public scoreboard API
+
+**Base URL:** `https://site.api.espn.com/apis/personalized/v2/scoreboard/header`
+
+**Sample Endpoint:**
+```
+https://site.api.espn.com/apis/personalized/v2/scoreboard/header?showAirings=buy%2Clive%2Creplay&lang=en&region=us&tz=America%2FChicago&dates=20251117
+```
+
+**Key Features:**
+- No authentication required for basic scoreboard data
+- Returns all sports in a single response
+- Date format: `YYYYMMDD` (e.g., `20251117` for Nov 17, 2025)
+- Response includes: games, teams, scores, status, league info
+
+**Response Structure:**
+```json
+{
+  "sports": [
+    {
+      "id": "20",
+      "name": "Football",
+      "leagues": [
+        {
+          "id": "28",
+          "name": "National Football League",
+          "events": [...]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Note:** Additional ESPN API endpoints will be needed for:
+- Player rosters
+- Game statistics (for bet resolution)
+- Odds data (if available)
+
+Based on ESPN API documentation:
 
 ```typescript
 // backend/src/services/apiSports.service.ts
 
 export class ApiSportsService {
-  private baseUrl = 'https://v1.american-football.api-sports.io';
-  private apiKey = process.env.API_SPORTS_KEY!;
+  private baseUrl = 'https://site.api.espn.com/apis/personalized/v2/scoreboard/header';
   
-  // Fetch games for a specific date
-  async getGames(date: string, league: number = 1): Promise<Game[]> {
-    // date format: YYYY-MM-DD
-    const endpoint = `/games`;
-    const params = { date, league };
+  // Fetch games for a specific date from ESPN
+  async getGames(date?: string): Promise<ApiSportsGame[]> {
+    // Build URL with query parameters
+    const params = new URLSearchParams();
+    params.append('showAirings', 'buy,live,replay');
+    params.append('lang', 'en');
+    params.append('region', 'us');
+    params.append('tz', 'America/Chicago');
     
-    const response = await this.makeRequest(endpoint, params);
-    return this.transformGamesResponse(response);
+    // ESPN API uses dates in YYYYMMDD format
+    if (date) {
+      const dateStr = date.replace(/-/g, '');
+      params.append('dates', dateStr);
+    }
+
+    const url = `${this.baseUrl}?${params.toString()}`;
+    
+    const response = await fetch(url);
+    const data = await response.json() as EspnApiResponse;
+    
+    // Transform ESPN response to our format
+    return this.transformEspnResponse(data);
   }
   
-  // Fetch game statistics (for resolution)
-  async getGameStatistics(gameId: string): Promise<GameStatistics> {
-    const endpoint = `/games/statistics`;
-    const params = { id: gameId };
+  // Transform ESPN API response to our game format
+  private transformEspnResponse(data: EspnApiResponse): ApiSportsGame[] {
+    const games: ApiSportsGame[] = [];
     
-    const response = await this.makeRequest(endpoint, params);
-    return this.transformStatisticsResponse(response);
-  }
-  
-  // Fetch team information
-  async getTeam(teamId: string): Promise<Team> {
-    const endpoint = `/teams`;
-    const params = { id: teamId };
-    
-    const response = await this.makeRequest(endpoint, params);
-    return response.response[0];
-  }
-  
-  // Fetch players for a team
-  async getTeamPlayers(teamId: string): Promise<Player[]> {
-    const endpoint = `/players`;
-    const params = { team: teamId };
-    
-    const response = await this.makeRequest(endpoint, params);
-    return response.response;
-  }
-  
-  // Fetch odds for a game (separate endpoint)
-  // See: https://api-sports.io/documentation/nfl/v1#tag/Odds
-  async getOdds(gameId: string): Promise<Odds> {
-    const endpoint = `/odds`;
-    const params = { game: gameId };
-    
-    const response = await this.makeRequest(endpoint, params);
-    return response.response[0];
-  }
-  
-  private async makeRequest(endpoint: string, params: any) {
-    const url = new URL(this.baseUrl + endpoint);
-    Object.keys(params).forEach(key => 
-      url.searchParams.append(key, params[key])
-    );
-    
-    // Log for rate limiting
-    const startTime = Date.now();
-    
-    const response = await fetch(url.toString(), {
-      headers: {
-        'x-rapidapi-key': this.apiKey,
-        'x-rapidapi-host': 'v1.american-football.api-sports.io'
+    for (const sport of data.sports) {
+      const sportName = this.mapEspnSportToOurSport(sport.id, sport.slug);
+      
+      for (const league of sport.leagues) {
+        for (const event of league.events) {
+          const competition = event.competitions?.[0];
+          if (!competition) continue;
+          
+          const homeTeam = competition.competitors.find(c => c.homeAway === 'home');
+          const awayTeam = competition.competitors.find(c => c.homeAway === 'away');
+          if (!homeTeam || !awayTeam) continue;
+          
+          // Transform to our format...
+          games.push({
+            id: event.id,
+            externalId: event.id,
+            // ... rest of transformation
+          });
+        }
       }
-    });
-    
-    const responseTime = Date.now() - startTime;
-    const rateLimitRemaining = response.headers.get('x-ratelimit-requests-remaining');
-    
-    // Log API call
-    await this.logApiCall(endpoint, response.status, responseTime, rateLimitRemaining);
-    
-    if (!response.ok) {
-      throw new Error(`API Sports request failed: ${response.statusText}`);
     }
     
-    return await response.json();
+    return games;
   }
   
-  private async logApiCall(
-    endpoint: string,
-    statusCode: number,
-    responseTime: number,
-    rateLimitRemaining: string | null
-  ) {
-    await prisma.api_call_log.create({
-      data: {
-        endpoint,
-        status_code: statusCode,
-        response_time_ms: responseTime,
-        rate_limit_remaining: rateLimitRemaining ? parseInt(rateLimitRemaining) : null
-      }
-    });
-  }
+  // TODO: Additional endpoints needed:
+  // - getGameStatistics(gameId) - for bet resolution
+  // - getTeamPlayers(teamId) - for player roster
+  // - getOdds(gameId) - for odds data
 }
 ```
 
@@ -1919,7 +1925,7 @@ ADMIN_EMAILS=admin@example.com,nick@example.com
 
 ## Questions Resolved
 
-1. **Odds Source:** ✅ Separate endpoint - https://api-sports.io/documentation/nfl/v1#tag/Odds
+1. **Odds Source:** ✅ ESPN API - Additional endpoint needed (to be implemented). ESPN may provide odds data in their API responses or via separate endpoints.
 2. **Player Data Freshness:** ✅ Game/team data cached permanently. Player rosters fetched fresh every time admin clicks "Create Bets" to handle trades/roster changes. Edge case of trades between bet creation and game day addressed in Future Enhancements.
 3. **Bet Editing:** ✅ Admins can edit bets until "Save" button clicked on date page (locks as complete). Still editable until midnight UTC on game day.
 4. **Display to Users:** ✅ Bets become visible to users at midnight UTC on game day
@@ -1931,7 +1937,7 @@ ADMIN_EMAILS=admin@example.com,nick@example.com
 
 - [TECH_REQUIREMENTS.md](./TECH_REQUIREMENTS.md) - Core technical requirements
 - [PRODUCT_OVERVIEW.md](./PRODUCT_OVERVIEW.md) - Product and game rules
-- API Documentation: https://api-sports.io/documentation/nfl/v1
+- **ESPN API:** Using public scoreboard endpoint - `https://site.api.espn.com/apis/personalized/v2/scoreboard/header`
 
 ---
 

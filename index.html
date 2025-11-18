@@ -48,6 +48,7 @@
                     <a href="#mechanics" class="text-gray-300 hover:text-orange-600 transition">Game Mechanics</a>
                     <a href="#leaderboards" class="text-gray-300 hover:text-orange-600 transition">Leaderboards</a>
                     <a href="#examples" class="text-gray-300 hover:text-orange-600 transition">Examples</a>
+                    <a href="#todays-bets" class="text-gray-300 hover:text-orange-600 transition">Today's Bets</a>
                 </div>
                 <div>
                     <a href="#waitlist" class="bg-gradient-to-r from-orange-600 to-red-700 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition">
@@ -620,6 +621,68 @@
         </div>
     </section>
 
+    <!-- Today's Bets -->
+    <section id="todays-bets" class="py-20 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-white mb-4">
+                    Today's Available Bets
+                </h2>
+                <p class="text-xl text-gray-300">
+                    See what you can bet on today
+                </p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="bets-loading" class="bg-slate-900 rounded-lg p-8 text-center">
+                <div class="text-4xl mb-4">⏳</div>
+                <p class="text-slate-400">Loading today's bets...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="bets-empty" class="bg-slate-900 rounded-lg p-8 text-center hidden">
+                <div class="text-4xl mb-4">📅</div>
+                <p class="text-slate-300 mb-2">No games with bets available today</p>
+                <p class="text-slate-500 text-sm">
+                    Check back later or browse upcoming games
+                </p>
+            </div>
+
+            <!-- Bets Container -->
+            <div id="bets-container" class="space-y-6 hidden"></div>
+        </div>
+    </section>
+
+    <!-- Signup Modal -->
+    <div id="signup-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-slate-900 rounded-lg border border-slate-700 p-8 max-w-md w-full mx-4 relative">
+            <button onclick="closeSignupModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <div class="text-center mb-6">
+                <div class="text-5xl mb-4">🎯</div>
+                <h3 class="text-2xl font-bold text-white mb-2">Ready to Place Your Bet?</h3>
+                <p class="text-slate-400 text-sm" id="modal-bet-text"></p>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-4 mb-6 border border-slate-700">
+                <p class="text-white font-medium text-center" id="modal-bet-display"></p>
+            </div>
+            <p class="text-slate-300 text-center mb-6 text-sm">
+                Sign up to start building your winning streak and place bets on today's games!
+            </p>
+            <div class="space-y-3">
+                <a href="#waitlist" onclick="closeSignupModalAndScroll()" class="block w-full bg-gradient-to-r from-orange-600 to-red-700 text-white px-6 py-3 rounded-lg font-bold text-center hover:shadow-xl hover:shadow-orange-500/20 transition transform hover:-translate-y-0.5">
+                    Get Started
+                </a>
+                <button onclick="closeSignupModal()" class="block w-full bg-slate-800 text-slate-300 px-6 py-3 rounded-lg font-medium hover:bg-slate-700 transition">
+                    Maybe Later
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- CTA / Waitlist -->
     <section id="waitlist" class="py-20 bg-gradient-to-r from-orange-600 to-red-700">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -685,6 +748,7 @@
                     <a href="#mechanics" class="hover:text-white transition">Mechanics</a>
                     <a href="#leaderboards" class="hover:text-white transition">Leaderboards</a>
                     <a href="#examples" class="hover:text-white transition">Examples</a>
+                    <a href="#todays-bets" class="hover:text-white transition">Today's Bets</a>
                 </div>
                 <p class="mt-8 text-xs">
                     © 2024 Parlay Streak. All rights reserved.
@@ -744,6 +808,149 @@
                 document.getElementById('waitlist-form').classList.add('hidden');
                 document.getElementById('form-subtext').classList.add('hidden');
                 document.getElementById('thank-you-message').classList.remove('hidden');
+            }
+        });
+
+        // Fetch and display today's bets
+        async function fetchTodaysBets() {
+            const loadingEl = document.getElementById('bets-loading');
+            const emptyEl = document.getElementById('bets-empty');
+            const containerEl = document.getElementById('bets-container');
+
+            try {
+                const response = await fetch('https://api.parlaystreak.com/api/bets/today');
+                const data = await response.json();
+
+                loadingEl.classList.add('hidden');
+
+                if (!data.success || !data.data || !data.data.games || data.data.games.length === 0) {
+                    emptyEl.classList.remove('hidden');
+                    return;
+                }
+
+                const games = data.data.games;
+                containerEl.classList.remove('hidden');
+                containerEl.innerHTML = '';
+
+                games.forEach(game => {
+                    const sortedBets = [...game.bets].sort((a, b) => a.priority - b.priority);
+                    
+                    const gameCard = document.createElement('div');
+                    gameCard.className = 'bg-slate-900 border border-slate-800 rounded-lg overflow-hidden hover:border-slate-700 transition';
+
+                    const sportEmoji = getSportEmoji(game.sport);
+                    const startTime = new Date(game.startTime);
+                    const timeStr = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    const dateStr = startTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+                    gameCard.innerHTML = `
+                        <div class="p-6 bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-b border-slate-800">
+                            <div class="flex items-center gap-4 mb-4">
+                                <span class="text-3xl">${sportEmoji}</span>
+                                <div class="flex-1">
+                                    <h3 class="text-xl font-bold text-white mb-1">
+                                        ${game.awayTeam} @ ${game.homeTeam}
+                                    </h3>
+                                    <div class="flex items-center gap-4 text-sm text-slate-400">
+                                        <span>${timeStr}</span>
+                                        <span>•</span>
+                                        <span>${dateStr}</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-orange-500">${sortedBets.length}</div>
+                                    <div class="text-xs text-slate-400">available bet${sortedBets.length !== 1 ? 's' : ''}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="mb-3 flex items-center gap-2">
+                                <span class="text-sm font-semibold text-slate-400">Available Bets:</span>
+                                <span class="text-sm text-slate-500">(${sortedBets.length})</span>
+                            </div>
+                            <div class="space-y-3">
+                                ${sortedBets.map(bet => `
+                                    <div class="bg-slate-800 rounded-lg p-4 border border-slate-700 hover:border-orange-600/50 cursor-pointer transition" onclick="openSignupModal(${JSON.stringify(bet.displayText)})">
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-orange-600/20 border border-orange-600/50 flex items-center justify-center">
+                                                <span class="text-xs font-bold text-orange-400">#${bet.priority}</span>
+                                            </div>
+                                            <div class="flex-1">
+                                                <p class="font-medium text-white">${bet.displayText}</p>
+                                            </div>
+                                            <div class="px-3 py-1 rounded text-xs font-medium bg-orange-900/30 text-orange-400 border border-orange-600/30">
+                                                AVAILABLE
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                    containerEl.appendChild(gameCard);
+                });
+            } catch (error) {
+                console.error('Error fetching bets:', error);
+                loadingEl.classList.add('hidden');
+                emptyEl.classList.remove('hidden');
+            }
+        }
+
+        function getSportEmoji(sport) {
+            switch (sport) {
+                case 'BASKETBALL': return '🏀';
+                case 'FOOTBALL': return '🏈';
+                case 'BASEBALL': return '⚾';
+                case 'HOCKEY': return '🏒';
+                case 'SOCCER': return '⚽';
+                default: return '🏆';
+            }
+        }
+
+        // Load bets on page load
+        fetchTodaysBets();
+
+        // Signup Modal Functions
+        function openSignupModal(betText) {
+            const modal = document.getElementById('signup-modal');
+            const betDisplay = document.getElementById('modal-bet-display');
+            const betTextEl = document.getElementById('modal-bet-text');
+            
+            betDisplay.textContent = betText;
+            betTextEl.textContent = 'You selected:';
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSignupModal() {
+            const modal = document.getElementById('signup-modal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function closeSignupModalAndScroll() {
+            closeSignupModal();
+            // Small delay to ensure modal closes before scrolling
+            setTimeout(() => {
+                const waitlistSection = document.getElementById('waitlist');
+                if (waitlistSection) {
+                    waitlistSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('signup-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSignupModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSignupModal();
             }
         });
     </script>

@@ -13,7 +13,7 @@ const apiSportsService = new ApiSportsService();
  * @swagger
  * /api/admin/games/fetch:
  *   post:
- *     summary: Fetch games for a specific date from API Sports
+ *     summary: Fetch games from ESPN API, store in database, and return stored games
  *     tags: [Admin]
  *     security:
  *       - sessionAuth: []
@@ -26,6 +26,7 @@ const apiSportsService = new ApiSportsService();
  *             required:
  *               - date
  *               - sport
+ *               - league
  *             properties:
  *               date:
  *                 type: string
@@ -33,20 +34,23 @@ const apiSportsService = new ApiSportsService();
  *                 example: "2025-01-15"
  *               sport:
  *                 type: string
- *                 enum: [basketball, football]
  *                 example: "basketball"
+ *               league:
+ *                 type: string
+ *                 example: "nba"
  *     responses:
  *       200:
- *         description: Games fetched and stored successfully
+ *         description: Games fetched from ESPN, stored in DB, and returned
  */
 router.post('/games/fetch', requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { date, sport = 'basketball' } = req.body;
+    const { date, sport, league } = req.body;
 
-    if (!date) {
+    // Validate required fields
+    if (!date || !sport || !league) {
       return res.status(400).json({
         success: false,
-        error: { message: 'Date is required', code: 'VALIDATION_ERROR' }
+        error: { message: 'date, sport, and league are required', code: 'VALIDATION_ERROR' }
       });
     }
 
@@ -59,58 +63,203 @@ router.post('/games/fetch', requireAuth, requireAdmin, async (req: Request, res:
       });
     }
 
-    // Fetch games from API Sports
-    const apiGames = await apiSportsService.getGames(date);
+    // Parse date range for query
+    const requestedDate = new Date(date);
+    requestedDate.setUTCHours(0, 0, 0, 0);
+    const nextDay = new Date(requestedDate);
+    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
 
-    // Store games in database
-    const storedGames = [];
-    for (const apiGame of apiGames.sports) {
-      for (const )
-      // try {
-      //   const game = await prisma.game.upsert({
-      //     where: {
-      //       externalId: apiGame.id.toString()
-      //     },
-      //     update: {
-      //       homeTeam: apiGame.teams.home.name,
-      //       awayTeam: apiGame.teams.away.name,
-      //       startTime: new Date(apiGame.timestamp * 1000),
-      //       status: apiGame.status.short.toLowerCase(),
-      //       homeScore: apiGame.scores.home.total,
-      //       awayScore: apiGame.scores.away.total,
-      //       metadata: {
-      //         apiData: apiGame,
-      //       } as any,
-      //       updatedAt: new Date()
-      //     },
-      //     create: {
-      //       externalId: apiGame.id.toString(),
-      //       sport: sport.toUpperCase(),
-      //       homeTeam: apiGame.teams.home.name,
-      //       awayTeam: apiGame.teams.away.name,
-      //       startTime: new Date(apiGame.timestamp * 1000),
-      //       status: apiGame.status.short.toLowerCase(),
-      //       homeScore: apiGame.scores.home.total,
-      //       awayScore: apiGame.scores.away.total,
-      //       metadata: {
-      //         apiData: apiGame
-      //       } as any
-      //     }
-      //   });
+    // Step 1: Check if we have games in DB for this date/sport/league
+    logger.info('Checking database for existing games', { date, sport, league });
+    
+    // First get all games for the date and sport
+    const allGamesForDate = await prisma.game.findMany({
+      where: {
+        startTime: {
+          gte: requestedDate,
+          lt: nextDay
+        },
+        sport: sport.toUpperCase()
+      },
+      include: {
+        bets: {
+          orderBy: { priority: 'asc' }
+        }
+      },
+      orderBy: { startTime: 'asc' }
+    });
 
-      //   storedGames.push(game);
-      // } catch (error) {
-      //   logger.error('Error storing game', { gameId: apiGame.id, error });
-      // }
+    // Filter by league in metadata (since Prisma JSON filtering is limited)
+    const existingGames = allGamesForDate.filter((game: any) => {
+      const metadata = game.metadata as any;
+      const leagueData = metadata?.league || metadata?.apiData?.league;
+      return leagueData?.id === league || 
+             leagueData?.abbreviation?.toLowerCase() === league.toLowerCase() ||
+             leagueData?.slug?.toLowerCase() === league.toLowerCase();
+    });
+
+    // Check if games are fresh (less than 24 hours old)
+    let shouldFetchFromAPI = true;
+    if (existingGames.length > 0) {
+      // Find the most recently updated game
+      const mostRecentGame = existingGames.reduce((latest, game) => {
+        const latestTime = new Date(latest.updatedAt || latest.createdAt).getTime();
+        const gameTime = new Date(game.updatedAt || game.createdAt).getTime();
+        return gameTime > latestTime ? game : latest;
+      }, existingGames[0]);
+      
+      const gameAge = Date.now() - new Date(mostRecentGame.updatedAt || mostRecentGame.createdAt).getTime();
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      
+      if (gameAge < oneDayMs) {
+        shouldFetchFromAPI = false;
+        logger.info('Using existing games from database', { 
+          count: existingGames.length, 
+          ageHours: Math.round(gameAge / (60 * 60 * 1000)),
+          date, 
+          sport, 
+          league 
+        });
+      } else {
+        logger.info('Database games are older than 24 hours, fetching fresh data', { 
+          count: existingGames.length,
+          ageHours: Math.round(gameAge / (60 * 60 * 1000)),
+          date, 
+          sport, 
+          league 
+        });
+      }
+    } else {
+      logger.info('No games found in database for this date, fetching from API', { date, sport, league });
     }
+
+    // Step 2: Fetch from ESPN API only if needed
+    let apiGames: any[] = [];
+    let storedGameIds: string[] = [];
+
+    if (shouldFetchFromAPI) {
+      logger.info('Fetching games from ESPN API', { date, sport, league });
+      apiGames = await apiSportsService.getGames(sport, league, date);
+      
+      if (!apiGames || apiGames.length === 0) {
+        logger.warn('No games returned from ESPN API', { date, sport, league });
+        // Return existing games from DB if we have them, otherwise empty
+        return res.json({
+          success: true,
+          data: {
+            games: existingGames,
+            count: existingGames.length,
+            date,
+            sport,
+            league,
+            message: existingGames.length > 0 
+              ? 'No new games from API, returning existing games from database'
+              : 'No games found for this date, sport, and league'
+          }
+        });
+      }
+      
+      logger.info('ESPN API returned games', { count: apiGames.length, date, sport, league });
+
+      // Step 3: Store games in database
+      logger.info('Storing games in database', { count: apiGames.length });
+      
+      for (const apiGame of apiGames) {
+        try {
+          const game = await prisma.game.upsert({
+            where: {
+              externalId: apiGame.externalId
+            },
+            update: {
+              homeTeam: apiGame.teams.home.displayName,
+              awayTeam: apiGame.teams.away.displayName,
+              startTime: new Date(apiGame.timestamp * 1000),
+              status: apiGame.status,
+              homeScore: apiGame.scores.home,
+              awayScore: apiGame.scores.away,
+              sport: apiGame.sport,
+              metadata: {
+                apiData: apiGame,
+                league: apiGame.league,
+              } as any,
+              updatedAt: new Date()
+            },
+            create: {
+              externalId: apiGame.externalId,
+              sport: apiGame.sport,
+              homeTeam: apiGame.teams.home.displayName,
+              awayTeam: apiGame.teams.away.displayName,
+              startTime: new Date(apiGame.timestamp * 1000),
+              status: apiGame.status,
+              homeScore: apiGame.scores.home,
+              awayScore: apiGame.scores.away,
+              metadata: {
+                apiData: apiGame,
+                league: apiGame.league,
+              } as any
+            }
+          });
+
+          storedGameIds.push(game.id);
+        } catch (error) {
+          logger.error('Error storing game', { gameId: apiGame.id, error });
+        }
+      }
+
+      // Step 4: Fetch updated games from database
+      if (storedGameIds.length > 0) {
+        const updatedGames = await prisma.game.findMany({
+          where: {
+            id: { in: storedGameIds }
+          },
+          include: {
+            bets: {
+              orderBy: { priority: 'asc' }
+            }
+          },
+          orderBy: { startTime: 'asc' }
+        });
+
+        logger.info('Successfully fetched and stored games', { 
+          fetched: apiGames.length, 
+          stored: storedGameIds.length,
+          returned: updatedGames.length,
+          date,
+          sport,
+          league
+        });
+
+        return res.json({
+          success: true,
+          data: {
+            games: updatedGames,
+            count: updatedGames.length,
+            date,
+            sport,
+            league,
+            source: 'api'
+          }
+        });
+      }
+    }
+
+    // Return existing games from database
+    logger.info('Returning games from database', { 
+      count: existingGames.length,
+      date,
+      sport,
+      league
+    });
 
     res.json({
       success: true,
       data: {
-        games: storedGames,
-        count: storedGames.length,
+        games: existingGames,
+        count: existingGames.length,
         date,
-        sport
+        sport,
+        league,
+        source: 'database'
       }
     });
   } catch (error: any) {
@@ -126,7 +275,8 @@ router.post('/games/fetch', requireAuth, requireAdmin, async (req: Request, res:
  * @swagger
  * /api/admin/games:
  *   get:
- *     summary: Get games for a specific date from database
+ *     summary: Get games for a specific date from database (without fetching from ESPN)
+ *     description: Loads existing games from the database. Useful for viewing games you've already fetched without re-fetching from ESPN.
  *     tags: [Admin]
  *     security:
  *       - sessionAuth: []
@@ -143,7 +293,6 @@ router.post('/games/fetch', requireAuth, requireAdmin, async (req: Request, res:
  *         required: false
  *         schema:
  *           type: string
- *           enum: [BASKETBALL, FOOTBALL]
  *         example: "BASKETBALL"
  *     responses:
  *       200:
@@ -218,16 +367,451 @@ router.get('/games', requireAuth, requireAdmin, async (req: Request, res: Respon
  */
 router.get('/sports', requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
-    const sports = apiSportsService.getSupportedSports();
+    const sportsConfig = apiSportsService.getSupportedSports();
     res.json({
       success: true,
-      data: { sports }
+      data: { sports: sportsConfig }
     });
   } catch (error: any) {
     logger.error('Error getting sports', { error });
     res.status(500).json({
       success: false,
       error: { message: error.message || 'Failed to get sports', code: 'SERVER_ERROR' }
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/teams/{gameId}/roster:
+ *   get:
+ *     summary: Get roster for teams in a game
+ *     tags: [Admin]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: gameId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Roster data retrieved successfully
+ */
+router.get('/teams/:gameId/roster', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { gameId } = req.params;
+
+    // Get game from database
+    const game = await prisma.game.findUnique({
+      where: { id: gameId },
+    });
+
+    if (!game) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Game not found', code: 'NOT_FOUND' }
+      });
+    }
+
+    // Extract sport and league from game metadata
+    const metadata = game.metadata as any;
+    const league = metadata?.league;
+    const apiData = metadata?.apiData;
+
+    if (!league || !apiData) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Game metadata missing league or API data', code: 'VALIDATION_ERROR' }
+      });
+    }
+
+    // Determine sport from game data
+    const sportMap: Record<string, string> = {
+      'BASKETBALL': 'basketball',
+      'FOOTBALL': 'football',
+      'BASEBALL': 'baseball',
+      'HOCKEY': 'hockey',
+      'SOCCER': 'soccer',
+    };
+    const sport = sportMap[game.sport] || game.sport.toLowerCase();
+    
+    // Get league slug - prefer abbreviation, fallback to id, then slug
+    // For NHL, abbreviation is "NHL" but slug should be "nhl"
+    const leagueSlug = (league.slug || league.id || league.abbreviation || '').toLowerCase();
+
+    // Get team IDs from game
+    const homeTeamId = apiData.teams?.home?.id;
+    const awayTeamId = apiData.teams?.away?.id;
+
+    if (!homeTeamId || !awayTeamId) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Game missing team IDs', code: 'VALIDATION_ERROR' }
+      });
+    }
+
+    // Fetch rosters for both teams
+    const [homeRoster, awayRoster] = await Promise.all([
+      apiSportsService.getTeamRoster(sport, leagueSlug, homeTeamId),
+      apiSportsService.getTeamRoster(sport, leagueSlug, awayTeamId),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        home: {
+          team: game.homeTeam,
+          roster: homeRoster,
+        },
+        away: {
+          team: game.awayTeam,
+          roster: awayRoster,
+        },
+      }
+    });
+  } catch (error: any) {
+    logger.error('Error fetching team rosters', { error });
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || 'Failed to fetch rosters', code: 'SERVER_ERROR' }
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/bets:
+ *   post:
+ *     summary: Create a new bet
+ *     tags: [Admin]
+ *     security:
+ *       - sessionAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - game_id
+ *               - bet_type
+ *               - config
+ *             properties:
+ *               game_id:
+ *                 type: string
+ *               bet_type:
+ *                 type: string
+ *                 enum: [COMPARISON, THRESHOLD, EVENT]
+ *               config:
+ *                 type: object
+ *               display_text_override:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Bet created successfully
+ */
+router.post('/bets', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { game_id, bet_type, config, display_text_override } = req.body;
+
+    if (!game_id || !bet_type || !config) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'game_id, bet_type, and config are required', code: 'VALIDATION_ERROR' }
+      });
+    }
+
+    // Validate bet type
+    if (!['COMPARISON', 'THRESHOLD', 'EVENT'].includes(bet_type)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Invalid bet_type. Must be COMPARISON, THRESHOLD, or EVENT', code: 'VALIDATION_ERROR' }
+      });
+    }
+
+    // Get game to verify it exists
+    const game = await prisma.game.findUnique({
+      where: { id: game_id }
+    });
+
+    if (!game) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Game not found', code: 'NOT_FOUND' }
+      });
+    }
+
+    // Generate display text (will implement utility function)
+    const displayText = display_text_override || generateDisplayText(bet_type, config);
+
+    // Get current max priority for this game
+    const maxPriorityResult = await prisma.bet.aggregate({
+      where: { gameId: game_id },
+      _max: { priority: true }
+    });
+
+    const priority = (maxPriorityResult._max.priority || 0) + 1;
+
+    // Create bet
+    // Note: After running migration, regenerate Prisma client: npx prisma generate
+    const bet = await prisma.bet.create({
+      data: {
+        gameId: game_id,
+        betType: bet_type,
+        displayText: displayText as any,
+        displayTextOverride: (display_text_override || null) as any,
+        config: config as any,
+        priority,
+        outcome: 'pending',
+        description: displayText, // Keep for backward compatibility
+        betValue: '', // Keep for backward compatibility
+        metadata: {}
+      } as any
+    });
+
+    logger.info('Bet created', { 
+      betId: bet.id, 
+      gameId: game_id, 
+      betType: bet_type,
+      config: JSON.stringify(config),
+      displayText
+    });
+
+    res.json({
+      success: true,
+      data: { bet }
+    });
+  } catch (error: any) {
+    logger.error('Error creating bet', { error });
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || 'Failed to create bet', code: 'SERVER_ERROR' }
+    });
+  }
+});
+
+// Helper function to format metric label
+function formatMetricLabel(metric: string): string {
+  return metric.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// Helper function to format time period label
+function formatTimePeriodLabel(period: string): string {
+  const periodMap: Record<string, string> = {
+    'FULL_GAME': 'Full Game',
+    'Q1': 'Q1',
+    'Q2': 'Q2',
+    'Q3': 'Q3',
+    'Q4': 'Q4',
+    'H1': '1H',
+    'H2': '2H',
+    'OT': 'OT'
+  };
+  return periodMap[period] || period;
+}
+
+// Helper function to generate display text from bet config
+function generateDisplayText(betType: string, config: any): string {
+  if (betType === 'COMPARISON') {
+    const { participant_1, participant_2, spread } = config;
+    
+    // Moneyline (simple comparison, no spread, both teams, points, full game)
+    if (!spread && 
+        participant_1.metric === 'points' && 
+        participant_1.time_period === 'FULL_GAME' &&
+        participant_1.subject_type === 'TEAM' &&
+        participant_2.subject_type === 'TEAM' &&
+        participant_2.metric === 'points' &&
+        participant_2.time_period === 'FULL_GAME') {
+      return `${participant_1.subject_name} ML`;
+    }
+    
+    // Spread (both teams, points, full game)
+    if (spread && 
+        participant_1.metric === 'points' && 
+        participant_1.time_period === 'FULL_GAME' &&
+        participant_1.subject_type === 'TEAM' &&
+        participant_2.subject_type === 'TEAM' &&
+        participant_2.metric === 'points' &&
+        participant_2.time_period === 'FULL_GAME') {
+      return `${participant_1.subject_name} ${spread.direction}${spread.value}`;
+    }
+    
+    // Generic comparison - always show all values explicitly
+    const metric1Label = formatMetricLabel(participant_1.metric);
+    const metric2Label = formatMetricLabel(participant_2.metric);
+    const period1 = participant_1.time_period !== 'FULL_GAME'
+      ? ` (${formatTimePeriodLabel(participant_1.time_period)})`
+      : '';
+    const period2 = participant_2.time_period !== 'FULL_GAME'
+      ? ` (${formatTimePeriodLabel(participant_2.time_period)})`
+      : '';
+    
+    // Always show both metrics and periods explicitly
+    if (spread) {
+      return `${participant_1.subject_name} ${metric1Label}${period1} ${spread.direction}${spread.value} > ${participant_2.subject_name} ${metric2Label}${period2}`;
+    } else {
+      return `${participant_1.subject_name} ${metric1Label}${period1} > ${participant_2.subject_name} ${metric2Label}${period2}`;
+    }
+  }
+  
+  if (betType === 'THRESHOLD') {
+    const { participant, operator, threshold } = config;
+    const metricLabel = formatMetricLabel(participant.metric);
+    const period = participant.time_period !== 'FULL_GAME'
+      ? ` (${formatTimePeriodLabel(participant.time_period)})`
+      : '';
+    
+    return `${participant.subject_name} ${operator} ${threshold} ${metricLabel}${period}`;
+  }
+  
+  if (betType === 'EVENT') {
+    const { participant, event_type, time_period } = config;
+    const eventLabel = event_type.replace(/_/g, ' ').toLowerCase();
+    const period = time_period !== 'FULL_GAME'
+      ? ` (${formatTimePeriodLabel(time_period)})`
+      : '';
+    
+    return `${participant.subject_name} ${eventLabel}${period}`;
+  }
+  
+  return 'Unknown bet';
+}
+
+/**
+ * @swagger
+ * /api/admin/bets/{betId}:
+ *   patch:
+ *     summary: Update a bet
+ *     tags: [Admin]
+ */
+router.patch('/bets/:betId', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { betId } = req.params;
+    const { bet_type, config, display_text_override, priority } = req.body;
+
+    const bet = await prisma.bet.findUnique({
+      where: { id: betId }
+    });
+
+    if (!bet) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Bet not found', code: 'NOT_FOUND' }
+      });
+    }
+
+    const updateData: any = {};
+
+    if (bet_type && config) {
+      updateData.betType = bet_type;
+      updateData.config = config as any;
+      updateData.displayText = display_text_override || generateDisplayText(bet_type, config);
+      if (display_text_override !== undefined) {
+        updateData.displayTextOverride = display_text_override || null;
+      }
+    }
+
+    if (priority !== undefined) {
+      updateData.priority = priority;
+    }
+
+    const updated = await prisma.bet.update({
+      where: { id: betId },
+      data: updateData as any
+    });
+
+    logger.info('Bet updated', { betId, updates: Object.keys(updateData) });
+
+    res.json({
+      success: true,
+      data: { bet: updated }
+    });
+  } catch (error: any) {
+    logger.error('Error updating bet', { error });
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || 'Failed to update bet', code: 'SERVER_ERROR' }
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/bets/{betId}:
+ *   delete:
+ *     summary: Delete a bet
+ *     tags: [Admin]
+ */
+router.delete('/bets/:betId', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { betId } = req.params;
+
+    await prisma.bet.delete({
+      where: { id: betId }
+    });
+
+    logger.info('Bet deleted', { betId });
+
+    res.json({
+      success: true,
+      data: { message: 'Bet deleted successfully' }
+    });
+  } catch (error: any) {
+    logger.error('Error deleting bet', { error });
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || 'Failed to delete bet', code: 'SERVER_ERROR' }
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/games/{gameId}/bets/reorder:
+ *   put:
+ *     summary: Reorder bet priorities
+ *     tags: [Admin]
+ */
+router.put('/games/:gameId/bets/reorder', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { gameId } = req.params;
+    const { bet_ids } = req.body; // Array of bet IDs in new order
+
+    if (!Array.isArray(bet_ids)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'bet_ids must be an array', code: 'VALIDATION_ERROR' }
+      });
+    }
+
+    // Update priorities
+    for (let i = 0; i < bet_ids.length; i++) {
+      await prisma.bet.update({
+        where: { id: bet_ids[i] },
+        data: { priority: i + 1 } as any
+      });
+    }
+
+    // Return updated bets
+    const bets = await prisma.bet.findMany({
+      where: { gameId },
+      orderBy: { priority: 'asc' }
+    });
+
+    logger.info('Bets reordered', { gameId, count: bet_ids.length });
+
+    res.json({
+      success: true,
+      data: { bets }
+    });
+  } catch (error: any) {
+    logger.error('Error reordering bets', { error });
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || 'Failed to reorder bets', code: 'SERVER_ERROR' }
     });
   }
 });

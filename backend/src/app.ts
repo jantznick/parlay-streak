@@ -15,16 +15,22 @@ import { errorHandler } from './middleware/errorHandler';
 // Import routes
 import authRoutes from './routes/auth.routes';
 import adminRoutes from './routes/admin.routes';
+import betsRoutes from './routes/bets.routes';
 // import gameRoutes from './routes/game.routes';
 // import parlayRoutes from './routes/parlay.routes';
 
 const app = express();
 const httpServer = createServer(app);
 
+// Handle CORS - support multiple origins
+const corsOrigins = process.env.CORS_ORIGIN 
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : ['http://localhost:5173'];
+
 // Initialize Socket.io
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: corsOrigins,
     credentials: true,
   },
 });
@@ -36,7 +42,7 @@ app.set('io', io);
 app.use(helmet());
 app.use(compression());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: corsOrigins,
   credentials: true,
 }));
 app.use(express.json());
@@ -70,6 +76,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/bets', betsRoutes);
 // app.use('/api/games', gameRoutes);
 // app.use('/api/parlays', parlayRoutes);
 

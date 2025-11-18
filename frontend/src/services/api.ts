@@ -76,21 +76,50 @@ class ApiService {
   }
 
   // Admin endpoints
-  async fetchGamesFromApi(date: string) {
+  async fetchGamesFromApi(date: string, sport: string, league: string) {
     return this.request('/api/admin/games/fetch', {
       method: 'POST',
-      body: JSON.stringify({ date }),
+      body: JSON.stringify({ date, sport, league }),
     });
-  }
-
-  async getGames(date: string, sport?: string) {
-    const params = new URLSearchParams({ date });
-    if (sport) params.append('sport', sport);
-    return this.request(`/api/admin/games?${params.toString()}`);
   }
 
   async getSupportedSports() {
     return this.request('/api/admin/sports');
+  }
+
+  async getGameRoster(gameId: string) {
+    return this.request(`/api/admin/teams/${gameId}/roster`);
+  }
+
+  async createBet(gameId: string, betType: string, config: any) {
+    return this.request('/api/admin/bets', {
+      method: 'POST',
+      body: JSON.stringify({
+        game_id: gameId,
+        bet_type: betType,
+        config
+      }),
+    });
+  }
+
+  async updateBet(betId: string, updates: { bet_type?: string; config?: any; display_text_override?: string; priority?: number }) {
+    return this.request(`/api/admin/bets/${betId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteBet(betId: string) {
+    return this.request(`/api/admin/bets/${betId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async reorderBets(gameId: string, betIds: string[]) {
+    return this.request(`/api/admin/games/${gameId}/bets/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ bet_ids: betIds }),
+    });
   }
 }
 

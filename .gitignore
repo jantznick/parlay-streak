@@ -44,3 +44,6 @@ prisma/migrations/**/migration.sql.bak
 
 # Docker volumes
 postgres_data/
+
+# Fetched data (rosters are fetched nightly)
+backend/data/rosters/

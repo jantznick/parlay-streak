@@ -74,17 +74,24 @@ model Game {
 
 // Bets Table
 model Bet {
-  id          String    @id @default(uuid())
-  gameId      String    @map("game_id")
-  betType     String    @map("bet_type") @db.VarChar(50) // 'moneyline', 'spread', 'over_under', 'player_prop', etc.
-  description String    @db.VarChar(255) // "Lakers ML", "Curry over 28.5 pts"
-  betValue    String    @map("bet_value") @db.VarChar(100) // The specific value (spread number, points, etc.)
-  outcome     String    @default("pending") @db.VarChar(20) // 'pending', 'win', 'loss', 'push', 'void'
-  priority    Int       @default(2) // 1 = main bet, 2+ = side bets
-  resolvedAt  DateTime? @map("resolved_at")
-  metadata    Json?     @db.JsonB // Additional bet data
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id                      String    @id @default(uuid())
+  gameId                  String    @map("game_id")
+  betType                 String    @map("bet_type") @db.VarChar(50) // 'COMPARISON', 'THRESHOLD', 'EVENT', or legacy types
+  description             String?   @db.VarChar(255) // Legacy field, kept for backward compatibility
+  betValue                String?   @map("bet_value") @db.VarChar(100) // Legacy field
+  displayText             String    @map("display_text") @db.VarChar(255) // Auto-generated or override
+  displayTextOverride     String?   @map("display_text_override") @db.VarChar(255)
+  config                  Json?     @db.JsonB // Structured bet config (ComparisonConfig | ThresholdConfig | EventConfig)
+  outcome                 String    @default("pending") @db.VarChar(20) // 'pending', 'win', 'loss', 'push', 'void'
+  priority                Int       @default(2) // 1 = main bet, 2+ = side bets
+  resolvedAt              DateTime? @map("resolved_at")
+  lastFetchedAt           DateTime? @map("last_fetched_at")
+  needsAdminResolution    Boolean   @default(false) @map("needs_admin_resolution")
+  adminResolutionNotes    String?   @map("admin_resolution_notes") @db.Text
+  visibleFrom             DateTime? @map("visible_from")
+  metadata                Json?     @db.JsonB // Additional bet data
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
 
   // Relations
   game        Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
@@ -92,6 +99,7 @@ model Bet {
 
   @@index([gameId])
   @@index([outcome])
+  @@index([visibleFrom])
   @@map("bets")
 }
 

@@ -1,7 +1,28 @@
 import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 
 export function Dashboard() {
   const { user, logout } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // Check if user is admin by calling the API
+    const checkAdmin = async () => {
+      try {
+        // Try to access an admin endpoint to check if user is admin
+        const response = await fetch('/api/admin/sports', {
+          credentials: 'include'
+        });
+        setIsAdmin(response.ok);
+      } catch {
+        setIsAdmin(false);
+      }
+    };
+    if (user) {
+      checkAdmin();
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -23,6 +44,14 @@ export function Dashboard() {
               </h1>
             </div>
             <div className="flex items-center gap-4">
+              {isAdmin && (
+                <Link
+                  to="/admin/bets"
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
+                >
+                  Admin
+                </Link>
+              )}
               <span className="text-slate-300">
                 Welcome, <span className="font-semibold text-white">{user?.username}</span>
               </span>
@@ -67,6 +96,25 @@ export function Dashboard() {
             </div>
             <p className="text-4xl font-bold text-white">{user?.totalPointsEarned || 0}</p>
           </div>
+        </div>
+
+        {/* Today's Bets Link */}
+        <div className="bg-gradient-to-br from-orange-900/20 to-slate-900 rounded-2xl p-8 border-2 border-orange-600/50 mb-8 text-center">
+          <Link
+            to="/bets/today"
+            className="inline-flex items-center gap-3 text-white hover:text-orange-400 transition group"
+          >
+            <span className="text-3xl">📊</span>
+            <div className="text-left">
+              <h3 className="text-xl font-bold group-hover:text-orange-400 transition">
+                View Today's Bets
+              </h3>
+              <p className="text-sm text-slate-400">
+                See all available bets for today's games
+              </p>
+            </div>
+            <span className="text-2xl group-hover:translate-x-1 transition">→</span>
+          </Link>
         </div>
 
         {/* Coming Soon Section */}
