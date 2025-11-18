@@ -1,70 +1,14 @@
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { Header } from '../components/layout/Header';
+import { TodaysBetsSection } from '../components/dashboard/TodaysBetsSection';
+import { MyBetsSection } from '../components/dashboard/MyBetsSection';
 
 export function Dashboard() {
-  const { user, logout } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    // Check if user is admin by calling the API
-    const checkAdmin = async () => {
-      try {
-        // Try to access an admin endpoint to check if user is admin
-        const response = await fetch('/api/admin/sports', {
-          credentials: 'include'
-        });
-        setIsAdmin(response.ok);
-      } catch {
-        setIsAdmin(false);
-      }
-    };
-    if (user) {
-      checkAdmin();
-    }
-  }, [user]);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-slate-950">
-      {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-700 bg-clip-text text-transparent">
-                Parlay Streak
-              </h1>
-            </div>
-            <div className="flex items-center gap-4">
-              {isAdmin && (
-                <Link
-                  to="/admin/bets"
-                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
-                >
-                  Admin
-                </Link>
-              )}
-              <span className="text-slate-300">
-                Welcome, <span className="font-semibold text-white">{user?.username}</span>
-              </span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -98,23 +42,14 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Today's Bets Link */}
-        <div className="bg-gradient-to-br from-orange-900/20 to-slate-900 rounded-2xl p-8 border-2 border-orange-600/50 mb-8 text-center">
-          <Link
-            to="/bets/today"
-            className="inline-flex items-center gap-3 text-white hover:text-orange-400 transition group"
-          >
-            <span className="text-3xl">📊</span>
-            <div className="text-left">
-              <h3 className="text-xl font-bold group-hover:text-orange-400 transition">
-                View Today's Bets
-              </h3>
-              <p className="text-sm text-slate-400">
-                See all available bets for today's games
-              </p>
-            </div>
-            <span className="text-2xl group-hover:translate-x-1 transition">→</span>
-          </Link>
+        {/* My Bets Section */}
+        <div className="mb-12">
+          <MyBetsSection />
+        </div>
+
+        {/* Today's Bets Section */}
+        <div className="mb-12">
+          <TodaysBetsSection />
         </div>
 
         {/* Coming Soon Section */}

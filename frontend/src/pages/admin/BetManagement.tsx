@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { Header } from '../../components/layout/Header';
 import { BetCreationModal } from '../../components/admin/BetCreationModal';
 import { BetEditModal } from '../../components/admin/BetEditModal';
 
@@ -359,25 +360,7 @@ export function BetManagement() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Admin: Bet Management</h1>
-              <p className="text-slate-400 text-sm mt-1">
-                Logged in as {user?.email}
-              </p>
-            </div>
-            <button
-              onClick={logout}
-              className="px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header title="Admin: Bet Management" />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

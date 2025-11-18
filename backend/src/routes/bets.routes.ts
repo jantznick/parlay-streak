@@ -309,5 +309,198 @@ router.post('/:betId/select', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), a
   }
 });
 
+/**
+ * @swagger
+ * /api/bets/my-selections:
+ *   get:
+ *     summary: Get all bet selections for the current user
+ *     tags: [Bets]
+ *     security:
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: Bet selections retrieved successfully
+ *       401:
+ *         description: Not authenticated
+ */
+router.get('/my-selections', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), async (req: Request, res: Response) => {
+  try {
+    const userId = req.session.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: { message: 'Authentication required', code: 'AUTH_REQUIRED' }
+      });
+    }
+
+    // Get all bet selections for the user (single bets only, not in parlays)
+    const selections = await prisma.userBetSelection.findMany({
+      where: {
+        userId,
+        parlayId: null, // Only single bets
+        status: {
+          in: ['selected', 'locked'] // Only active selections
+        }
+      },
+      include: {
+        bet: {
+          include: {
+            game: {
+              select: {
+                id: true,
+                homeTeam: true,
+                awayTeam: true,
+                startTime: true,
+                status: true,
+                sport: true,
+                metadata: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    logger.info('Fetched user bet selections', {
+      userId,
+      count: selections.length
+    });
+
+    res.json({
+      success: true,
+      data: {
+        selections: selections.map(sel => ({
+          id: sel.id,
+          betId: sel.betId,
+          selectedSide: sel.selectedSide,
+          status: sel.status,
+          createdAt: sel.createdAt,
+          bet: {
+            id: sel.bet.id,
+            displayText: sel.bet.displayText,
+            betType: sel.bet.betType,
+            outcome: sel.bet.outcome,
+            config: sel.bet.config, // Include config for participant names
+            game: sel.bet.game
+          }
+        }))
+      }
+    });
+  } catch (error: any) {
+    logger.error('Error fetching user bet selections', { error });
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || 'Failed to fetch bet selections', code: 'SERVER_ERROR' }
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/bets/selections/:selectionId:
+ *   delete:
+ *     summary: Delete a bet selection (only if game hasn't started)
+ *     tags: [Bets]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: selectionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Bet selection deleted successfully
+ *       400:
+ *         description: Cannot delete (game started, etc.)
+ *       401:
+ *         description: Not authenticated
+ *       404:
+ *         description: Selection not found
+ */
+router.delete('/selections/:selectionId', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), async (req: Request, res: Response) => {
+  try {
+    const { selectionId } = req.params;
+    const userId = req.session.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: { message: 'Authentication required', code: 'AUTH_REQUIRED' }
+      });
+    }
+
+    // Get the selection with bet and game info
+    const selection = await prisma.userBetSelection.findUnique({
+      where: { id: selectionId },
+      include: {
+        bet: {
+          include: {
+            game: true
+          }
+        }
+      }
+    });
+
+    if (!selection) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Bet selection not found', code: 'NOT_FOUND' }
+      });
+    }
+
+    // Verify ownership
+    if (selection.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: { message: 'Not authorized to delete this selection', code: 'FORBIDDEN' }
+      });
+    }
+
+    // Check if game has started
+    if (selection.bet.game.status !== 'scheduled') {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Cannot delete selection for a game that has already started', code: 'GAME_STARTED' }
+      });
+    }
+
+    // Check if selection is locked
+    if (selection.status === 'locked') {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Cannot delete a locked selection', code: 'SELECTION_LOCKED' }
+      });
+    }
+
+    // Delete the selection
+    await prisma.userBetSelection.delete({
+      where: { id: selectionId }
+    });
+
+    logger.info('User bet selection deleted', {
+      userId,
+      selectionId,
+      betId: selection.betId
+    });
+
+    res.json({
+      success: true,
+      data: { message: 'Bet selection deleted successfully' }
+    });
+  } catch (error: any) {
+    logger.error('Error deleting bet selection', { error, selectionId: req.params.selectionId });
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || 'Failed to delete bet selection', code: 'SERVER_ERROR' }
+    });
+  }
+});
+
 export default router;
 

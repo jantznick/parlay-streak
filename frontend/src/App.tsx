@@ -5,7 +5,6 @@ import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { VerifyMagicLink } from './pages/VerifyMagicLink';
 import { BetManagement } from './pages/admin/BetManagement';
-import { TodaysBets } from './pages/TodaysBets';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -64,12 +63,6 @@ function App() {
                 <BetManagement />
               </PrivateRoute>
             }
-          />
-
-          {/* Public Bets Route */}
-          <Route
-            path="/bets/today"
-            element={<TodaysBets />}
           />
 
           {/* Public Routes */}

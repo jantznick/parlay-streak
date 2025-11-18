@@ -101,6 +101,16 @@ class ApiService {
     });
   }
 
+  async getMySelections() {
+    return this.request('/api/bets/my-selections');
+  }
+
+  async deleteSelection(selectionId: string) {
+    return this.request(`/api/bets/selections/${selectionId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getGameRoster(gameId: string) {
     return this.request(`/api/admin/teams/${gameId}/roster`);
   }

@@ -12,7 +12,7 @@ export function BetSelectionCard({ side, label, isSelected, disabled, onClick }:
       onClick={onClick}
       disabled={disabled}
       className={`
-        flex-1 px-4 py-6 rounded-lg border-2 transition-all
+        w-full px-4 py-3 rounded-lg border-2 transition-all
         ${isSelected
           ? 'border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/20'
           : 'border-slate-700 bg-slate-800 hover:border-slate-600 hover:bg-slate-750'
@@ -24,7 +24,7 @@ export function BetSelectionCard({ side, label, isSelected, disabled, onClick }:
       `}
     >
       <div className="text-center">
-        <div className={`text-lg font-semibold ${isSelected ? 'text-orange-400' : 'text-white'}`}>
+        <div className={`text-sm font-semibold ${isSelected ? 'text-orange-400' : 'text-white'}`}>
           {label}
         </div>
       </div>

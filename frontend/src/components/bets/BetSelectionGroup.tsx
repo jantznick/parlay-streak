@@ -157,7 +157,7 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
         <div className="text-sm text-slate-400 mb-2">
           {bet.displayText}
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <BetSelectionCard
             side={sideLabels.side1.value}
             label={sideLabels.side1.label}
@@ -190,13 +190,8 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
 
   return (
     <div className="space-y-3">
-      {/* Bet Display Text */}
-      <div className="text-sm text-slate-400 mb-2">
-        {bet.displayText}
-      </div>
-
       {/* Two Side Cards */}
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <BetSelectionCard
           side={sideLabels.side1.value}
           label={sideLabels.side1.label}
