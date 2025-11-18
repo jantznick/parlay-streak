@@ -170,10 +170,13 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
       }
 
       // If there's an existing active parlay with 1 bet, convert it back to a single bet first
+      // Note: We temporarily close the builder to allow refresh, then reopen with new parlay
       if (activeParlay && activeParlay.betCount === 1 && isParlayBuilderOpen) {
         try {
           await api.deleteParlay(activeParlay.id);
+          setIsParlayBuilderOpen(false); // Temporarily close to allow refresh
           triggerRefresh(); // Refresh to show the converted single bet
+          // Builder will be reopened below when new parlay is set
         } catch (err) {
           console.error('Error converting old parlay to single bet:', err);
         }
@@ -186,7 +189,7 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
           setActiveParlay(data.parlay);
           setIsParlayBuilderOpen(true);
           setSaved(true);
-          triggerRefresh(); // Auto-refresh My Bets section
+          // Don't refresh - bet will show overlay in My Bets instead
           if (onSelectionSaved) {
             onSelectionSaved();
           }
@@ -243,7 +246,7 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
           setActiveParlay(data.parlay);
           await refreshActiveParlay();
           setSaved(true);
-          triggerRefresh(); // Auto-refresh My Bets section
+          // Don't refresh - bet will show overlay in My Bets instead
           if (onSelectionSaved) {
             onSelectionSaved();
           }

@@ -102,11 +102,11 @@ export function ParlayBuilder() {
             // Parlay was deleted (no bets left or became invalid)
             setActiveParlay(null);
             setIsParlayBuilderOpen(false);
-            triggerRefresh(); // Auto-refresh My Bets section
+            triggerRefresh(); // Refresh when parlay is deleted
           } else if (data.parlay) {
             setActiveParlay(data.parlay);
             await refreshActiveParlay();
-            triggerRefresh(); // Auto-refresh My Bets section
+            // Don't refresh - overlay will update automatically via activeParlay state
           }
         }
       } else {

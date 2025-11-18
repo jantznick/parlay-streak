@@ -78,8 +78,12 @@ export function MyBetsSection() {
   const [pendingParlayToOpen, setPendingParlayToOpen] = useState<Parlay | null>(null);
 
   useEffect(() => {
-    fetchMyData();
-  }, [refreshTrigger]);
+    // Only refresh if builder is closed, or if it's a non-parlay operation (like delete)
+    // This prevents UI updates while user is building a parlay
+    if (!isParlayBuilderOpen) {
+      fetchMyData();
+    }
+  }, [refreshTrigger, isParlayBuilderOpen]);
 
   const fetchMyData = async () => {
     setLoading(true);
@@ -122,7 +126,10 @@ export function MyBetsSection() {
     if (activeParlay && activeParlay.betCount === 1) {
       try {
         await api.deleteParlay(activeParlay.id);
-        await fetchMyData(); // Refresh to show the converted single bet
+        // Only refresh if builder is closed (it will be after conversion)
+        if (!isParlayBuilderOpen) {
+          await fetchMyData();
+        }
       } catch (err) {
         console.error('Error converting old parlay to single bet:', err);
       }
@@ -150,10 +157,13 @@ export function MyBetsSection() {
       }
 
       // If there's an existing active parlay with 1 bet, convert it back to a single bet first
+      // Note: We temporarily close the builder to allow refresh, then reopen with new parlay
       if (activeParlay && activeParlay.betCount === 1 && isParlayBuilderOpen) {
         try {
           await api.deleteParlay(activeParlay.id);
+          setIsParlayBuilderOpen(false); // Temporarily close to allow refresh
           await fetchMyData(); // Refresh to show the converted single bet
+          // Builder will be reopened below when new parlay is set
         } catch (err) {
           console.error('Error converting old parlay to single bet:', err);
         }
@@ -165,7 +175,7 @@ export function MyBetsSection() {
         if (data.parlay) {
           setActiveParlay(data.parlay);
           setIsParlayBuilderOpen(true);
-          await fetchMyData();
+          // Don't refresh - bet will show overlay instead
         } else {
           alert('Failed to start parlay');
         }
@@ -299,6 +309,14 @@ export function MyBetsSection() {
     });
   };
 
+  // Check if a bet is in the active parlay builder
+  const isBetInActiveParlay = (selectionId: string, betId: string): boolean => {
+    if (!activeParlay || !isParlayBuilderOpen) return false;
+    return activeParlay.selections.some(
+      sel => sel.id === selectionId || sel.bet.id === betId
+    );
+  };
+
   const getSportEmoji = (sport: string) => {
     switch (sport) {
       case 'BASKETBALL': return '🏀';
@@ -366,12 +384,30 @@ export function MyBetsSection() {
             <div className="grid gap-4">
               {selections.map((selection) => {
                 const canModify = selection.bet.game.status === 'scheduled' && selection.status !== 'locked';
+                const inBuilder = isBetInActiveParlay(selection.id, selection.bet.id);
                 
                 return (
                   <div
                     key={selection.id}
-                    className="bg-slate-900 border border-slate-800 rounded-lg p-4 hover:border-slate-700 transition"
+                    className={`bg-slate-900 border rounded-lg p-4 transition relative ${
+                      inBuilder
+                        ? 'border-blue-500 border-2'
+                        : 'border-slate-800 hover:border-slate-700'
+                    }`}
                   >
+                    {/* Greyed out overlay for bets in parlay builder */}
+                    {inBuilder && (
+                      <>
+                        {/* Semi-transparent grey overlay covering the entire card */}
+                        <div className="absolute inset-0 bg-slate-950/85 rounded-lg z-20 pointer-events-none" />
+                        {/* "In Builder" badge on top of overlay */}
+                        <div className="absolute top-2 right-2 z-30">
+                          <span className="px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium border border-blue-500 shadow-lg">
+                            In Builder
+                          </span>
+                        </div>
+                      </>
+                    )}
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
