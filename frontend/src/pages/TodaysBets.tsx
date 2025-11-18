@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { BetSelectionGroup } from '../components/bets/BetSelectionGroup';
 
 interface Bet {
   id: string;
@@ -10,6 +11,7 @@ interface Bet {
   priority: number;
   outcome: string;
   config?: any;
+  displayTextOverride?: string;
 }
 
 interface Game {
@@ -38,10 +40,13 @@ export function TodaysBets() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/bets/today', {
+      // Get timezone offset in hours (e.g., -5 for EST)
+      const timezoneOffset = -new Date().getTimezoneOffset() / 60;
+      const response = await fetch(`/api/bets/today?timezoneOffset=${timezoneOffset}`, {
         credentials: 'include'
       });
       const data = await response.json();
+      console.log('Today\'s bets API response:', data);
       if (data.success && data.data?.games) {
         // Games are already sorted by start time from backend, but ensure they're sorted
         const sortedGames = [...data.data.games].sort((a, b) => {
@@ -49,11 +54,14 @@ export function TodaysBets() {
           const timeB = new Date(b.startTime).getTime();
           return timeA - timeB;
         });
+        console.log('Setting games:', sortedGames);
         setGames(sortedGames);
       } else {
+        console.log('No games found in response:', data);
         setGames([]);
       }
     } catch (error: any) {
+      console.error('Error fetching today\'s bets:', error);
       setError(error.message || 'Failed to load bets');
       setGames([]);
     } finally {
@@ -251,31 +259,33 @@ export function TodaysBets() {
 
                     {/* Bets List - All bets shown are available (pending) */}
                     <div className="p-6">
-                      <div className="mb-3 flex items-center gap-2">
+                      <div className="mb-4 flex items-center gap-2">
                         <span className="text-sm font-semibold text-slate-400">Available Bets:</span>
                         <span className="text-sm text-slate-500">({sortedBets.length})</span>
                       </div>
-                      <div className="space-y-3">
+                      <div className="space-y-6">
                         {sortedBets.map((bet) => (
                           <div
                             key={bet.id}
-                            className="bg-slate-800 rounded-lg p-4 border border-slate-700 hover:border-orange-600/50 cursor-pointer transition"
+                            className="bg-slate-800 rounded-lg p-4 border border-slate-700"
                           >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 mb-4">
                               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-600/20 border border-orange-600/50 flex items-center justify-center">
                                 <span className="text-xs font-bold text-orange-400">
                                   #{bet.priority}
                                 </span>
                               </div>
-                              <div className="flex-1">
-                                <p className="font-medium text-white">
-                                  {bet.displayText}
-                                </p>
-                              </div>
                               <div className="px-3 py-1 rounded text-xs font-medium bg-orange-900/30 text-orange-400 border border-orange-600/30">
                                 AVAILABLE
                               </div>
                             </div>
+                            <BetSelectionGroup
+                              bet={bet}
+                              game={game}
+                              onSelectionSaved={() => {
+                                // Optionally refresh or show feedback
+                              }}
+                            />
                           </div>
                         ))}
                       </div>

@@ -33,15 +33,15 @@ Different bet types require different user choices:
 **Storage:** Store which participant the user selected (participant_1 or participant_2)
 
 #### 2. THRESHOLD Bets
-**Example:** "LeBron James points OVER 28.5"
+**Example:** "LeBron James points 28.5"
 
-**User Choice:** The bet already has OVER/UNDER defined by admin
-- User just selects this bet (no side choice needed)
-- The operator (OVER/UNDER) is part of the bet definition
+**User Choice:** User chooses OVER or UNDER
+- Option A: OVER 28.5
+- Option B: UNDER 28.5
 
-**Alternative Approach (if needed):** Could allow user to choose OVER/UNDER, but this would require creating two separate bet options. For MVP, we'll assume the bet is fixed.
+**Note:** The bet definition has a threshold value (28.5), but the user chooses which side (OVER/UNDER) they predict.
 
-**Storage:** No side selection needed, just bet selection
+**Storage:** Store 'over' or 'under' as selectedSide
 
 #### 3. EVENT Bets
 **Example:** "LeBron scores triple double"
@@ -95,100 +95,44 @@ model UserBetSelection {
 }
 ```
 
-**Questions to Resolve:**
-1. Can a user select the same bet multiple times with different sides? (e.g., Lakers in one parlay, Warriors in another)
-2. Should `selectedSide` be nullable for THRESHOLD bets, or use a default value?
-3. Should we allow users to have multiple selections of the same bet (for different parlays)?
+**Key Points:**
+1. Users can select the same bet multiple times with different sides (e.g., Lakers in one parlay, Warriors in another)
+2. Users can select the same bet+side multiple times (for different parlays)
+3. `selectedSide` is always required (no nullable) - every bet type has two sides
+4. Single bets are NOT parlays - they're just selections with status='selected' or 'locked'
 
-**Proposed Answer:**
-- Yes, users can select the same bet multiple times (for different parlays)
-- `selectedSide` can be nullable for THRESHOLD bets
-- Multiple selections allowed (remove unique constraint, or make it `[userId, betId, selectedSide, parlayId]`)
+**Final Schema Design:**
 
-**Revised Schema:**
+The relationship is:
+1. **UserBetSelection** = User's choice of a bet + side (saved permanently)
+2. **Parlay** = Collection of 2-5 UserBetSelections (direct relationship, no junction table)
+
+**Key Points:**
+- Single bets are NOT parlays - they're just UserBetSelection records with `parlayId = null`
+- A UserBetSelection can only be in ONE parlay (parlayId field)
+- If you want the same bet+side in multiple parlays, create multiple UserBetSelection records
+- Parlay directly contains UserBetSelections (no ParlayBet table needed)
+
+**Schema:**
 ```prisma
 model UserBetSelection {
   id              String   @id @default(uuid())
   userId          String   @map("user_id")
   betId           String   @map("bet_id")
-  selectedSide    String?  @map("selected_side") @db.VarChar(50)
+  selectedSide    String   @map("selected_side") @db.VarChar(50) // NOT NULL - always required
+  // Values: 'participant_1', 'participant_2', 'over', 'under', 'yes', 'no'
+  
+  parlayId        String?  @map("parlay_id") // If null, it's a single bet (not in a parlay)
+  
   status          String   @default("selected") @db.VarChar(20)
+  // 'selected' - chosen but not locked yet (parlayId is null, single bet)
+  // 'locked' - game started, can't modify
+  // 'resolved' - bet resolved
+  
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
   
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bet             Bet      @relation(fields: [betId], references: [id], onDelete: Cascade)
-  parlayBets      ParlayBet[]
-  
-  @@index([userId, status])
-  @@index([betId])
-  @@map("user_bet_selections")
-}
-```
-
-**Note:** The relationship with `ParlayBet` needs clarification. Should `UserBetSelection` be the link, or should `ParlayBet` reference `UserBetSelection`? Or should they be separate?
-
-**Proposed Approach:**
-- `UserBetSelection` represents the user's choice (which side)
-- `ParlayBet` links a parlay to a bet, and references the `UserBetSelection` to know which side was chosen
-- This allows: User selects bet → Creates selection → Adds selection to parlay
-
-**Updated Schema:**
-```prisma
-model UserBetSelection {
-  id              String   @id @default(uuid())
-  userId          String   @map("user_id")
-  betId           String   @map("bet_id")
-  selectedSide    String?  @map("selected_side") @db.VarChar(50)
-  status          String   @default("selected") @db.VarChar(20)
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bet             Bet      @relation(fields: [betId], references: [id], onDelete: Cascade)
-  parlayBets      ParlayBet[] // Links to parlays this selection is in
-  
-  @@index([userId, status])
-  @@index([betId])
-  @@map("user_bet_selections")
-}
-
-// Update ParlayBet to reference UserBetSelection
-model ParlayBet {
-  id                    String   @id @default(uuid())
-  parlayId              String   @map("parlay_id")
-  userBetSelectionId    String   @map("user_bet_selection_id") // Reference to user's selection
-  createdAt             DateTime @default(now()) @map("created_at")
-
-  parlay                Parlay           @relation(fields: [parlayId], references: [id], onDelete: Cascade)
-  userBetSelection      UserBetSelection @relation(fields: [userBetSelectionId], references: [id], onDelete: Cascade)
-
-  @@unique([parlayId, userBetSelectionId])
-  @@index([parlayId])
-  @@index([userBetSelectionId])
-  @@map("parlay_bets")
-}
-```
-
-**Wait, this creates a circular dependency issue. Let me reconsider...**
-
-**Better Approach:**
-- Keep `ParlayBet` as is (links parlay to bet)
-- Add `selectedSide` to `ParlayBet` to store the user's choice
-- `UserBetSelection` is just for tracking selections before they're in parlays (optional, for "cart" functionality)
-
-**Simpler Schema:**
-```prisma
-model UserBetSelection {
-  id              String   @id @default(uuid())
-  userId          String   @map("user_id")
-  betId           String   @map("bet_id")
-  selectedSide    String?  @map("selected_side") @db.VarChar(50)
-  status          String   @default("selected") @db.VarChar(20) // 'selected', 'in_parlay', 'locked'
-  parlayId        String?  @map("parlay_id") // Which parlay this is in (if any)
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  
+  // Relations
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   bet             Bet      @relation(fields: [betId], references: [id], onDelete: Cascade)
   parlay          Parlay?  @relation(fields: [parlayId], references: [id], onDelete: SetNull)
@@ -196,35 +140,101 @@ model UserBetSelection {
   @@index([userId, status])
   @@index([betId])
   @@index([parlayId])
+  @@index([userId, betId, selectedSide]) // Allow same bet+side multiple times (for different parlays)
   @@map("user_bet_selections")
 }
 
-// Update ParlayBet to reference UserBetSelection instead of just Bet
-model ParlayBet {
-  id                    String   @id @default(uuid())
-  parlayId              String   @map("parlay_id")
-  userBetSelectionId    String   @map("user_bet_selection_id") // Links to user's selection
-  createdAt             DateTime @default(now()) @map("created_at")
+// Update Parlay model to have UserBetSelection relation
+model Parlay {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  betCount          Int      @map("bet_count") // 2-5 (derived from selections count)
+  parlayValue       Int      @map("parlay_value") // +2, +4, +8, +16
+  insured           Boolean  @default(false)
+  insuranceCost     Int      @default(0) @map("insurance_cost")
+  status            String   @default("building") @db.VarChar(20)
+  lockedAt          DateTime? @map("locked_at")
+  resolvedAt        DateTime? @map("resolved_at")
+  lastGameEndTime   DateTime? @map("last_game_end_time")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
-  parlay                Parlay           @relation(fields: [parlayId], references: [id], onDelete: Cascade)
-  userBetSelection      UserBetSelection @relation(fields: [userBetSelectionId], references: [id], onDelete: Cascade)
+  // Relations
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  selections        UserBetSelection[] // Direct relation - parlay contains these selections
+  streakHistory     StreakHistory[]
 
-  @@unique([parlayId, userBetSelectionId])
-  @@index([parlayId])
-  @@index([userBetSelectionId])
-  @@map("parlay_bets")
+  @@index([userId, status])
+  @@index([lastGameEndTime])
+  @@map("parlays")
 }
 ```
 
-**Actually, let me simplify even more for MVP:**
+**How it works:**
+1. User selects bet + side → Creates `UserBetSelection` with status='selected', parlayId=null (single bet)
+2. User saves bet → Stays as single bet (parlayId remains null)
+3. User creates parlay → Selects 2-5 UserBetSelections, creates `Parlay`, sets their `parlayId` to the parlay's id
+4. Game starts → Status changes to 'locked' (can't modify)
+5. Bet resolves → Status changes to 'resolved'
 
-For single bets (MVP), we can create a parlay immediately with one bet. So:
-1. User selects bet and side
-2. Create `UserBetSelection` with status='in_parlay'
-3. Create `Parlay` with 1 bet
-4. Create `ParlayBet` linking parlay to the selection
+**How Parlay contains UserBetSelections:**
+- A `Bet` record is just the bet definition (e.g., "Lakers points > Warriors points")
+- A `UserBetSelection` is the user's choice (e.g., "I pick Lakers" = participant_1)
+- A `Parlay` is a collection of 2-5 UserBetSelections (direct relation via `parlayId` field)
+- When resolving a parlay, we query all UserBetSelections where `parlayId = parlay.id`
+- For each selection, we know:
+  - Which bet it is (from `UserBetSelection.betId`)
+  - Which side the user picked (from `UserBetSelection.selectedSide`)
+  - We can then check if the user's pick was correct
 
-This works for MVP. Later, we can add "cart" functionality where users build selections before creating parlays.
+**Example - Single Bet (NOT a parlay):**
+```
+Bet: "Lakers points > Warriors points" (id: bet-123)
+UserBetSelection: { 
+  betId: bet-123, 
+  selectedSide: 'participant_1', 
+  userId: user-456, 
+  parlayId: null,  // Not in a parlay - this is a single bet
+  status: 'selected' 
+}
+// No Parlay created - this is just a single bet selection
+```
+
+**Example - Multi-Bet Parlay:**
+```
+Bet 1: "Lakers points > Warriors points" (id: bet-123)
+Bet 2: "Steph Curry points OVER 28.5" (id: bet-456)
+
+UserBetSelection 1: { 
+  id: selection-1,
+  betId: bet-123, 
+  selectedSide: 'participant_1', 
+  parlayId: 'parlay-789',
+  status: 'locked' 
+}
+
+UserBetSelection 2: { 
+  id: selection-2,
+  betId: bet-456, 
+  selectedSide: 'over', 
+  parlayId: 'parlay-789',
+  status: 'locked' 
+}
+
+Parlay: { 
+  id: parlay-789, 
+  userId: user-456, 
+  betCount: 2, 
+  parlayValue: 2,
+  selections: [selection-1, selection-2] // Direct relation
+}
+
+When resolving:
+1. Query UserBetSelections where parlayId = 'parlay-789'
+2. For each selection, check if the user's pick was correct
+3. If all picks correct → Parlay wins, add parlayValue to streak
+4. If any pick wrong → Parlay loses, reset streak (unless insured)
+```
 
 ---
 
@@ -232,13 +242,12 @@ This works for MVP. Later, we can add "cart" functionality where users build sel
 
 ### POST `/api/bets/:betId/select`
 
-Create a user bet selection (and optionally create a single-bet parlay immediately).
+Create a user bet selection (single bet, NOT a parlay).
 
 **Request:**
 ```typescript
 {
-  selectedSide?: string; // 'participant_1', 'participant_2', 'yes', 'no', or null for THRESHOLD
-  createParlay?: boolean; // If true, immediately create a 1-bet parlay (default: true for MVP)
+  selectedSide: string; // REQUIRED - 'participant_1', 'participant_2', 'over', 'under', 'yes', 'no'
 }
 ```
 
@@ -250,15 +259,9 @@ Create a user bet selection (and optionally create a single-bet parlay immediate
     selection: {
       id: string;
       betId: string;
-      selectedSide: string | null;
-      status: string;
-      parlayId?: string; // If parlay was created
-    };
-    parlay?: {
-      id: string;
-      betCount: number;
-      parlayValue: number;
-      status: string;
+      selectedSide: string;
+      status: string; // 'selected' (single bet, not in parlay)
+      createdAt: string;
     };
   };
 }
@@ -267,9 +270,10 @@ Create a user bet selection (and optionally create a single-bet parlay immediate
 **Validation:**
 - User must be authenticated
 - Bet must exist and be available (outcome='pending', visibleFrom in past or null)
+- Game must not have started yet (can't select bets for games in progress)
 - For COMPARISON: selectedSide must be 'participant_1' or 'participant_2'
+- For THRESHOLD: selectedSide must be 'over' or 'under'
 - For EVENT: selectedSide must be 'yes' or 'no'
-- For THRESHOLD: selectedSide should be null (or ignored)
 
 ### GET `/api/bets/my-selections`
 
@@ -316,69 +320,80 @@ Delete a bet selection (only if status='selected', not yet in a parlay).
 - Clicking opens signup modal (for non-users)
 
 **New Flow:**
-1. User clicks on a bet card
-2. **If COMPARISON bet:** Modal opens showing:
-   - Bet display text
-   - Two buttons: "Participant 1" and "Participant 2" (with names)
-   - If spread: Show spread details
-   - "Select" button
-3. **If THRESHOLD bet:** Modal opens showing:
-   - Bet display text
-   - "Select This Bet" button (no side choice)
-4. **If EVENT bet:** Modal opens showing:
-   - Bet display text
-   - Two buttons: "YES" and "NO"
-   - "Select" button
-5. User selects side and clicks "Select"
-6. **For MVP (single bets):** Immediately creates 1-bet parlay
-   - Show success message: "Bet added! Your parlay is locked when the game starts."
-   - Optionally show parlay details
-7. **Future (parlay building):** Add to "My Selections" cart
-   - Show success: "Bet added to your selections"
-   - Show cart count badge
+1. Each bet displays as **two clickable cards** (one for each side)
+   - **COMPARISON:** Card 1 = "Participant 1" (e.g., "Lakers"), Card 2 = "Participant 2" (e.g., "Warriors")
+   - **THRESHOLD:** Card 1 = "OVER [threshold]", Card 2 = "UNDER [threshold]"
+   - **EVENT:** Card 1 = "YES", Card 2 = "NO"
+2. User clicks on one of the two cards
+3. Card highlights (visual feedback - border, background color change, etc.)
+4. **"Save Bet" button appears** (below the bet cards or in a fixed position)
+5. User clicks "Save Bet"
+6. API call creates `UserBetSelection` with status='selected'
+7. Show success message: "Bet saved! You can add it to a parlay later."
+8. **Future:** "Start Parlay" button will also appear (for building multi-bet parlays)
 
-### Bet Selection Modal Component
+**Visual Design:**
+- Two cards side-by-side for each bet
+- Hover states for interactivity
+- Selected state (highlighted border/background)
+- "Save Bet" button appears when a card is selected
+- Button disabled if game has started
+
+### Bet Selection Card Component
+
+**Component:** `BetSelectionCard` (replaces modal approach)
 
 **Props:**
 ```typescript
-interface BetSelectionModalProps {
+interface BetSelectionCardProps {
   bet: Bet;
   game: Game;
-  onClose: () => void;
-  onSelect: (selectedSide: string | null) => Promise<void>;
+  onSelect: (selectedSide: string) => Promise<void>;
+  isSelected?: boolean; // Is this side currently selected?
+  disabled?: boolean; // Is selection disabled (game started)?
 }
 ```
 
 **Behavior:**
-- Renders different UI based on bet type
-- Handles side selection
-- Calls `onSelect` with the selected side
+- Renders as a clickable card
+- Shows the side label (e.g., "Lakers", "OVER 28.5", "YES")
+- Highlights when clicked/selected
+- Triggers parent component to show "Save Bet" button
 - Shows loading state during API call
 - Shows error messages if selection fails
+
+**Parent Component:** `BetSelectionGroup`
+- Renders two `BetSelectionCard` components side-by-side
+- Manages selected state
+- Shows "Save Bet" button when a card is selected
+- Handles the save action
 
 ---
 
 ## Implementation Plan
 
 ### Phase 1: Database Schema (MVP)
-1. Create `UserBetSelection` table
-2. Update `ParlayBet` to reference `UserBetSelection` (or add `selectedSide` to `ParlayBet`)
-3. Run migration
+1. Create `UserBetSelection` table with `selectedSide` (NOT NULL) and `parlayId` (nullable)
+2. Update `Parlay` model to have `UserBetSelection[]` relation (remove old `ParlayBet` relation)
+3. Remove or deprecate `ParlayBet` table (Parlay directly contains UserBetSelections)
+4. Update `User` model to include `UserBetSelection[]` relation
+5. Run migration
 
 ### Phase 2: Backend API (MVP)
 1. Create `POST /api/bets/:betId/select` endpoint
-2. Validate bet availability and user authentication
-3. Create `UserBetSelection` record
-4. Create 1-bet `Parlay` immediately
-5. Create `ParlayBet` linking parlay to selection
-6. Return selection and parlay data
+2. Validate bet availability, user authentication, and game hasn't started
+3. Validate `selectedSide` based on bet type
+4. Create `UserBetSelection` record with status='selected'
+5. Return selection data (NO parlay creation - single bets are not parlays)
 
 ### Phase 3: Frontend UI (MVP)
-1. Create `BetSelectionModal` component
-2. Update `TodaysBets` page to open modal on bet click
-3. Handle different bet types in modal
-4. Show success/error messages
-5. Optionally show created parlay details
+1. Create `BetSelectionCard` component (clickable card for one side)
+2. Create `BetSelectionGroup` component (renders two cards + save button)
+3. Update `TodaysBets` page to show two cards per bet instead of one
+4. Handle card selection and highlighting
+5. Show "Save Bet" button when card is selected
+6. Handle save action and show success/error messages
+7. Update UI to show saved bets differently (optional - show which bets user has selected)
 
 ### Phase 4: Testing & Refinement
 1. Test all bet types
@@ -388,32 +403,41 @@ interface BetSelectionModalProps {
 
 ---
 
-## Open Questions
+## Clarifications Made
 
-1. **THRESHOLD bets:** Should users be able to choose OVER/UNDER, or is the bet fixed?
-   - **Proposed:** Bet is fixed (admin sets OVER/UNDER), user just selects it
+1. **THRESHOLD bets:** Users choose OVER or UNDER (two sides, like other bet types) ✓
    
-2. **Multiple selections:** Can user select same bet multiple times?
-   - **Proposed:** Yes, for different parlays
+2. **Multiple selections:** Users can select same bet multiple times (for different parlays) ✓
    
-3. **Parlay creation timing:** For MVP, create parlay immediately or allow building?
-   - **Proposed:** Create immediately for MVP (single-bet parlays)
+3. **Single bets:** Single bets are NOT parlays - they're just `UserBetSelection` records ✓
    
-4. **Selection status:** Do we need 'selected' status, or go straight to 'in_parlay'?
-   - **Proposed:** For MVP, go straight to 'in_parlay' (parlay created immediately)
+4. **Selection status:** Status='selected' for single bets (not in a parlay) ✓
    
-5. **ParlayBet relationship:** Should `ParlayBet` reference `UserBetSelection` or just `Bet`?
-   - **Proposed:** Reference `UserBetSelection` to know which side was chosen
+5. **Parlay relationship:** Parlay directly contains UserBetSelections via `parlayId` field (no ParlayBet table) ✓
+   
+6. **UI Design:** Two clickable cards per bet (one for each side), "Save Bet" button appears on selection ✓
 
 ---
 
 ## Decisions Made
 
-1. **Schema Approach:** Use `UserBetSelection` table to store user's side choice, then link to parlays via `ParlayBet`
-2. **MVP Scope:** Create 1-bet parlays immediately (no cart/building phase yet)
-3. **THRESHOLD bets:** No side selection needed (bet is fixed)
-4. **Multiple selections:** Allowed (user can select same bet for different parlays)
+1. **Schema Approach:** 
+   - `UserBetSelection` stores user's bet + side choice (always has a side)
+   - `Parlay` directly contains UserBetSelections via `parlayId` field (no ParlayBet table)
+   - Single bets are NOT parlays - they're just `UserBetSelection` with `parlayId = null`
+
+2. **MVP Scope:** 
+   - Users can save single bet selections (not in parlays)
+   - Parlay building will come later
+   - Special UI for single bets vs parlays
+
+3. **THRESHOLD bets:** Users choose OVER or UNDER (two sides, like other bet types)
+
+4. **Multiple selections:** Allowed (user can select same bet+side multiple times for different parlays)
+
 5. **Admin access:** Admins play identically to regular users (no special handling)
+
+6. **UI Design:** Two clickable cards per bet (one for each side), "Save Bet" button appears when a card is selected
 
 ---
 

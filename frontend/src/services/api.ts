@@ -93,6 +93,14 @@ class ApiService {
     return this.request('/api/admin/sports');
   }
 
+  // Bet selection endpoints
+  async selectBet(betId: string, selectedSide: string) {
+    return this.request(`/api/bets/${betId}/select`, {
+      method: 'POST',
+      body: JSON.stringify({ selectedSide }),
+    });
+  }
+
   async getGameRoster(gameId: string) {
     return this.request(`/api/admin/teams/${gameId}/roster`);
   }

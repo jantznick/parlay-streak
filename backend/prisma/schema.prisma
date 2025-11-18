@@ -29,6 +29,7 @@ model User {
   streakHistory  StreakHistory[]
   authTokens     AuthToken[]
   sessions       Session[]
+  betSelections  UserBetSelection[]
 
   @@map("users")
 }
@@ -96,6 +97,7 @@ model Bet {
   // Relations
   game        Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
   parlayBets  ParlayBet[]
+  selections  UserBetSelection[]
 
   @@index([gameId])
   @@index([outcome])
@@ -119,8 +121,9 @@ model Parlay {
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   parlayBets    ParlayBet[]
+  selections    UserBetSelection[] // Direct relation - parlay contains these selections
   streakHistory StreakHistory[]
 
   @@index([userId, status])
@@ -162,6 +165,36 @@ model StreakHistory {
 
   @@index([userId, createdAt(sort: Desc)])
   @@map("streak_history")
+}
+
+// User Bet Selections Table
+model UserBetSelection {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  betId           String   @map("bet_id")
+  selectedSide    String   @map("selected_side") @db.VarChar(50) // NOT NULL - always required
+  // Values: 'participant_1', 'participant_2', 'over', 'under', 'yes', 'no'
+  
+  parlayId        String?  @map("parlay_id") // If null, it's a single bet (not in a parlay)
+  
+  status          String   @default("selected") @db.VarChar(20)
+  // 'selected' - chosen but not locked yet (parlayId is null, single bet)
+  // 'locked' - game started, can't modify
+  // 'resolved' - bet resolved
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bet             Bet      @relation(fields: [betId], references: [id], onDelete: Cascade)
+  parlay          Parlay?  @relation(fields: [parlayId], references: [id], onDelete: SetNull)
+  
+  @@index([userId, status])
+  @@index([betId])
+  @@index([parlayId])
+  @@index([userId, betId, selectedSide]) // Allow same bet+side multiple times (for different parlays)
+  @@map("user_bet_selections")
 }
 
 // Auth Tokens Table (for magic links, password reset, etc.)
