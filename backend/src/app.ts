@@ -11,6 +11,7 @@ import { sessionConfig } from './config/session';
 import { swaggerSpec } from './config/swagger';
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
+import { checkMaintenanceMode } from './middleware/featureFlags';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -50,6 +51,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Session middleware
 app.use(session(sessionConfig));
+
+// Maintenance mode check (before routes)
+app.use(checkMaintenanceMode);
 
 // Request logging
 app.use((req, res, next) => {

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as authController from '../controllers/auth.controller';
 import { requireAuth } from '../middleware/auth';
+import { requireFeature } from '../middleware/featureFlags';
 
 const router = Router();
 
@@ -33,7 +34,7 @@ const router = Router();
  *       400:
  *         description: Validation error
  */
-router.post('/register', authController.register);
+router.post('/register', requireFeature('AUTH_REGISTRATION'), authController.register);
 
 /**
  * @swagger
@@ -61,7 +62,7 @@ router.post('/register', authController.register);
  *       401:
  *         description: Invalid credentials
  */
-router.post('/login', authController.login);
+router.post('/login', requireFeature('AUTH_LOGIN'), authController.login);
 
 /**
  * @swagger
@@ -116,7 +117,7 @@ router.get('/me', requireAuth, authController.getCurrentUser);
  *       400:
  *         description: Invalid email
  */
-router.post('/magic-link/request', authController.requestMagicLink);
+router.post('/magic-link/request', requireFeature('AUTH_MAGIC_LINKS'), authController.requestMagicLink);
 
 /**
  * @swagger
@@ -136,7 +137,7 @@ router.post('/magic-link/request', authController.requestMagicLink);
  *       401:
  *         description: Invalid or expired token
  */
-router.get('/magic-link/verify', authController.verifyMagicLink);
+router.get('/magic-link/verify', requireFeature('AUTH_MAGIC_LINKS'), authController.verifyMagicLink);
 
 export default router;
 

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
+import { requireFeature } from '../middleware/featureFlags';
 import { ApiSportsService } from '../services/apiSports.service';
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
@@ -42,7 +43,7 @@ const apiSportsService = new ApiSportsService();
  *       200:
  *         description: Games fetched from ESPN, stored in DB, and returned
  */
-router.post('/games/fetch', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+router.post('/games/fetch', requireAuth, requireAdmin, requireFeature('ADMIN_GAME_MANAGEMENT'), async (req: Request, res: Response) => {
   try {
     const { date, sport, league } = req.body;
 
@@ -298,7 +299,7 @@ router.post('/games/fetch', requireAuth, requireAdmin, async (req: Request, res:
  *       200:
  *         description: Games retrieved successfully
  */
-router.get('/games', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+router.get('/games', requireAuth, requireAdmin, requireFeature('ADMIN_GAME_MANAGEMENT'), async (req: Request, res: Response) => {
   try {
     const { date, sport } = req.query;
 
@@ -365,7 +366,7 @@ router.get('/games', requireAuth, requireAdmin, async (req: Request, res: Respon
  *       200:
  *         description: Supported sports retrieved successfully
  */
-router.get('/sports', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+router.get('/sports', requireAuth, requireAdmin, requireFeature('ADMIN_GAME_MANAGEMENT'), async (req: Request, res: Response) => {
   try {
     const sportsConfig = apiSportsService.getSupportedSports();
     res.json({
@@ -399,7 +400,7 @@ router.get('/sports', requireAuth, requireAdmin, async (req: Request, res: Respo
  *       200:
  *         description: Roster data retrieved successfully
  */
-router.get('/teams/:gameId/roster', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+router.get('/teams/:gameId/roster', requireAuth, requireAdmin, requireFeature('ADMIN_BET_MANAGEMENT'), async (req: Request, res: Response) => {
   try {
     const { gameId } = req.params;
 
@@ -512,7 +513,7 @@ router.get('/teams/:gameId/roster', requireAuth, requireAdmin, async (req: Reque
  *       200:
  *         description: Bet created successfully
  */
-router.post('/bets', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+router.post('/bets', requireAuth, requireAdmin, requireFeature('ADMIN_BET_MANAGEMENT'), async (req: Request, res: Response) => {
   try {
     const { game_id, bet_type, config, display_text_override } = req.body;
 
@@ -687,7 +688,7 @@ function generateDisplayText(betType: string, config: any): string {
  *     summary: Update a bet
  *     tags: [Admin]
  */
-router.patch('/bets/:betId', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+router.patch('/bets/:betId', requireAuth, requireAdmin, requireFeature('ADMIN_BET_MANAGEMENT'), async (req: Request, res: Response) => {
   try {
     const { betId } = req.params;
     const { bet_type, config, display_text_override, priority } = req.body;
@@ -745,7 +746,7 @@ router.patch('/bets/:betId', requireAuth, requireAdmin, async (req: Request, res
  *     summary: Delete a bet
  *     tags: [Admin]
  */
-router.delete('/bets/:betId', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+router.delete('/bets/:betId', requireAuth, requireAdmin, requireFeature('ADMIN_BET_MANAGEMENT'), async (req: Request, res: Response) => {
   try {
     const { betId } = req.params;
 
@@ -775,7 +776,7 @@ router.delete('/bets/:betId', requireAuth, requireAdmin, async (req: Request, re
  *     summary: Reorder bet priorities
  *     tags: [Admin]
  */
-router.put('/games/:gameId/bets/reorder', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+router.put('/games/:gameId/bets/reorder', requireAuth, requireAdmin, requireFeature('ADMIN_BET_MANAGEMENT'), async (req: Request, res: Response) => {
   try {
     const { gameId } = req.params;
     const { bet_ids } = req.body; // Array of bet IDs in new order
@@ -812,6 +813,36 @@ router.put('/games/:gameId/bets/reorder', requireAuth, requireAdmin, async (req:
     res.status(500).json({
       success: false,
       error: { message: error.message || 'Failed to reorder bets', code: 'SERVER_ERROR' }
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/feature-flags:
+ *   get:
+ *     summary: Get current feature flag status (admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: Feature flags status
+ */
+router.get('/feature-flags', requireAuth, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { getFeatureFlags } = require('../middleware/featureFlags');
+    const flags = getFeatureFlags();
+    
+    res.json({
+      success: true,
+      data: flags
+    });
+  } catch (error: any) {
+    logger.error('Error fetching feature flags', { error });
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || 'Failed to fetch feature flags', code: 'SERVER_ERROR' }
     });
   }
 });

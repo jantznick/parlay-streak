@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
+import { requireFeature } from '../middleware/featureFlags';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -15,7 +16,7 @@ const prisma = new PrismaClient();
  *       200:
  *         description: Bets retrieved successfully
  */
-router.get('/today', async (req: Request, res: Response) => {
+router.get('/today', requireFeature('PUBLIC_BETS_VIEW'), async (req: Request, res: Response) => {
   try {
     // Get today's date range (start of today to end of today in UTC)
     const now = new Date();
