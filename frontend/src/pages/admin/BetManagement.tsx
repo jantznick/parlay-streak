@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { BetCreationModal } from '../../components/admin/BetCreationModal';
@@ -33,11 +33,25 @@ interface SportConfig {
   leagues: Array<{ id: string; name: string }>;
 }
 
+// Helper function to get today's date in local timezone (not UTC)
+const getLocalTodayDateString = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper function to get timezone offset in hours
+const getTimezoneOffset = (): number => {
+  // getTimezoneOffset() returns offset in minutes, negative for ahead of UTC
+  // We want hours, positive for ahead of UTC (e.g., EST is -5, so offset is -5)
+  return -new Date().getTimezoneOffset() / 60;
+};
+
 export function BetManagement() {
   const { user, logout } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalTodayDateString());
   const [sportsConfig, setSportsConfig] = useState<SportConfig[]>([]);
   const [selectedSport, setSelectedSport] = useState<string>('basketball');
   const [selectedLeague, setSelectedLeague] = useState<string>('nba');
@@ -50,6 +64,7 @@ export function BetManagement() {
   const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
   const [editingBet, setEditingBet] = useState<{ bet: Bet; game: Game } | null>(null);
   const [deletingBet, setDeletingBet] = useState<{ bet: Bet; game: Game } | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Load sports configuration on mount
   useEffect(() => {
@@ -85,16 +100,40 @@ export function BetManagement() {
   }, [selectedSport, sportsConfig, selectedLeague]);
 
   // Fetch games from ESPN API, store in DB, and return stored games
-  const fetchGames = async () => {
+  // Memoized to prevent unnecessary re-renders and with request cancellation
+  const fetchGames = useCallback(async (force: boolean = false) => {
     if (!selectedSport || !selectedLeague) {
       setError('Please select both sport and league');
       return;
     }
 
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     setError(null);
+    
     try {
-      const response = await api.fetchGamesFromApi(selectedDate, selectedSport, selectedLeague);
+      const timezoneOffset = getTimezoneOffset();
+      const response = await api.fetchGamesFromApi(
+        selectedDate, 
+        selectedSport, 
+        selectedLeague, 
+        force,
+        timezoneOffset
+      );
+      
+      // Check if request was aborted
+      if (controller.signal.aborted) {
+        return;
+      }
+      
       if (response.success && response.data && typeof response.data === 'object' && 'games' in response.data) {
         const gamesList = (response.data as { games: Game[] }).games;
         // Sort games by start time to ensure consistent ordering
@@ -104,13 +143,40 @@ export function BetManagement() {
           return timeA - timeB;
         });
         setGames(sortedGames);
+      } else {
+        setGames([]);
       }
     } catch (error: any) {
-      setError(error.message);
+      // Don't set error if request was aborted
+      if (error.name !== 'AbortError' && !controller.signal.aborted) {
+        setError(error.message || 'Failed to fetch games');
+      }
     } finally {
-      setLoading(false);
+      // Only update loading state if this is still the current request
+      if (!controller.signal.aborted) {
+        setLoading(false);
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
+      }
     }
-  };
+  }, [selectedDate, selectedSport, selectedLeague]);
+
+  // Automatically fetch games when date, sport, or league changes
+  useEffect(() => {
+    // Only fetch if we have sports config loaded and both sport and league are selected
+    if (sportsConfig.length > 0 && selectedSport && selectedLeague) {
+      fetchGames();
+    }
+    
+    // Cleanup: abort request on unmount or when dependencies change
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, [selectedDate, selectedSport, selectedLeague, sportsConfig, fetchGames]);
 
   // Handle create bets button click
   const handleCreateBets = async (game: Game) => {
@@ -370,13 +436,21 @@ export function BetManagement() {
               </select>
             </div>
 
-            <div className="flex items-end">
+            <div className="flex items-end gap-3">
               <button
-                onClick={fetchGames}
+                onClick={() => fetchGames(false)}
                 disabled={loading || !selectedSport || !selectedLeague}
-                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium"
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium"
               >
                 {loading ? 'Fetching...' : 'Fetch Games'}
+              </button>
+              <button
+                onClick={() => fetchGames(true)}
+                disabled={loading || !selectedSport || !selectedLeague}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium"
+                title="Force refresh from ESPN API (bypasses database cache)"
+              >
+                Force Refresh
               </button>
             </div>
           </div>

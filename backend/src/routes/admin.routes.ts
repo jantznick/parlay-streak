@@ -43,9 +43,36 @@ const apiSportsService = new ApiSportsService();
  *       200:
  *         description: Games fetched from ESPN, stored in DB, and returned
  */
+/**
+ * Convert a date string and timezone offset to UTC date range
+ * @param dateStr - Date in YYYY-MM-DD format (user's local date)
+ * @param timezoneOffset - Timezone offset in hours (e.g., -5 for EST, -6 for CST)
+ * @returns Object with start and end UTC dates for the date range
+ */
+function getUTCDateRange(dateStr: string, timezoneOffset: number | undefined): { start: Date; end: Date } {
+  // Parse date components
+  const [year, month, day] = dateStr.split('-').map(Number);
+  
+  // Default to UTC if no timezone offset provided (backward compatibility)
+  const offset = timezoneOffset ?? 0;
+  
+  // Create date representing midnight in the user's timezone
+  // We create it as UTC first, then adjust by the offset
+  const localMidnight = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+  
+  // Convert to UTC by subtracting the offset (offset is hours, convert to milliseconds)
+  // If user is in EST (UTC-5), offset is -5, so we subtract -5 hours = add 5 hours to get UTC
+  const startUTC = new Date(localMidnight.getTime() - (offset * 60 * 60 * 1000));
+  
+  // End is 24 hours later
+  const endUTC = new Date(startUTC.getTime() + (24 * 60 * 60 * 1000));
+  
+  return { start: startUTC, end: endUTC };
+}
+
 router.post('/games/fetch', requireAuth, requireAdmin, requireFeature('ADMIN_GAME_MANAGEMENT'), async (req: Request, res: Response) => {
   try {
-    const { date, sport, league } = req.body;
+    const { date, sport, league, force, timezoneOffset } = req.body;
 
     // Validate required fields
     if (!date || !sport || !league) {
@@ -64,21 +91,34 @@ router.post('/games/fetch', requireAuth, requireAdmin, requireFeature('ADMIN_GAM
       });
     }
 
-    // Parse date range for query
-    const requestedDate = new Date(date);
-    requestedDate.setUTCHours(0, 0, 0, 0);
-    const nextDay = new Date(requestedDate);
-    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+    // Convert user's date + timezone to UTC range for querying
+    const { start: requestedDateStart, end: requestedDateEnd } = getUTCDateRange(date, timezoneOffset);
+    
+    logger.info('Date range calculation', {
+      date,
+      timezoneOffset: timezoneOffset ?? 'not provided (using UTC)',
+      utcStart: requestedDateStart.toISOString(),
+      utcEnd: requestedDateEnd.toISOString()
+    });
 
     // Step 1: Check if we have games in DB for this date/sport/league
-    logger.info('Checking database for existing games', { date, sport, league });
+    logger.info('Checking database for existing games', { 
+      date, 
+      sport, 
+      league,
+      timezoneOffset: timezoneOffset ?? 'not provided',
+      utcRange: {
+        start: requestedDateStart.toISOString(),
+        end: requestedDateEnd.toISOString()
+      }
+    });
     
-    // First get all games for the date and sport
+    // First get all games for the date and sport using UTC range
     const allGamesForDate = await prisma.game.findMany({
       where: {
         startTime: {
-          gte: requestedDate,
-          lt: nextDay
+          gte: requestedDateStart,
+          lt: requestedDateEnd
         },
         sport: sport.toUpperCase()
       },
@@ -100,8 +140,9 @@ router.post('/games/fetch', requireAuth, requireAdmin, requireFeature('ADMIN_GAM
     });
 
     // Check if games are fresh (less than 24 hours old)
-    let shouldFetchFromAPI = true;
-    if (existingGames.length > 0) {
+    // If force=true, always fetch from API regardless of cache
+    let shouldFetchFromAPI = force === true;
+    if (!shouldFetchFromAPI && existingGames.length > 0) {
       // Find the most recently updated game
       const mostRecentGame = existingGames.reduce((latest, game) => {
         const latestTime = new Date(latest.updatedAt || latest.createdAt).getTime();
@@ -162,7 +203,36 @@ router.post('/games/fetch', requireAuth, requireAdmin, requireFeature('ADMIN_GAM
       
       logger.info('ESPN API returned games', { count: apiGames.length, date, sport, league });
 
-      // Step 3: Store games in database
+      // Step 3: Delete old games for this date/sport/league that are no longer in the API response
+      // This ensures we don't have stale games in the database
+      // Only delete games that are in existingGames (already filtered by date/sport/league)
+      const apiGameExternalIds = new Set(apiGames.map(g => g.externalId));
+      const gamesToDelete = existingGames.filter(game => {
+        // Delete games that are not in the new API response
+        // These are games we had in the DB for this date/sport/league but are no longer in the API
+        return !apiGameExternalIds.has(game.externalId);
+      });
+
+      if (gamesToDelete.length > 0) {
+        logger.info('Deleting old games that are no longer in API response', { 
+          count: gamesToDelete.length,
+          gameIds: gamesToDelete.map(g => g.id),
+          externalIds: gamesToDelete.map(g => g.externalId)
+        });
+        
+        // Delete games (bets will be cascade deleted automatically due to onDelete: Cascade in schema)
+        await prisma.game.deleteMany({
+          where: {
+            id: { in: gamesToDelete.map(g => g.id) }
+          }
+        });
+        
+        logger.info('Successfully deleted old games', { count: gamesToDelete.length });
+      } else {
+        logger.info('No old games to delete - all existing games are in the new API response');
+      }
+
+      // Step 4: Store games in database
       logger.info('Storing games in database', { count: apiGames.length });
       
       for (const apiGame of apiGames) {
@@ -207,7 +277,7 @@ router.post('/games/fetch', requireAuth, requireAdmin, requireFeature('ADMIN_GAM
         }
       }
 
-      // Step 4: Fetch updated games from database
+      // Step 5: Fetch updated games from database
       if (storedGameIds.length > 0) {
         const updatedGames = await prisma.game.findMany({
           where: {

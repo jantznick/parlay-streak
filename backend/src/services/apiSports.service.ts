@@ -200,7 +200,19 @@ export class ApiSportsService {
     
     // Build URL: /sports/{sport}/{league}/scoreboard?dates={date}
     const url = `${this.baseUrl}/${sport}/${league}/scoreboard?dates=${dateStr}`;
-    logger.info('Fetching games from ESPN API', { url, sport, league, date });
+    
+    // Log URL prominently for debugging
+    console.log('\n═══════════════════════════════════════════════════════════');
+    console.log('📡 ESPN API REQUEST');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log(`URL: ${url}`);
+    console.log(`Date (input): ${date}`);
+    console.log(`Date (formatted): ${dateStr}`);
+    console.log(`Sport: ${sport}`);
+    console.log(`League: ${league}`);
+    console.log('═══════════════════════════════════════════════════════════\n');
+    
+    logger.info('Fetching games from ESPN API', { url, sport, league, date, dateStr });
 
     // Retry logic
     let lastError: Error | null = null;

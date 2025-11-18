@@ -76,10 +76,16 @@ class ApiService {
   }
 
   // Admin endpoints
-  async fetchGamesFromApi(date: string, sport: string, league: string) {
+  async fetchGamesFromApi(
+    date: string, 
+    sport: string, 
+    league: string, 
+    force: boolean = false,
+    timezoneOffset?: number
+  ) {
     return this.request('/api/admin/games/fetch', {
       method: 'POST',
-      body: JSON.stringify({ date, sport, league }),
+      body: JSON.stringify({ date, sport, league, force, timezoneOffset }),
     });
   }
 
