@@ -8,6 +8,7 @@ CREATE TABLE "users" (
     "longest_streak" INTEGER NOT NULL DEFAULT 0,
     "total_points_earned" INTEGER NOT NULL DEFAULT 0,
     "insurance_locked" BOOLEAN NOT NULL DEFAULT false,
+    "last_insured_parlay_id" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -48,11 +49,18 @@ CREATE TABLE "bets" (
     "id" TEXT NOT NULL,
     "game_id" TEXT NOT NULL,
     "bet_type" VARCHAR(50) NOT NULL,
-    "description" VARCHAR(255) NOT NULL,
-    "bet_value" VARCHAR(100) NOT NULL,
+    "description" VARCHAR(255),
+    "bet_value" VARCHAR(100),
+    "display_text" VARCHAR(255) NOT NULL,
+    "display_text_override" VARCHAR(255),
+    "config" JSONB,
     "outcome" VARCHAR(20) NOT NULL DEFAULT 'pending',
     "priority" INTEGER NOT NULL DEFAULT 2,
     "resolved_at" TIMESTAMP(3),
+    "last_fetched_at" TIMESTAMP(3),
+    "needs_admin_resolution" BOOLEAN NOT NULL DEFAULT false,
+    "admin_resolution_notes" TEXT,
+    "visible_from" TIMESTAMP(3),
     "metadata" JSONB,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -79,16 +87,6 @@ CREATE TABLE "parlays" (
 );
 
 -- CreateTable
-CREATE TABLE "parlay_bets" (
-    "id" TEXT NOT NULL,
-    "parlay_id" TEXT NOT NULL,
-    "bet_id" TEXT NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "parlay_bets_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "streak_history" (
     "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
@@ -100,6 +98,20 @@ CREATE TABLE "streak_history" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "streak_history_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_bet_selections" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "bet_id" TEXT NOT NULL,
+    "selected_side" VARCHAR(50) NOT NULL,
+    "parlay_id" TEXT,
+    "status" VARCHAR(20) NOT NULL DEFAULT 'selected',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_bet_selections_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -143,22 +155,28 @@ CREATE INDEX "bets_game_id_idx" ON "bets"("game_id");
 CREATE INDEX "bets_outcome_idx" ON "bets"("outcome");
 
 -- CreateIndex
+CREATE INDEX "bets_visible_from_idx" ON "bets"("visible_from");
+
+-- CreateIndex
 CREATE INDEX "parlays_user_id_status_idx" ON "parlays"("user_id", "status");
 
 -- CreateIndex
 CREATE INDEX "parlays_last_game_end_time_idx" ON "parlays"("last_game_end_time");
 
 -- CreateIndex
-CREATE INDEX "parlay_bets_parlay_id_idx" ON "parlay_bets"("parlay_id");
-
--- CreateIndex
-CREATE INDEX "parlay_bets_bet_id_idx" ON "parlay_bets"("bet_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "parlay_bets_parlay_id_bet_id_key" ON "parlay_bets"("parlay_id", "bet_id");
-
--- CreateIndex
 CREATE INDEX "streak_history_user_id_created_at_idx" ON "streak_history"("user_id", "created_at" DESC);
+
+-- CreateIndex
+CREATE INDEX "user_bet_selections_user_id_status_idx" ON "user_bet_selections"("user_id", "status");
+
+-- CreateIndex
+CREATE INDEX "user_bet_selections_bet_id_idx" ON "user_bet_selections"("bet_id");
+
+-- CreateIndex
+CREATE INDEX "user_bet_selections_parlay_id_idx" ON "user_bet_selections"("parlay_id");
+
+-- CreateIndex
+CREATE INDEX "user_bet_selections_user_id_bet_id_selected_side_idx" ON "user_bet_selections"("user_id", "bet_id", "selected_side");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "auth_tokens_token_key" ON "auth_tokens"("token");
@@ -179,16 +197,20 @@ ALTER TABLE "bets" ADD CONSTRAINT "bets_game_id_fkey" FOREIGN KEY ("game_id") RE
 ALTER TABLE "parlays" ADD CONSTRAINT "parlays_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "parlay_bets" ADD CONSTRAINT "parlay_bets_parlay_id_fkey" FOREIGN KEY ("parlay_id") REFERENCES "parlays"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "parlay_bets" ADD CONSTRAINT "parlay_bets_bet_id_fkey" FOREIGN KEY ("bet_id") REFERENCES "bets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "streak_history" ADD CONSTRAINT "streak_history_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "streak_history" ADD CONSTRAINT "streak_history_parlay_id_fkey" FOREIGN KEY ("parlay_id") REFERENCES "parlays"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "user_bet_selections" ADD CONSTRAINT "user_bet_selections_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_bet_selections" ADD CONSTRAINT "user_bet_selections_bet_id_fkey" FOREIGN KEY ("bet_id") REFERENCES "bets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_bet_selections" ADD CONSTRAINT "user_bet_selections_parlay_id_fkey" FOREIGN KEY ("parlay_id") REFERENCES "parlays"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "auth_tokens" ADD CONSTRAINT "auth_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
