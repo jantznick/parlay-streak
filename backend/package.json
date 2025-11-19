@@ -6,7 +6,7 @@
   "scripts": {
     "predev": "test -d ../shared && (rm -rf ./shared && cp -r ../shared .) || true",
     "dev": "nodemon src/index.ts",
-    "prebuild": "test -d ./shared || (test -d ../shared && cp -r ../shared .) || (echo 'ERROR: Shared folder not found. Expected ./shared or ../shared' && exit 1)",
+    "prebuild": "test -d ./shared || (echo 'ERROR: Shared folder not found at ./shared. It should have been copied by the build command.' && exit 1)",
     "build": "tsc && tsc-alias",
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
