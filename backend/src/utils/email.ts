@@ -285,12 +285,15 @@ async function sendProductionPasswordResetEmail(email: string, resetLink: string
 
 /**
  * Send magic link email
- * Automatically uses dev mode if RESEND_API_KEY is not configured, production mode otherwise
+ * Automatically uses dev mode if RESEND_API_KEY is not configured or NODE_ENV is development, production mode otherwise
  */
 export async function sendMagicLinkEmail(email: string, magicLink: string): Promise<void> {
-  // Check if Resend is configured
-  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_your_api_key_here') {
-    // Use dev mode (console log) if Resend not configured
+  // Use dev mode if NODE_ENV is development OR Resend is not configured
+  const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+  const resendNotConfigured = !process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_your_api_key_here';
+  
+  if (isDevelopment || resendNotConfigured) {
+    // Use dev mode (console log) if in development or Resend not configured
     sendDevEmail(email, magicLink);
     // Simulate email sending delay
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -302,12 +305,15 @@ export async function sendMagicLinkEmail(email: string, magicLink: string): Prom
 
 /**
  * Send welcome/registration email
- * Automatically uses dev mode if RESEND_API_KEY is not configured, production mode otherwise
+ * Automatically uses dev mode if RESEND_API_KEY is not configured or NODE_ENV is development, production mode otherwise
  */
 export async function sendWelcomeEmail(email: string, username: string): Promise<void> {
-  // Check if Resend is configured
-  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_your_api_key_here') {
-    // Use dev mode (console log) if Resend not configured
+  // Use dev mode if NODE_ENV is development OR Resend is not configured
+  const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+  const resendNotConfigured = !process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_your_api_key_here';
+  
+  if (isDevelopment || resendNotConfigured) {
+    // Use dev mode (console log) if in development or Resend not configured
     sendDevWelcomeEmail(email, username);
     // Simulate email sending delay
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -319,12 +325,15 @@ export async function sendWelcomeEmail(email: string, username: string): Promise
 
 /**
  * Send password reset email
- * Automatically uses dev mode if RESEND_API_KEY is not configured, production mode otherwise
+ * Automatically uses dev mode if RESEND_API_KEY is not configured or NODE_ENV is development, production mode otherwise
  */
 export async function sendPasswordResetEmail(email: string, resetLink: string): Promise<void> {
-  // Check if Resend is configured
-  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_your_api_key_here') {
-    // Use dev mode (console log) if Resend not configured
+  // Use dev mode if NODE_ENV is development OR Resend is not configured
+  const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+  const resendNotConfigured = !process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_your_api_key_here';
+  
+  if (isDevelopment || resendNotConfigured) {
+    // Use dev mode (console log) if in development or Resend not configured
     sendDevPasswordResetEmail(email, resetLink);
     // Simulate email sending delay
     await new Promise(resolve => setTimeout(resolve, 100));
