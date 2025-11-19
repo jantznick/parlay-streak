@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { Footer } from '../components/layout/Footer';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -50,8 +51,9 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
+    <div className="min-h-screen bg-slate-950 flex flex-col">
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="max-w-md w-full">
         {/* Logo/Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-600 to-red-700 bg-clip-text text-transparent">
@@ -137,7 +139,9 @@ export function Login() {
             </p>
           </div>
         </div>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 }

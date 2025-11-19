@@ -437,22 +437,19 @@ export function MyBetsSection() {
                     <span className="flex-1 text-sm text-white font-medium truncate">
                       {formatSelectionText(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.bet.game)}
                     </span>
-                    <span className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
-                      selection.status === 'locked'
-                        ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-600/30'
-                        : 'bg-green-900/30 text-green-400 border border-green-600/30'
-                    }`}>
-                      {selection.status === 'locked' ? '🔒' : '✓'}
-                    </span>
+                    {selection.status === 'locked' && (
+                      <span className="px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 bg-yellow-900/30 text-yellow-400 border border-yellow-600/30">
+                        🔒
+                      </span>
+                    )}
                     {canModify && (
                       <div className="flex gap-1.5 flex-shrink-0">
                         <button
                           onClick={() => handleStartParlay(selection.id, selection.bet.id, selection.selectedSide)}
                           disabled={startingParlayId === selection.id}
                           className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Start Parlay"
                         >
-                          {startingParlayId === selection.id ? '...' : '📦'}
+                          {startingParlayId === selection.id ? '...' : 'Make Parlay'}
                         </button>
                         <button
                           onClick={() => setConfirmDeleteId(selection.id)}
@@ -478,11 +475,11 @@ export function MyBetsSection() {
                 >
                   <div className="flex items-center gap-3">
                     <span className="px-2 py-0.5 bg-blue-600 text-white rounded text-xs font-bold border border-blue-500 flex-shrink-0">
-                      PARLAY {parlay.betCount} • +{parlay.parlayValue}
+                    {parlay.betCount} LEG PARLAY
                     </span>
                     {parlay.insured && (
                       <span className="px-1.5 py-0.5 bg-orange-900/30 text-orange-400 rounded text-xs font-medium border border-orange-600/30 flex-shrink-0">
-                        🛡️
+                        INSURED
                       </span>
                     )}
                     {isLocked && (
@@ -499,13 +496,11 @@ export function MyBetsSection() {
                           <span className="text-xs text-white font-medium whitespace-nowrap">
                             {formatSelectionText(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.game)}
                           </span>
-                          <span className={`px-1 py-0.5 rounded text-xs flex-shrink-0 ${
-                            selection.status === 'locked'
-                              ? 'bg-yellow-900/30 text-yellow-400'
-                              : 'bg-green-900/30 text-green-400'
-                          }`}>
-                            {selection.status === 'locked' ? '🔒' : '✓'}
-                          </span>
+                          {selection.status === 'locked' && (
+                            <span className="px-1 py-0.5 rounded text-xs flex-shrink-0 bg-yellow-900/30 text-yellow-400">
+                              🔒
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>

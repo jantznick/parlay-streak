@@ -1,0 +1,10 @@
+# Redirects for static site deployment
+# This file is used by Render and other static hosting services
+
+# Redirect root to index.html
+/ /index.html 200
+
+# Ensure all HTML files are served correctly
+/legal/* /legal/:splat.html 200
+/company/* /company/:splat.html 200
+

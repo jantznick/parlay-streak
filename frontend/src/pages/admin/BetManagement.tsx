@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { Header } from '../../components/layout/Header';
+import { Footer } from '../../components/layout/Footer';
 import { BetCreationModal } from '../../components/admin/BetCreationModal';
 import { BetEditModal } from '../../components/admin/BetEditModal';
 
@@ -359,7 +360,7 @@ export function BetManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header title="Admin: Bet Management" />
 
       {/* Main Content */}
@@ -703,6 +704,7 @@ export function BetManagement() {
           </div>
         </div>
       )}
+      <Footer />
     </div>
   );
 }

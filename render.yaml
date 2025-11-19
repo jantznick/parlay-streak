@@ -39,12 +39,9 @@ services:
   - type: web
     name: parlay-streak-marketing
     env: static
-    rootDir: /
-    staticPublishPath: /
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    rootDir: public
+    buildCommand: echo "No build needed for static site"
+    staticPublishPath: .
 
 databases:
   - name: parlay-streak-db

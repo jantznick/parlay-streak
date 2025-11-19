@@ -37,8 +37,15 @@ export function TodaysBetsSection() {
     setLoading(true);
     setError(null);
     try {
+      // Get local date string (YYYY-MM-DD) in user's timezone
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const localDate = `${year}-${month}-${day}`;
+      
       const timezoneOffset = -new Date().getTimezoneOffset() / 60;
-      const response = await fetch(`/api/bets/today?timezoneOffset=${timezoneOffset}`, {
+      const response = await fetch(`/api/bets/today?date=${localDate}&timezoneOffset=${timezoneOffset}`, {
         credentials: 'include'
       });
       const data = await response.json();
