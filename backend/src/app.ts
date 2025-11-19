@@ -40,7 +40,10 @@ const io = new SocketIOServer(httpServer, {
 app.set('io', io);
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginEmbedderPolicy: false, // Allow cross-origin cookies
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin resources
+}));
 app.use(compression());
 app.use(cors({
   origin: corsOrigins,
