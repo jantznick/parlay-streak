@@ -5,6 +5,7 @@
     "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": ".",
+    "composite": false,
     "strict": false,
     "noImplicitAny": false,
     "esModuleInterop": true,
@@ -16,7 +17,7 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["./shared/*", "../shared/*"]
+      "@shared/*": ["./shared/*"]
     }
   },
   "include": ["src/**/*", "./shared/**/*"],
