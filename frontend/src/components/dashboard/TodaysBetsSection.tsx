@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BetSelectionGroup } from '../bets/BetSelectionGroup';
+import { api } from '../../services/api';
 
 interface Bet {
   id: string;
@@ -45,10 +46,7 @@ export function TodaysBetsSection() {
       const localDate = `${year}-${month}-${day}`;
       
       const timezoneOffset = -new Date().getTimezoneOffset() / 60;
-      const response = await fetch(`/api/bets/today?date=${localDate}&timezoneOffset=${timezoneOffset}`, {
-        credentials: 'include'
-      });
-      const data = await response.json();
+      const data = await api.getTodaysBets(localDate, timezoneOffset);
       if (data.success && data.data?.games) {
         const sortedGames = [...data.data.games].sort((a, b) => {
           const timeA = new Date(a.startTime).getTime();

@@ -93,6 +93,11 @@ class ApiService {
     return this.request('/api/admin/sports');
   }
 
+  // Public bets endpoint
+  async getTodaysBets(date: string, timezoneOffset: number) {
+    return this.request(`/api/bets/today?date=${date}&timezoneOffset=${timezoneOffset}`);
+  }
+
   // Bet selection endpoints
   async selectBet(betId: string, selectedSide: string) {
     return this.request(`/api/bets/${betId}/select`, {
