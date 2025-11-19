@@ -23,6 +23,11 @@ import parlayRoutes from './routes/parlay.routes';
 const app = express();
 const httpServer = createServer(app);
 
+// Trust proxy - required for secure cookies behind reverse proxy (Render)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Handle CORS - support multiple origins
 const corsOrigins = process.env.CORS_ORIGIN 
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
@@ -67,6 +72,19 @@ app.use(express.urlencoded({ extended: true }));
 
 // Session middleware
 app.use(session(sessionConfig));
+
+// Debug middleware to log session info
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/auth')) {
+    logger.info('Session middleware', {
+      path: req.path,
+      hasSession: !!req.session,
+      sessionId: req.sessionID,
+      userId: req.session?.userId,
+    });
+  }
+  next();
+});
 
 // Maintenance mode check (before routes)
 app.use(checkMaintenanceMode);

@@ -6,6 +6,7 @@ import prisma from '../config/database';
 import { ValidationError, AuthenticationError } from '../middleware/errorHandler';
 import { AUTH_VALIDATION } from '@shared/validation/auth';
 import { sendMagicLinkEmail } from '../utils/email';
+import { logger } from '../utils/logger';
 
 // Validation schemas using shared constants
 const registerSchema = Joi.object({
@@ -122,11 +123,25 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     // Set session
     req.session.userId = user.id;
     
+    // Log session info for debugging
+    logger.info('Setting session', { 
+      userId: user.id, 
+      sessionId: req.sessionID,
+      cookie: req.session.cookie 
+    });
+    
     // Explicitly save session to ensure cookie is set
     req.session.save((err) => {
       if (err) {
+        logger.error('Session save error', { error: err });
         return next(err);
       }
+      
+      // Log that session was saved
+      logger.info('Session saved successfully', { 
+        sessionId: req.sessionID,
+        cookie: req.session.cookie 
+      });
       
       res.json({
         success: true,

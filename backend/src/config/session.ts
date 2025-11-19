@@ -17,7 +17,7 @@ export const sessionConfig: session.SessionOptions = {
   }),
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: false, // Don't save uninitialized sessions
   name: 'parlay.sid', // Custom session cookie name
   cookie: {
     secure: process.env.NODE_ENV === 'production', // true in production (requires HTTPS)
@@ -27,5 +27,9 @@ export const sessionConfig: session.SessionOptions = {
     domain: process.env.NODE_ENV === 'production' ? '.parlaystreak.com' : undefined, // Allow cookies across subdomains in production
     path: '/', // Ensure cookie is available for all paths
   },
+  // Add rolling to refresh cookie on activity
+  rolling: false,
+  // Trust proxy for secure cookies behind reverse proxy
+  proxy: process.env.NODE_ENV === 'production',
 };
 

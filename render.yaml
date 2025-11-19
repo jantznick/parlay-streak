@@ -29,11 +29,13 @@ services:
     name: parlay-streak-app
     env: static
     rootDir: frontend
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
         value: https://api.parlaystreak.com
+      # Note: NODE_ENV should NOT be set to production for frontend builds
+      # as it causes npm to skip devDependencies needed for the build
 
   # Marketing Site
   - type: web
