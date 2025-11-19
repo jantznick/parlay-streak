@@ -316,8 +316,8 @@ Or use Railway's custom domain feature for `api.parlaystreak.com`.
 
 5. **Configure Build Settings**:
    - Root Directory: `.` (repo root, leave empty or set to `.`)
-   - Build Command: `cd backend && npm install && npm run build && npx prisma generate`
-   - Start Command: `cd backend && npm run start`
+   - Build Command: `pwd && ls -la && test -d backend && cd backend && npm install && npm run build && npx prisma generate`
+   - Start Command: `cd backend && node dist/index.js`
 
 6. **Run Migrations**:
    - In Railway, open the PostgreSQL service
