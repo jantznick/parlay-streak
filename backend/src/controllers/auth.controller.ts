@@ -77,10 +77,17 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
     // Set session
     req.session.userId = user.id;
-
-    res.status(201).json({
-      success: true,
-      data: { user },
+    
+    // Explicitly save session to ensure cookie is set
+    req.session.save((err) => {
+      if (err) {
+        return next(err);
+      }
+      
+      res.status(201).json({
+        success: true,
+        data: { user },
+      });
     });
   } catch (err) {
     next(err);
@@ -114,19 +121,26 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     // Set session
     req.session.userId = user.id;
-
-    res.json({
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          currentStreak: user.currentStreak,
-          longestStreak: user.longestStreak,
-          totalPointsEarned: user.totalPointsEarned,
+    
+    // Explicitly save session to ensure cookie is set
+    req.session.save((err) => {
+      if (err) {
+        return next(err);
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            currentStreak: user.currentStreak,
+            longestStreak: user.longestStreak,
+            totalPointsEarned: user.totalPointsEarned,
+          },
         },
-      },
+      });
     });
   } catch (err) {
     next(err);
@@ -284,19 +298,26 @@ export const verifyMagicLink = async (req: Request, res: Response, next: NextFun
 
     // Set session
     req.session.userId = authToken.userId;
-
-    res.json({
-      success: true,
-      data: {
-        user: {
-          id: authToken.user.id,
-          username: authToken.user.username,
-          email: authToken.user.email,
-          currentStreak: authToken.user.currentStreak,
-          longestStreak: authToken.user.longestStreak,
-          totalPointsEarned: authToken.user.totalPointsEarned,
+    
+    // Explicitly save session to ensure cookie is set
+    req.session.save((err) => {
+      if (err) {
+        return next(err);
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          user: {
+            id: authToken.user.id,
+            username: authToken.user.username,
+            email: authToken.user.email,
+            currentStreak: authToken.user.currentStreak,
+            longestStreak: authToken.user.longestStreak,
+            totalPointsEarned: authToken.user.totalPointsEarned,
+          },
         },
-      },
+      });
     });
   } catch (err) {
     next(err);

@@ -46,8 +46,21 @@ app.use(helmet({
 }));
 app.use(compression());
 app.use(cors({
-  origin: corsOrigins,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (corsOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // Log for debugging
+      logger.warn('CORS blocked origin', { origin, allowedOrigins: corsOrigins });
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
+  exposedHeaders: ['Set-Cookie'], // Explicitly expose Set-Cookie header
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
