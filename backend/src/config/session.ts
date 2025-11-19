@@ -25,6 +25,7 @@ export const sessionConfig: session.SessionOptions = {
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' required for cross-subdomain cookies in production
     domain: process.env.NODE_ENV === 'production' ? '.parlaystreak.com' : undefined, // Allow cookies across subdomains in production
+    path: '/', // Ensure cookie is available for all paths
   },
 };
 
