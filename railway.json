@@ -5,7 +5,7 @@
     "buildCommand": "if [ -d backend ]; then (test -d shared && cp -r shared backend/ || test -d backend/shared || (echo 'ERROR: Shared folder not found' && exit 1)) && cd backend && npm install && npm run build && npx prisma generate; else (test -d shared && cp -r shared . || test -d ./shared || (echo 'ERROR: Shared folder not found' && exit 1)) && npm install && npm run build && npx prisma generate; fi"
   },
   "deploy": {
-    "startCommand": "cd backend && node dist/index.js",
+    "startCommand": "if [ -f backend/dist/index.js ]; then cd backend && node dist/index.js; elif [ -f dist/index.js ]; then node dist/index.js; else echo 'ERROR: dist/index.js not found' && ls -la && ls -la backend/ 2>&1 && exit 1; fi",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
