@@ -40,28 +40,28 @@ class ApiService {
   }
 
   // Auth endpoints
-  async register(username: string, email: string, password: string) {
-    return this.request('/api/auth/register', {
+  async register(username: string, email: string, password: string): Promise<ApiResponse<{ user: any }>> {
+    return this.request<{ user: any }>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify({ username, email, password }),
     });
   }
 
-  async login(email: string, password: string) {
-    return this.request('/api/auth/login', {
+  async login(email: string, password: string): Promise<ApiResponse<{ user: any }>> {
+    return this.request<{ user: any }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
   }
 
-  async logout() {
+  async logout(): Promise<ApiResponse> {
     return this.request('/api/auth/logout', {
       method: 'POST',
     });
   }
 
-  async getCurrentUser() {
-    return this.request('/api/auth/me');
+  async getCurrentUser(): Promise<ApiResponse<{ user: any }>> {
+    return this.request<{ user: any }>('/api/auth/me');
   }
 
   async requestMagicLink(email: string) {
@@ -175,12 +175,12 @@ class ApiService {
     return this.request(`/api/parlays${query ? `?${query}` : ''}`);
   }
 
-  async getParlay(parlayId: string) {
-    return this.request(`/api/parlays/${parlayId}`);
+  async getParlay(parlayId: string): Promise<ApiResponse<{ parlay: any }>> {
+    return this.request<{ parlay: any }>(`/api/parlays/${parlayId}`);
   }
 
-  async updateParlay(parlayId: string, updates: { insured?: boolean }) {
-    return this.request(`/api/parlays/${parlayId}`, {
+  async updateParlay(parlayId: string, updates: { insured?: boolean }): Promise<ApiResponse<{ parlay: any }>> {
+    return this.request<{ parlay: any }>(`/api/parlays/${parlayId}`, {
       method: 'PATCH',
       body: JSON.stringify(updates),
     });
