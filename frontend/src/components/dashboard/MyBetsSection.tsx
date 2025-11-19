@@ -69,7 +69,6 @@ export function MyBetsSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [expandedParlayId, setExpandedParlayId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [startingParlayId, setStartingParlayId] = useState<string | null>(null);
   const [showNewParlayWarning, setShowNewParlayWarning] = useState(false);
@@ -86,7 +85,11 @@ export function MyBetsSection() {
   }, [refreshTrigger, isParlayBuilderOpen]);
 
   const fetchMyData = async () => {
-    setLoading(true);
+    // Don't set loading to true if we already have data - prevents jump
+    const isInitialLoad = selections.length === 0 && parlays.length === 0;
+    if (isInitialLoad) {
+      setLoading(true);
+    }
     setError(null);
     try {
       // Fetch single bets (selections with no parlay)
@@ -235,57 +238,68 @@ export function MyBetsSection() {
     }
   };
 
-  const formatSideLabel = (side: string, betType: string, config: any, game: any) => {
+  const formatSelectionText = (side: string, betType: string, config: any, game: any) => {
     if (betType === 'COMPARISON' && config) {
       const compConfig = config;
-      if (side === 'participant_1') {
-        const participant = compConfig.participant_1;
-        let name = participant?.subject_name || 'Participant 1';
-        
-        // If it's a team, try to use the game team names
-        if (participant?.subject_type === 'TEAM') {
-          const metadata = game.metadata;
-          const apiData = metadata?.apiData;
-          if (apiData?.teams?.home?.id === participant.subject_id) {
-            name = game.homeTeam;
-          } else if (apiData?.teams?.away?.id === participant.subject_id) {
-            name = game.awayTeam;
-          }
+      const p1 = compConfig.participant_1;
+      const p2 = compConfig.participant_2;
+      
+      let name1 = p1?.subject_name || 'A';
+      let name2 = p2?.subject_name || 'B';
+      
+      // Use short names if available
+      if (p1?.subject_type === 'TEAM') {
+        const metadata = game.metadata;
+        const apiData = metadata?.apiData;
+        if (apiData?.teams?.home?.id === p1.subject_id) {
+          name1 = game.homeTeam.split(' ').pop() || name1;
+        } else if (apiData?.teams?.away?.id === p1.subject_id) {
+          name1 = game.awayTeam.split(' ').pop() || name1;
         }
-        
-        // Handle spread
-        if (compConfig.spread) {
-          const spreadValue = compConfig.spread.value;
-          const spreadDir = compConfig.spread.direction;
-          if (spreadDir === '+') {
-            name = `${name} +${spreadValue}`;
-          } else {
-            name = `${name} -${spreadValue}`;
-          }
-        }
-        
-        return name;
-      } else if (side === 'participant_2') {
-        const participant = compConfig.participant_2;
-        let name = participant?.subject_name || 'Participant 2';
-        
-        // If it's a team, try to use the game team names
-        if (participant?.subject_type === 'TEAM') {
-          const metadata = game.metadata;
-          const apiData = metadata?.apiData;
-          if (apiData?.teams?.home?.id === participant.subject_id) {
-            name = game.homeTeam;
-          } else if (apiData?.teams?.away?.id === participant.subject_id) {
-            name = game.awayTeam;
-          }
-        }
-        
-        return name;
       }
-    } else if (betType === 'THRESHOLD') {
-      return side.toUpperCase();
-    } else if (betType === 'EVENT') {
-      return side.toUpperCase();
+      
+      if (p2?.subject_type === 'TEAM') {
+        const metadata = game.metadata;
+        const apiData = metadata?.apiData;
+        if (apiData?.teams?.home?.id === p2.subject_id) {
+          name2 = game.homeTeam.split(' ').pop() || name2;
+        } else if (apiData?.teams?.away?.id === p2.subject_id) {
+          name2 = game.awayTeam.split(' ').pop() || name2;
+        }
+      }
+      
+      // Handle spread
+      if (compConfig.spread) {
+        const spreadValue = compConfig.spread.value;
+        const spreadDir = compConfig.spread.direction;
+        if (side === 'participant_1') {
+          name1 = spreadDir === '+' ? `${name1} +${spreadValue}` : `${name1} -${spreadValue}`;
+        } else {
+          name2 = spreadDir === '+' ? `${name2} +${spreadValue}` : `${name2} -${spreadValue}`;
+        }
+      }
+      
+      return side === 'participant_1' ? `${name1} over ${name2}` : `${name2} over ${name1}`;
+    } else if (betType === 'THRESHOLD' && config) {
+      const threshold = config.threshold;
+      const participant = config.participant;
+      let name = participant?.subject_name || 'Player';
+      
+      // Use short name
+      if (participant?.subject_type === 'TEAM') {
+        const metadata = game.metadata;
+        const apiData = metadata?.apiData;
+        if (apiData?.teams?.home?.id === participant.subject_id) {
+          name = game.homeTeam.split(' ').pop() || name;
+        } else if (apiData?.teams?.away?.id === participant.subject_id) {
+          name = game.awayTeam.split(' ').pop() || name;
+        }
+      }
+      
+      return side === 'over' ? `${name} over ${threshold}` : `${name} under ${threshold}`;
+    } else if (betType === 'EVENT' && config) {
+      const event = config.event || 'Event';
+      return side === 'yes' ? `${event} ✓` : `${event} ✗`;
     }
     return side;
   };
@@ -328,16 +342,16 @@ export function MyBetsSection() {
     }
   };
 
-  if (loading) {
+  if (loading && selections.length === 0 && parlays.length === 0) {
     return (
-      <div className="bg-slate-900 rounded-lg p-8 text-center">
+      <div className="bg-slate-900 rounded-lg p-8 text-center animate-pulse">
         <div className="text-4xl mb-4">⏳</div>
         <p className="text-slate-400">Loading your bets...</p>
       </div>
     );
   }
 
-  if (error) {
+  if (error && selections.length === 0 && parlays.length === 0) {
     return (
       <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
         <p className="text-red-400">{error}</p>
@@ -345,7 +359,7 @@ export function MyBetsSection() {
     );
   }
 
-  if (selections.length === 0 && parlays.length === 0) {
+  if (selections.length === 0 && parlays.length === 0 && !loading) {
     return (
       <div className="bg-slate-900 rounded-lg p-8 text-center">
         <div className="text-4xl mb-4">📝</div>
@@ -357,9 +371,15 @@ export function MyBetsSection() {
     );
   }
 
+  // Combine all bets into one list for unified display
+  const allBets = [
+    ...selections.map(s => ({ type: 'single' as const, data: s })),
+    ...parlays.map(p => ({ type: 'parlay' as const, data: p }))
+  ];
+
   return (
     <>
-      <div className="space-y-8">
+      <div className="space-y-4">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold text-white">
@@ -377,200 +397,132 @@ export function MyBetsSection() {
           </button>
         </div>
 
-        {/* Single Bets Section */}
-        {selections.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-white border-b border-slate-800 pb-2">Single Bets</h3>
-            <div className="grid gap-4">
-              {selections.map((selection) => {
-                const canModify = selection.bet.game.status === 'scheduled' && selection.status !== 'locked';
-                const inBuilder = isBetInActiveParlay(selection.id, selection.bet.id);
-                
-                return (
-                  <div
-                    key={selection.id}
-                    className={`bg-slate-900 border rounded-lg p-4 transition relative ${
-                      inBuilder
-                        ? 'border-blue-500 border-2'
-                        : 'border-slate-800 hover:border-slate-700'
-                    }`}
-                  >
-                    {/* Greyed out overlay for bets in parlay builder */}
-                    {inBuilder && (
-                      <>
-                        {/* Semi-transparent grey overlay covering the entire card */}
-                        <div className="absolute inset-0 bg-slate-950/85 rounded-lg z-20 pointer-events-none" />
-                        {/* "In Builder" badge on top of overlay */}
-                        <div className="absolute top-2 right-2 z-30">
-                          <span className="px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium border border-blue-500 shadow-lg">
-                            In Builder
+        {error && (
+          <div className="bg-red-900/20 border border-red-800 rounded-lg p-3">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Unified Bets List */}
+        <div className="grid gap-3">
+          {allBets.map((bet) => {
+            if (bet.type === 'single') {
+              const selection = bet.data;
+              const canModify = selection.bet.game.status === 'scheduled' && selection.status !== 'locked';
+              const inBuilder = isBetInActiveParlay(selection.id, selection.bet.id);
+              
+              return (
+                <div
+                  key={selection.id}
+                  className={`bg-slate-900 border rounded-lg px-3 py-2 transition-all duration-200 relative ${
+                    inBuilder
+                      ? 'border-blue-500 border-2'
+                      : 'border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  {/* Greyed out overlay for bets in parlay builder */}
+                  {inBuilder && (
+                    <>
+                      <div className="absolute inset-0 bg-slate-950/85 rounded-lg z-20 pointer-events-none" />
+                      <div className="absolute top-1.5 right-1.5 z-30">
+                        <span className="px-1.5 py-0.5 bg-blue-600 text-white rounded text-xs font-medium border border-blue-500 shadow-lg">
+                          In Builder
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg flex-shrink-0">{getSportEmoji(selection.bet.game.sport)}</span>
+                    <span className="text-xs text-slate-400 flex-shrink-0">{formatTime(selection.bet.game.startTime)}</span>
+                    <span className="flex-1 text-sm text-white font-medium truncate">
+                      {formatSelectionText(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.bet.game)}
+                    </span>
+                    <span className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
+                      selection.status === 'locked'
+                        ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-600/30'
+                        : 'bg-green-900/30 text-green-400 border border-green-600/30'
+                    }`}>
+                      {selection.status === 'locked' ? '🔒' : '✓'}
+                    </span>
+                    {canModify && (
+                      <div className="flex gap-1.5 flex-shrink-0">
+                        <button
+                          onClick={() => handleStartParlay(selection.id, selection.bet.id, selection.selectedSide)}
+                          disabled={startingParlayId === selection.id}
+                          className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Start Parlay"
+                        >
+                          {startingParlayId === selection.id ? '...' : '📦'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(selection.id)}
+                          disabled={deletingId === selection.id}
+                          className="px-2 py-1 bg-red-900/30 text-red-400 rounded hover:bg-red-900/50 text-xs font-medium border border-red-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Remove"
+                        >
+                          {deletingId === selection.id ? '...' : '×'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            } else {
+              const parlay = bet.data;
+              const isLocked = parlay.lockedAt !== null && parlay.lockedAt !== undefined;
+
+              return (
+                <div
+                  key={parlay.id}
+                  className="bg-gradient-to-br from-blue-900/20 to-slate-900 border-2 border-blue-800/50 rounded-lg px-3 py-2 hover:border-blue-700/50 transition-all duration-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="px-2 py-0.5 bg-blue-600 text-white rounded text-xs font-bold border border-blue-500 flex-shrink-0">
+                      PARLAY {parlay.betCount} • +{parlay.parlayValue}
+                    </span>
+                    {parlay.insured && (
+                      <span className="px-1.5 py-0.5 bg-orange-900/30 text-orange-400 rounded text-xs font-medium border border-orange-600/30 flex-shrink-0">
+                        🛡️
+                      </span>
+                    )}
+                    {isLocked && (
+                      <span className="px-1.5 py-0.5 bg-yellow-900/30 text-yellow-400 rounded text-xs font-medium border border-yellow-600/30 flex-shrink-0">
+                        🔒
+                      </span>
+                    )}
+                    <div className="flex items-center gap-2 flex-1 min-w-0 overflow-x-auto">
+                      {parlay.selections.map((selection, idx) => (
+                        <div key={selection.id} className="flex items-center gap-1.5 flex-shrink-0">
+                          {idx > 0 && <span className="text-slate-500">•</span>}
+                          <span className="text-xs">{getSportEmoji(selection.game.sport)}</span>
+                          <span className="text-xs text-slate-400">{formatTime(selection.game.startTime)}</span>
+                          <span className="text-xs text-white font-medium whitespace-nowrap">
+                            {formatSelectionText(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.game)}
+                          </span>
+                          <span className={`px-1 py-0.5 rounded text-xs flex-shrink-0 ${
+                            selection.status === 'locked'
+                              ? 'bg-yellow-900/30 text-yellow-400'
+                              : 'bg-green-900/30 text-green-400'
+                          }`}>
+                            {selection.status === 'locked' ? '🔒' : '✓'}
                           </span>
                         </div>
-                      </>
-                    )}
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="text-2xl">{getSportEmoji(selection.bet.game.sport)}</span>
-                          <div>
-                            <h3 className="font-semibold text-white">
-                              {selection.bet.game.awayTeam} @ {selection.bet.game.homeTeam}
-                            </h3>
-                            <p className="text-sm text-slate-400">
-                              {formatTime(selection.bet.game.startTime)}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-3 p-3 bg-slate-800 rounded-lg">
-                          <p className="text-sm text-slate-300 mb-2">
-                            {selection.bet.displayText}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-1 bg-orange-900/30 text-orange-400 rounded text-xs font-medium border border-orange-600/30">
-                              {formatSideLabel(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.bet.game)}
-                            </span>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              selection.status === 'locked'
-                                ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-600/30'
-                                : 'bg-green-900/30 text-green-400 border border-green-600/30'
-                            }`}>
-                              {selection.status.toUpperCase()}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <p className="text-xs text-slate-500 mt-2">
-                          Selected {formatDate(selection.createdAt)}
-                        </p>
-                      </div>
-                      
-                      {canModify && (
-                        <div className="flex flex-col gap-2">
-                          <button
-                            onClick={() => handleStartParlay(selection.id, selection.bet.id, selection.selectedSide)}
-                            disabled={startingParlayId === selection.id}
-                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {startingParlayId === selection.id ? 'Starting...' : 'Start Parlay'}
-                          </button>
-                          <button
-                            onClick={() => setConfirmDeleteId(selection.id)}
-                            disabled={deletingId === selection.id}
-                            className="px-3 py-1.5 bg-red-900/30 text-red-400 rounded-lg hover:bg-red-900/50 transition text-sm font-medium border border-red-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {deletingId === selection.id ? 'Removing...' : 'Remove'}
-                          </button>
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Parlays Section */}
-        {parlays.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-white border-b border-slate-800 pb-2">Parlays</h3>
-            <div className="grid gap-4">
-              {parlays.map((parlay) => {
-                const isExpanded = expandedParlayId === parlay.id;
-                const isLocked = parlay.lockedAt !== null && parlay.lockedAt !== undefined;
-
-                return (
-                  <div
-                    key={parlay.id}
-                    className="bg-gradient-to-br from-blue-900/20 to-slate-900 border-2 border-blue-800/50 rounded-lg overflow-hidden hover:border-blue-700/50 transition"
-                  >
-                    {/* Parlay Header */}
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="px-3 py-1 bg-blue-600 text-white rounded text-sm font-bold border border-blue-500">
-                              PARLAY: {parlay.betCount} bets • +{parlay.parlayValue}
-                            </span>
-                            {parlay.insured && (
-                              <span className="px-2 py-1 bg-orange-900/30 text-orange-400 rounded text-xs font-medium border border-orange-600/30">
-                                Insured
-                              </span>
-                            )}
-                            {isLocked && (
-                              <span className="px-2 py-1 bg-yellow-900/30 text-yellow-400 rounded text-xs font-medium border border-yellow-600/30">
-                                🔒 Locked
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-400">
-                            Created {formatDate(parlay.createdAt)}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          {!isLocked && (
-                            <button
-                              onClick={() => handleOpenParlay(parlay)}
-                              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-medium"
-                            >
-                              Open
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setExpandedParlayId(isExpanded ? null : parlay.id)}
-                            className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition text-sm font-medium"
-                          >
-                            {isExpanded ? 'Collapse' : 'Expand'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Parlay Selections (when expanded) */}
-                    {isExpanded && (
-                      <div className="px-4 pb-4 space-y-3 border-t border-blue-800/30">
-                        {parlay.selections.map((selection) => (
-                          <div
-                            key={selection.id}
-                            className="p-3 bg-slate-800/50 rounded-lg"
-                          >
-                            <div className="flex items-center gap-3 mb-2">
-                              <span className="text-xl">{getSportEmoji(selection.game.sport)}</span>
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-white text-sm">
-                                  {selection.game.awayTeam} @ {selection.game.homeTeam}
-                                </h4>
-                                <p className="text-xs text-slate-400">
-                                  {formatTime(selection.game.startTime)}
-                                </p>
-                              </div>
-                            </div>
-                            <p className="text-sm text-slate-300 mb-2">
-                              {selection.bet.displayText}
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <span className="px-2 py-1 bg-orange-900/30 text-orange-400 rounded text-xs font-medium border border-orange-600/30">
-                                {formatSideLabel(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.game)}
-                              </span>
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                selection.status === 'locked'
-                                  ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-600/30'
-                                  : 'bg-green-900/30 text-green-400 border border-green-600/30'
-                              }`}>
-                                {selection.status.toUpperCase()}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                    {!isLocked && (
+                      <button
+                        onClick={() => handleOpenParlay(parlay)}
+                        className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium flex-shrink-0"
+                      >
+                        Open
+                      </button>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+                </div>
+              );
+            }
+          })}
+        </div>
       </div>
 
       {/* Delete Confirmation Modal */}

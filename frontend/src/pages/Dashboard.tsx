@@ -17,7 +17,11 @@ export function Dashboard() {
       <ParlayBuilder />
 
       {/* Main Content */}
-      <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ${isParlayBuilderOpen ? 'mr-96' : ''}`}>
+      <main className={`max-w-7xl px-4 sm:px-6 lg:px-8 py-12 mx-auto transition-[margin-right] duration-300 ease-in-out ${
+        isParlayBuilderOpen 
+          ? 'mr-[22rem]' // Increase right margin when builder opens
+          : ''
+      }`}>
         {/* Streak Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Current Streak */}

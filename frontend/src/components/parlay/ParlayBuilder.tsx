@@ -83,7 +83,8 @@ export function ParlayBuilder() {
     }
   }, [activeParlay, setActiveParlay, setIsParlayBuilderOpen]);
 
-  if (!activeParlay || !isParlayBuilderOpen) {
+  // Don't render content if no active parlay
+  if (!activeParlay) {
     return null;
   }
 
@@ -231,7 +232,11 @@ export function ParlayBuilder() {
   const isLocked = activeParlay.lockedAt !== null && activeParlay.lockedAt !== undefined;
 
   return (
-    <div className="fixed right-4 top-4 bottom-4 w-80 bg-slate-900 border border-slate-800 rounded-lg shadow-xl z-50 flex flex-col">
+    <div className={`fixed right-4 top-4 bottom-4 w-80 bg-slate-900 border border-slate-800 rounded-lg shadow-xl z-50 flex flex-col transition-all duration-300 ease-in-out ${
+      isParlayBuilderOpen
+        ? 'opacity-100 translate-x-0'
+        : 'opacity-0 translate-x-full pointer-events-none'
+    }`}>
       {/* Header */}
       <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
         <h3 className="text-lg font-bold text-white">Parlay Builder</h3>
