@@ -557,8 +557,8 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     });
 
     // Always return success to prevent user enumeration
-    // Only send email if user exists and has a password
-    if (user && user.passwordHash) {
+    // Send email if user exists (including magic-link-only users who want to set a password)
+    if (user) {
       // Check rate limit
       if (checkRateLimit(email)) {
         // Generate reset token

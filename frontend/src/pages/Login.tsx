@@ -129,6 +129,14 @@ export function Login() {
                 className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
                 placeholder="••••••••"
               />
+              <div className="mt-2 text-right">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-orange-500 hover:text-orange-400"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             {/* Submit Button */}
