@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BetSelectionGroup } from '../bets/BetSelectionGroup';
+import { useBets } from '../../context/BetsContext';
 import { api } from '../../services/api';
 
 interface Bet {
@@ -26,27 +27,62 @@ interface Game {
 }
 
 export function TodaysBetsSection() {
+  const { selectedDate } = useBets();
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get today's date string
+  const getTodayDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  // Check if we're viewing today or a future date
+  const isViewingTodayOrFuture = () => {
+    if (!selectedDate) return true; // Default to showing if no date selected
+    const today = getTodayDateString();
+    return selectedDate >= today;
+  };
+  
+  // Format date display for section title
+  const formatDateForTitle = (dateString: string) => {
+    const date = new Date(dateString + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selected = new Date(date);
+    selected.setHours(0, 0, 0, 0);
+    
+    const diffTime = selected.getTime() - today.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    if (diffDays > 1) {
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+      });
+    }
+    return dateString; // Fallback
+  };
 
   useEffect(() => {
     fetchTodaysBets();
-  }, []);
+  }, [selectedDate]);
 
   const fetchTodaysBets = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Get local date string (YYYY-MM-DD) in user's timezone
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const localDate = `${year}-${month}-${day}`;
-      
+      // Use selected date from context, or default to today
+      const dateToFetch = selectedDate || getTodayDateString();
       const timezoneOffset = -new Date().getTimezoneOffset() / 60;
-      const response = await api.getTodaysBets(localDate, timezoneOffset);
+      const response = await api.getTodaysBets(dateToFetch, timezoneOffset);
       if (response.success && response.data?.games) {
         const sortedGames = [...response.data.games].sort((a, b) => {
           const timeA = new Date(a.startTime).getTime();
@@ -112,13 +148,24 @@ export function TodaysBetsSection() {
     );
   }
 
-  if (games.length === 0) {
+  // Hide section if viewing past dates (MyBetsSection handles those)
+  if (selectedDate && !isViewingTodayOrFuture()) {
+    return null;
+  }
+  
+  // Format date label for display
+  const dateLabel = selectedDate ? formatDateForTitle(selectedDate) : 'Today';
+  
+  // Show empty state message when there are no games
+  if (games.length === 0 && !loading) {
     return (
       <div className="bg-slate-900 rounded-lg p-8 text-center">
         <div className="text-4xl mb-4">📅</div>
-        <p className="text-slate-300 mb-2">No games with bets available today</p>
+        <p className="text-slate-300 mb-2">No games with bets available for {dateLabel.toLowerCase()}</p>
         <p className="text-slate-500 text-sm mb-4">
-          Check back later or browse upcoming games
+          {selectedDate === getTodayDateString() 
+            ? "Check back later or browse upcoming games"
+            : "No bets available for this date"}
         </p>
         <button
           onClick={fetchTodaysBets}
@@ -135,7 +182,7 @@ export function TodaysBetsSection() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-white">
-            Today's Available Bets
+            {dateLabel}'s Available Bets
           </h2>
           <p className="text-slate-400 text-sm mt-1">
             {games.length} game{games.length !== 1 ? 's' : ''} with {games.reduce((sum, g) => sum + g.bets.length, 0)} available bet{games.reduce((sum, g) => sum + g.bets.length, 0) !== 1 ? 's' : ''}

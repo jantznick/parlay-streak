@@ -711,7 +711,7 @@ router.delete('/:parlayId/selections/:selectionId', requireAuth, requireFeature(
 router.get('/', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), async (req: Request, res: Response) => {
   try {
     const userId = req.session.userId;
-    const { status, includeSelections } = req.query;
+    const { status, includeSelections, date, timezoneOffset } = req.query;
 
     if (!userId) {
       return res.status(401).json({
@@ -721,9 +721,16 @@ router.get('/', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), async (req: Req
     }
 
     const where: any = { userId };
-    if (status) {
+    
+    // When date is provided, always return all statuses (consistent with bets endpoint)
+    // This allows viewing historical parlays regardless of status
+    // If no date is provided and status is specified, allow filtering (for other use cases)
+    if (!date && status) {
       where.status = status;
     }
+    // When date is provided (or no status filter), return all statuses:
+    // 'building', 'locked', 'pending', 'won', 'lost', 'resolution_failed'
+    // This is consistent with the bets endpoint which returns all statuses when date is provided
 
     const include: any = includeSelections === 'false' ? false : {
       selections: {
@@ -737,11 +744,38 @@ router.get('/', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), async (req: Req
       }
     };
 
-    const parlays = await prisma.parlay.findMany({
+    let parlays = await prisma.parlay.findMany({
       where,
       include,
       orderBy: { createdAt: 'desc' }
     });
+
+    // If date is provided, filter parlays to only those with games on that date
+    if (date && typeof date === 'string') {
+      // Convert user's local date + timezone to UTC date range
+      function getUTCDateRange(dateStr: string, offset: number | undefined): { start: Date; end: Date } {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const offsetHours = offset ?? 0;
+        // Create date representing midnight in user's local timezone
+        const localMidnight = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+        // Convert to UTC by subtracting the offset
+        const startUTC = new Date(localMidnight.getTime() - (offsetHours * 60 * 60 * 1000));
+        const endUTC = new Date(startUTC.getTime() + (24 * 60 * 60 * 1000));
+        return { start: startUTC, end: endUTC };
+      }
+
+      const tzOffset = timezoneOffset ? parseInt(timezoneOffset as string, 10) : undefined;
+      const { start: dateStart, end: dateEnd } = getUTCDateRange(date, tzOffset);
+
+      // Filter parlays to only those where at least one game starts on the selected date
+      parlays = parlays.filter(parlay => {
+        if (!parlay.selections || parlay.selections.length === 0) return false;
+        return parlay.selections.some(selection => {
+          const gameStartTime = new Date(selection.bet.game.startTime);
+          return gameStartTime >= dateStart && gameStartTime < dateEnd;
+        });
+      });
+    }
 
     res.json({
       success: true,

@@ -343,15 +343,87 @@ router.get('/my-selections', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), as
       });
     }
 
+    // Get date and timezone offset from query params (optional)
+    // If provided, filter by game start time for that date
+    const date = req.query.date as string | undefined;
+    const timezoneOffset = req.query.timezoneOffset 
+      ? parseInt(req.query.timezoneOffset as string, 10) 
+      : undefined;
+
+    // Build where clause
+    let where: any = {
+      userId,
+      parlayId: null, // Only single bets
+    };
+
+    // When date is provided, return all statuses for historical viewing (consistent with parlays)
+    // When no date is provided, still return all statuses (these are the only 3 statuses for bets anyway)
+    // Statuses: 'selected', 'locked', 'resolved'
+    // No status filter needed - we want all statuses
+
+    // If date is provided, filter by game start time
+    // First, find games in the date range, then filter selections by bet IDs
+    let betIdsInDateRange: string[] | undefined;
+    if (date) {
+      // Convert user's local date + timezone to UTC date range
+      function getUTCDateRange(dateStr: string, offset: number | undefined): { start: Date; end: Date } {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const offsetHours = offset ?? 0;
+        // Create date representing midnight in user's local timezone
+        const localMidnight = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+        // Convert to UTC by subtracting the offset
+        const startUTC = new Date(localMidnight.getTime() - (offsetHours * 60 * 60 * 1000));
+        const endUTC = new Date(startUTC.getTime() + (24 * 60 * 60 * 1000));
+        return { start: startUTC, end: endUTC };
+      }
+
+      const { start: dateStart, end: dateEnd } = getUTCDateRange(date, timezoneOffset);
+      
+      // Find all games in the date range
+      const gamesInRange = await prisma.game.findMany({
+        where: {
+          startTime: {
+            gte: dateStart,
+            lt: dateEnd
+          }
+        },
+        select: {
+          id: true
+        }
+      });
+
+      const gameIds = gamesInRange.map(g => g.id);
+
+      // Find all bets for these games
+      const betsInRange = await prisma.bet.findMany({
+        where: {
+          gameId: {
+            in: gameIds
+          }
+        },
+        select: {
+          id: true
+        }
+      });
+
+      betIdsInDateRange = betsInRange.map(b => b.id);
+      
+      // Filter selections by bet IDs
+      if (betIdsInDateRange.length > 0) {
+        where.betId = {
+          in: betIdsInDateRange
+        };
+      } else {
+        // No bets in date range, return empty result
+        where.betId = {
+          in: [] // Empty array means no results
+        };
+      }
+    }
+
     // Get all bet selections for the user (single bets only, not in parlays)
     const selections = await prisma.userBetSelection.findMany({
-      where: {
-        userId,
-        parlayId: null, // Only single bets
-        status: {
-          in: ['selected', 'locked'] // Only active selections
-        }
-      },
+      where,
       include: {
         bet: {
           include: {

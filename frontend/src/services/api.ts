@@ -130,8 +130,16 @@ class ApiService {
     });
   }
 
-  async getMySelections() {
-    return this.request('/api/bets/my-selections');
+  async getMySelections(date?: string, timezoneOffset?: number) {
+    const params = new URLSearchParams();
+    if (date) {
+      params.append('date', date);
+    }
+    if (timezoneOffset !== undefined) {
+      params.append('timezoneOffset', timezoneOffset.toString());
+    }
+    const queryString = params.toString();
+    return this.request(`/api/bets/my-selections${queryString ? `?${queryString}` : ''}`);
   }
 
   async deleteSelection(selectionId: string) {
@@ -196,10 +204,12 @@ class ApiService {
     });
   }
 
-  async getParlays(status?: string, includeSelections: boolean = true) {
+  async getParlays(status?: string, includeSelections: boolean = true, date?: string, timezoneOffset?: number) {
     const params = new URLSearchParams();
     if (status) params.append('status', status);
     if (!includeSelections) params.append('includeSelections', 'false');
+    if (date) params.append('date', date);
+    if (timezoneOffset !== undefined) params.append('timezoneOffset', timezoneOffset.toString());
     const query = params.toString();
     return this.request(`/api/parlays${query ? `?${query}` : ''}`);
   }

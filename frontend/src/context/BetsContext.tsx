@@ -3,12 +3,15 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 interface BetsContextType {
   refreshTrigger: number;
   triggerRefresh: () => void;
+  selectedDate: string | null;
+  setSelectedDate: (date: string | null) => void;
 }
 
 const BetsContext = createContext<BetsContextType | undefined>(undefined);
 
 export function BetsProvider({ children }: { children: ReactNode }) {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const triggerRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -19,6 +22,8 @@ export function BetsProvider({ children }: { children: ReactNode }) {
       value={{
         refreshTrigger,
         triggerRefresh,
+        selectedDate,
+        setSelectedDate,
       }}
     >
       {children}
