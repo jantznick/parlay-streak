@@ -847,11 +847,12 @@ export function MyBetsSection() {
           </div>
         )}
 
-        {/* Available Bets - Always show for past dates, show for today/future if games exist */}
-        {(isPastDate || historicalGames.length > 0 || loadingHistorical) && (
+        {/* Available Bets - Only show for past/future dates (TodaysBetsSection handles today) */}
+        {/* Always show for past dates, show for future dates if games exist */}
+        {(isPastDate || (selected > today && (historicalGames.length > 0 || loadingHistorical))) && (
           <div className="mt-8">
             <h3 className="text-lg font-semibold text-slate-300 mb-4">
-              {isTodayOrFuture ? 'Available Bets' : 'Available Bets (Historical)'} for {formatDateDisplay(selectedDate)}
+              Available Bets for {formatDateDisplay(selectedDate)}
             </h3>
             {loadingHistorical ? (
               <div className="text-center text-slate-400 text-sm py-8">
@@ -866,11 +867,7 @@ export function MyBetsSection() {
                   const sortedBets = [...game.bets].sort((a, b) => a.priority - b.priority);
                   
                   return (
-                    <div key={game.id} className={`rounded-lg border p-4 ${
-                      isTodayOrFuture 
-                        ? 'bg-slate-900 border-slate-800' 
-                        : 'bg-slate-800/50 border-slate-700'
-                    }`}>
+                    <div key={game.id} className="rounded-lg border p-4 bg-slate-800/50 border-slate-700">
                       <div className="flex items-center gap-3 mb-3">
                         <span className="text-lg">{getSportEmoji(game.sport)}</span>
                         <div className="flex-1">
@@ -882,35 +879,11 @@ export function MyBetsSection() {
                           </div>
                         </div>
                       </div>
-                      <div className="space-y-4">
+                      <div className="space-y-2">
                         {sortedBets.map((bet) => {
                           const isSelected = userSelectedBetIds.has(bet.id);
                           
-                          // For today/future dates, show interactive BetSelectionGroup
-                          if (isTodayOrFuture && game.status === 'scheduled' && bet.outcome === 'pending') {
-                            return (
-                              <div key={bet.id} className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-600/20 border border-orange-600/50 flex items-center justify-center">
-                                    <span className="text-xs font-bold text-orange-400">
-                                      #{bet.priority}
-                                    </span>
-                                  </div>
-                                  <span className="text-sm text-slate-300">{bet.displayText}</span>
-                                  {isSelected && (
-                                    <span className="text-xs text-blue-400 px-2 py-0.5 bg-blue-900/30 rounded">✓ Selected</span>
-                                  )}
-                                </div>
-                                <BetSelectionGroup
-                                  bet={bet as any}
-                                  game={game as any}
-                                  onSelectionSaved={fetchMyData}
-                                />
-                              </div>
-                            );
-                          }
-                          
-                          // For past dates or resolved bets, show read-only
+                          // Always show read-only for past/future dates (non-interactive)
                           return (
                             <div
                               key={bet.id}
@@ -949,7 +922,9 @@ export function MyBetsSection() {
                 <div className="text-4xl mb-4">📅</div>
                 <p className="text-slate-300 mb-2">No bets available for {formatDateDisplay(selectedDate)}</p>
                 <p className="text-slate-500 text-sm">
-                  There were no games with bets available on this date
+                  {isPastDate 
+                    ? "There were no games with bets available on this date"
+                    : "No games with bets available for this date"}
                 </p>
               </div>
             )}
