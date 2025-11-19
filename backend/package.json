@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "prebuild": "if [ ! -d ./shared ] && [ -d ../shared ]; then cp -r ../shared .; fi",
+    "prebuild": "test -d ../shared && cp -r ../shared . || (test -d ./shared || (echo 'ERROR: Shared folder not found' && exit 1))",
     "build": "tsc && tsc-alias",
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
