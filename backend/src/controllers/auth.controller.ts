@@ -176,9 +176,18 @@ export const getCurrentUser = async (req: Request, res: Response, next: NextFunc
       throw new AuthenticationError('User not found');
     }
 
+    // Check if user is admin
+    const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
+    const isAdmin = adminEmails.includes(user.email);
+
     res.json({
       success: true,
-      data: { user },
+      data: { 
+        user: {
+          ...user,
+          isAdmin,
+        },
+      },
     });
   } catch (err) {
     next(err);

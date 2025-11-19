@@ -7,6 +7,7 @@ import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { VerifyMagicLink } from './pages/VerifyMagicLink';
 import { BetManagement } from './pages/admin/BetManagement';
+import { NotFound } from './pages/NotFound';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -87,6 +88,9 @@ function App() {
             }
           />
           <Route path="/auth/verify" element={<VerifyMagicLink />} />
+          
+          {/* 404 Catch-all */}
+          <Route path="*" element={<NotFound />} />
             </Routes>
           </BetsProvider>
         </ParlayProvider>

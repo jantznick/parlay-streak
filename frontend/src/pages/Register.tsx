@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -14,8 +14,15 @@ export function Register() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [sendingMagicLink, setSendingMagicLink] = useState(false);
-  const { register } = useAuth();
+  const { user, loading: authLoading, register } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -75,13 +82,18 @@ export function Register() {
 
     try {
       await api.requestMagicLink(email);
-      setSuccess('✨ Check your email (or console in dev mode) for a magic link!');
+      setSuccess('✨ Check your email for a magic link!');
     } catch (err: any) {
       setError(err.message || 'Failed to send magic link');
     } finally {
       setSendingMagicLink(false);
     }
   };
+
+  // Don't render if redirecting
+  if (!authLoading && user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">

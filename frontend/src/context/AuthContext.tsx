@@ -9,6 +9,7 @@ interface User {
   longestStreak: number;
   totalPointsEarned: number;
   insuranceLocked: boolean;
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {

@@ -4,6 +4,7 @@
   "description": "Backend API for Parlay Streak sports prediction game",
   "main": "dist/index.js",
   "scripts": {
+    "predev": "test -d ./shared || (test -d ../shared && cp -r ../shared .) || true",
     "dev": "nodemon src/index.ts",
     "prebuild": "test -d ./shared || (test -d ../shared && cp -r ../shared .) || (echo 'ERROR: Shared folder not found. Expected ./shared or ../shared' && exit 1)",
     "build": "tsc && tsc-alias",

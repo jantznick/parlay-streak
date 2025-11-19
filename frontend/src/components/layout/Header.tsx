@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
 interface HeaderProps {
@@ -8,25 +7,6 @@ interface HeaderProps {
 
 export function Header({ title }: HeaderProps) {
   const { user, logout } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (!user) {
-        setIsAdmin(false);
-        return;
-      }
-      try {
-        const response = await fetch('/api/admin/sports', {
-          credentials: 'include'
-        });
-        setIsAdmin(response.ok);
-      } catch {
-        setIsAdmin(false);
-      }
-    };
-    checkAdmin();
-  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -56,7 +36,7 @@ export function Header({ title }: HeaderProps) {
           </div>
           {user && (
             <div className="flex items-center gap-4">
-              {isAdmin && (
+              {user.isAdmin && (
                 <Link
                   to="/admin/bets"
                   className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
