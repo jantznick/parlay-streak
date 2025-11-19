@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as authController from '../controllers/auth.controller';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth, requireAuthOnly } from '../middleware/auth';
 import { requireFeature } from '../middleware/featureFlags';
 
 const router = Router();
@@ -92,7 +92,7 @@ router.post('/logout', authController.logout);
  *       401:
  *         description: Not authenticated
  */
-router.get('/me', requireAuth, authController.getCurrentUser);
+router.get('/me', requireAuthOnly, authController.getCurrentUser);
 
 /**
  * @swagger
@@ -138,6 +138,98 @@ router.post('/magic-link/request', requireFeature('AUTH_MAGIC_LINKS'), authContr
  *         description: Invalid or expired token
  */
 router.get('/magic-link/verify', requireFeature('AUTH_MAGIC_LINKS'), authController.verifyMagicLink);
+
+/**
+ * @swagger
+ * /api/auth/verify-email/resend:
+ *   post:
+ *     summary: Resend verification email
+ *     tags: [Auth]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Verification email sent
+ *       401:
+ *         description: Not authenticated
+ *       400:
+ *         description: Email already verified or rate limited
+ */
+router.post('/verify-email/resend', requireAuthOnly, authController.resendVerificationEmail);
+
+/**
+ * @swagger
+ * /api/auth/verify-email:
+ *   get:
+ *     summary: Verify email address
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *       400:
+ *         description: Invalid or expired token
+ */
+router.get('/verify-email', authController.verifyEmail);
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset email sent (if account exists)
+ */
+router.post('/forgot-password', authController.forgotPassword);
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *               - confirmPassword
+ *             properties:
+ *               token:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               confirmPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Invalid token or validation error
+ */
+router.post('/reset-password', authController.resetPassword);
 
 export default router;
 

@@ -14,7 +14,11 @@ const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
   : ['http://localhost:5173'];
 
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Base authentication middleware - checks session and CSRF protection
+ * Does NOT check email verification (use requireAuth for that)
+ */
+const requireAuthBase = (req: Request, res: Response, next: NextFunction) => {
   // Check authentication
   if (!req.session.userId) {
     throw new AuthenticationError('Authentication required');
@@ -56,6 +60,81 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
       error: {
         message: 'Forbidden: Origin not allowed',
         code: 'FORBIDDEN_ORIGIN',
+      },
+    });
+  }
+
+  next();
+};
+
+/**
+ * Main authentication middleware - requires authentication AND email verification
+ * Use this for all app features that require verified users
+ */
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+  // First check base auth (session + CSRF)
+  requireAuthBase(req, res, async () => {
+    // Check email verification - users must verify email before accessing app features
+    // Import prisma here to avoid circular dependencies
+    const prisma = (await import('../config/database')).default;
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.session.userId },
+      select: { emailVerified: true },
+    });
+
+    if (!user) {
+      throw new AuthenticationError('User not found');
+    }
+
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          message: 'Email verification required. Please verify your email address to access this feature.',
+          code: 'EMAIL_NOT_VERIFIED',
+        },
+      });
+    }
+
+    next();
+  });
+};
+
+/**
+ * Authentication middleware without email verification requirement
+ * Use this for routes that need to work before email verification (e.g., /api/auth/me, /api/auth/verify-email/resend)
+ */
+export const requireAuthOnly = requireAuthBase;
+
+/**
+ * Middleware to require email verification
+ * Must be used after requireAuthOnly
+ * @deprecated Use requireAuth instead, which includes email verification check
+ */
+export const requireEmailVerification = async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session.userId) {
+    throw new AuthenticationError('Authentication required');
+  }
+
+  // Import prisma here to avoid circular dependencies
+  const prisma = (await import('../config/database')).default;
+
+  const user = await prisma.user.findUnique({
+    where: { id: req.session.userId },
+    select: { emailVerified: true },
+  });
+
+  if (!user) {
+    throw new AuthenticationError('User not found');
+  }
+
+  if (!user.emailVerified) {
+    return res.status(403).json({
+      success: false,
+      error: {
+        message: 'Email verification required',
+        code: 'EMAIL_NOT_VERIFIED',
       },
     });
   }

@@ -6,6 +6,9 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { VerifyMagicLink } from './pages/VerifyMagicLink';
+import { VerifyEmail } from './pages/VerifyEmail';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
 import { BetManagement } from './pages/admin/BetManagement';
 import { NotFound } from './pages/NotFound';
 
@@ -88,6 +91,9 @@ function App() {
             }
           />
           <Route path="/auth/verify" element={<VerifyMagicLink />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* 404 Catch-all */}
           <Route path="*" element={<NotFound />} />

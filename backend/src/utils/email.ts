@@ -343,3 +343,116 @@ export async function sendPasswordResetEmail(email: string, resetLink: string): 
   }
 }
 
+/**
+ * Send email verification email
+ */
+function sendDevVerificationEmail(email: string, verificationLink: string): void {
+  console.log('\n');
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('📧 EMAIL VERIFICATION EMAIL (Development Mode)');
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('');
+  console.log(`To:      ${email}`);
+  console.log(`Subject: Verify Your Email Address - Parlay Streak`);
+  console.log('');
+  console.log('Message:');
+  console.log('  Welcome to Parlay Streak!');
+  console.log('');
+  console.log('  Please verify your email address by clicking the link below:');
+  console.log('');
+  console.log(`  🔗 ${verificationLink}`);
+  console.log('');
+  console.log('  This link expires in 24 hours.');
+  console.log('');
+  console.log('  If you didn\'t create an account, you can safely ignore this email.');
+  console.log('');
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('💡 TIP: Copy the link above and paste it in your browser');
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('\n');
+}
+
+async function sendProductionVerificationEmail(email: string, verificationLink: string): Promise<void> {
+  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_your_api_key_here') {
+    logger.warn('RESEND_API_KEY not configured. Falling back to dev mode.');
+    sendDevVerificationEmail(email, verificationLink);
+    return;
+  }
+
+  try {
+    const { Resend } = require('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Parlay Streak <onboarding@resend.dev>';
+    
+    await resend.emails.send({
+      from: fromEmail,
+      to: email,
+      subject: 'Verify Your Email Address - Parlay Streak',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(to right, #ea580c, #dc2626); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">Parlay Streak</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb; border-top: none;">
+            <h2 style="color: #111827; margin-top: 0;">Verify Your Email Address</h2>
+            <p style="color: #4b5563; font-size: 16px;">Welcome to Parlay Streak! Please verify your email address to complete your registration and start building your streak.</p>
+            <p style="color: #4b5563; font-size: 16px;">Click the button below to verify your email address:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${verificationLink}" 
+                 style="display: inline-block; background: linear-gradient(to right, #ea580c, #dc2626); 
+                        color: white; padding: 14px 28px; text-decoration: none; 
+                        border-radius: 8px; font-weight: bold; font-size: 16px;">
+                Verify Email Address
+              </a>
+            </div>
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              <strong>⚠️ Important:</strong> This link expires in 24 hours.
+            </p>
+            <p style="color: #9ca3af; font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              If you didn't create an account with Parlay Streak, you can safely ignore this email. No account will be created.
+            </p>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `Verify Your Email Address\n\nWelcome to Parlay Streak! Please verify your email address to complete your registration and start building your streak.\n\nClick the link below to verify your email address:\n\n${verificationLink}\n\nThis link expires in 24 hours.\n\nIf you didn't create an account with Parlay Streak, you can safely ignore this email. No account will be created.`,
+    });
+
+    logger.info(`Verification email sent to ${email} via Resend`);
+  } catch (error: any) {
+    logger.error('Failed to send verification email via Resend', { 
+      error: error.message,
+      email 
+    });
+    logger.warn('Falling back to dev mode email');
+    sendDevVerificationEmail(email, verificationLink);
+  }
+}
+
+/**
+ * Send email verification email
+ * Automatically uses dev mode if RESEND_API_KEY is not configured or NODE_ENV is development, production mode otherwise
+ */
+export async function sendVerificationEmail(email: string, verificationLink: string): Promise<void> {
+  // Use dev mode if NODE_ENV is development OR Resend is not configured
+  const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+  const resendNotConfigured = !process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_your_api_key_here';
+  
+  if (isDevelopment || resendNotConfigured) {
+    // Use dev mode (console log) if in development or Resend not configured
+    sendDevVerificationEmail(email, verificationLink);
+    // Simulate email sending delay
+    await new Promise(resolve => setTimeout(resolve, 100));
+  } else {
+    // Use Resend in production
+    await sendProductionVerificationEmail(email, verificationLink);
+  }
+}
+

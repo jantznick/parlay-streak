@@ -75,6 +75,30 @@ class ApiService {
     return this.request(`/api/auth/magic-link/verify?token=${token}`);
   }
 
+  async resendVerificationEmail() {
+    return this.request('/api/auth/verify-email/resend', {
+      method: 'POST',
+    });
+  }
+
+  async verifyEmail(token: string) {
+    return this.request(`/api/auth/verify-email?token=${token}`);
+  }
+
+  async forgotPassword(email: string) {
+    return this.request('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, password: string, confirmPassword: string) {
+    return this.request('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password, confirmPassword }),
+    });
+  }
+
   // Admin endpoints
   async fetchGamesFromApi(
     date: string, 

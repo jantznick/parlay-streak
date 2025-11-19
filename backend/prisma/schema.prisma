@@ -17,6 +17,9 @@ model User {
   username           String   @unique @db.VarChar(50)
   email              String   @unique @db.VarChar(255)
   passwordHash       String?  @map("password_hash") @db.VarChar(255) // Nullable for magic link only users
+  emailVerified      Boolean  @default(false) @map("email_verified")
+  emailVerificationToken String? @unique @map("email_verification_token") @db.VarChar(64)
+  emailVerificationExpires DateTime? @map("email_verification_expires")
   currentStreak      Int      @default(0) @map("current_streak")
   longestStreak      Int      @default(0) @map("longest_streak")
   totalPointsEarned  Int      @default(0) @map("total_points_earned")
@@ -184,7 +187,7 @@ model AuthToken {
   id        String    @id @default(uuid())
   userId    String    @map("user_id")
   token     String    @unique @db.VarChar(500)
-  tokenType String    @map("token_type") @db.VarChar(20) // 'magic_link', 'password_reset'
+  tokenType String    @map("token_type") @db.VarChar(20) // 'magic_link', 'password_reset', 'email_verification'
   expiresAt DateTime  @map("expires_at")
   usedAt    DateTime? @map("used_at")
   createdAt DateTime  @default(now()) @map("created_at")
