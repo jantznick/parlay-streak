@@ -66,6 +66,7 @@ model Game {
   homeScore  Int?      @map("home_score")
   awayScore  Int?      @map("away_score")
   metadata   Json?     @db.JsonB // Additional game data
+  lastPolledAt DateTime? @map("last_polled_at") // Last time we checked for resolution
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
 
@@ -89,8 +90,13 @@ model Bet {
   config                  Json?     @db.JsonB // Structured bet config (ComparisonConfig | ThresholdConfig | EventConfig)
   outcome                 String    @default("pending") @db.VarChar(20) // 'pending', 'win', 'loss', 'push', 'void'
   priority                Int       @default(2) // 1 = main bet, 2+ = side bets
-  resolvedAt              DateTime? @map("resolved_at")
+  resolvedAt              DateTime? @map("resolved_at") // When we processed the resolution
+  resolutionEventTime     DateTime? @map("resolution_event_time") // When the event actually happened (from API)
+  resolutionUTCTime       DateTime? @map("resolution_utc_time") // UTC time of resolution event completion
+  resolutionQuarter       String?   @map("resolution_quarter") @db.VarChar(20) // Which quarter/period
+  resolutionStatSnapshot  Json?     @map("resolution_stat_snapshot") @db.JsonB // Stats used for resolution
   lastFetchedAt           DateTime? @map("last_fetched_at")
+  lastPolledAt            DateTime? @map("last_polled_at") // Last time we checked for resolution
   needsAdminResolution    Boolean   @default(false) @map("needs_admin_resolution")
   adminResolutionNotes    String?   @map("admin_resolution_notes") @db.Text
   visibleFrom             DateTime? @map("visible_from")
@@ -105,6 +111,7 @@ model Bet {
   @@index([gameId])
   @@index([outcome])
   @@index([visibleFrom])
+  @@index([resolutionEventTime])
   @@map("bets")
 }
 
@@ -135,19 +142,26 @@ model Parlay {
 
 // Streak History Table
 model StreakHistory {
-  id           String   @id @default(uuid())
-  userId       String   @map("user_id")
-  parlayId     String?  @map("parlay_id")
-  oldStreak    Int      @map("old_streak")
-  newStreak    Int      @map("new_streak")
-  changeAmount Int      @map("change_amount")
-  changeType   String   @map("change_type") @db.VarChar(20) // 'parlay_win', 'parlay_loss', 'insurance_deducted'
-  createdAt    DateTime @default(now()) @map("created_at")
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  parlayId          String?   @map("parlay_id")
+  betId             String?   @map("bet_id") // For single bet resolutions
+  oldStreak         Int       @map("old_streak")
+  newStreak         Int       @map("new_streak")
+  changeAmount      Int       @map("change_amount")
+  changeType        String    @map("change_type") @db.VarChar(20) // 'parlay_win', 'parlay_loss', 'bet_win', 'bet_loss', 'insurance_deducted'
+  eventTime         DateTime  @map("event_time") // When the event actually happened (from API)
+  processedAt       DateTime  @map("processed_at") // When we processed it
+  correctedAt       DateTime? @map("corrected_at") // When this entry was corrected
+  isCorrection      Boolean   @default(false) @map("is_correction") // True if this is a correction entry
+  originalHistoryId String?   @map("original_history_id") // Links to the entry being corrected
+  createdAt         DateTime  @default(now()) @map("created_at")
 
   // Relations
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   parlay Parlay? @relation(fields: [parlayId], references: [id], onDelete: SetNull)
 
+  @@index([userId, eventTime])
   @@index([userId, createdAt(sort: Desc)])
   @@map("streak_history")
 }
@@ -167,6 +181,9 @@ model UserBetSelection {
   // 'locked' - game started, can't modify
   // 'resolved' - bet resolved
   
+  outcome         String?  @db.VarChar(20) // 'win' | 'loss' | 'push' | 'void' (user-specific outcome)
+  resolvedAt      DateTime? @map("resolved_at") // When this selection was resolved
+  
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
   
@@ -179,6 +196,7 @@ model UserBetSelection {
   @@index([betId])
   @@index([parlayId])
   @@index([userId, betId, selectedSide]) // Allow same bet+side multiple times (for different parlays)
+  @@index([betId, selectedSide, status]) // For bulk updates
   @@map("user_bet_selections")
 }
 
