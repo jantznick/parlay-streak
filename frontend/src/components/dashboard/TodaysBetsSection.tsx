@@ -46,9 +46,9 @@ export function TodaysBetsSection() {
       const localDate = `${year}-${month}-${day}`;
       
       const timezoneOffset = -new Date().getTimezoneOffset() / 60;
-      const data = await api.getTodaysBets(localDate, timezoneOffset);
-      if (data.success && data.data?.games) {
-        const sortedGames = [...data.data.games].sort((a, b) => {
+      const response = await api.getTodaysBets(localDate, timezoneOffset);
+      if (response.success && response.data?.games) {
+        const sortedGames = [...response.data.games].sort((a, b) => {
           const timeA = new Date(a.startTime).getTime();
           const timeB = new Date(b.startTime).getTime();
           return timeA - timeB;

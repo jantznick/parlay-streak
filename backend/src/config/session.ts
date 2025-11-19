@@ -23,7 +23,8 @@ export const sessionConfig: session.SessionOptions = {
     secure: process.env.NODE_ENV === 'production', // true in production (requires HTTPS)
     httpOnly: true, // Prevent client-side JS from accessing cookie
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'lax', // CSRF protection
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' required for cross-subdomain cookies in production
+    domain: process.env.NODE_ENV === 'production' ? '.parlaystreak.com' : undefined, // Allow cookies across subdomains in production
   },
 };
 

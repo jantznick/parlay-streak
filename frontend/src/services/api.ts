@@ -94,8 +94,8 @@ class ApiService {
   }
 
   // Public bets endpoint
-  async getTodaysBets(date: string, timezoneOffset: number) {
-    return this.request(`/api/bets/today?date=${date}&timezoneOffset=${timezoneOffset}`);
+  async getTodaysBets(date: string, timezoneOffset: number): Promise<ApiResponse<{ games: any[] }>> {
+    return this.request<{ games: any[] }>(`/api/bets/today?date=${date}&timezoneOffset=${timezoneOffset}`);
   }
 
   // Bet selection endpoints
