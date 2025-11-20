@@ -4,7 +4,7 @@
     "module": "commonjs",
     "lib": ["ES2022"],
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "..",
     "composite": false,
     "strict": false,
     "noImplicitAny": false,
@@ -20,7 +20,7 @@
       "@shared/*": ["./shared/*", "../shared/*"]
     }
   },
-  "include": ["src/**/*", "./shared/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "./shared/**/*", "../shared/**/*"],
+  "exclude": ["node_modules", "dist", "src/scripts/test*.ts", "**/test*.ts", "**/*.test.ts"]
 }
 
