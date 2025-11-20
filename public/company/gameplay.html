@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Play - Parlay Streak</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950">
+    <!-- Header -->
+    <header class="fixed top-0 w-full bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 z-50">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-700 bg-clip-text text-transparent">
+                        Parlay Streak
+                    </a>
+                </div>
+                <div>
+                    <a href="/" class="text-gray-300 hover:text-orange-600 transition">Back to Home</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Content -->
+    <section class="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-8">How to Play Parlay Streak</h1>
+
+            <div class="prose prose-invert max-w-none space-y-12 text-slate-300">
+                <!-- Quick Start -->
+                <section>
+                    <h2 class="text-3xl font-bold text-white mb-4">Quick Start</h2>
+                    <ol class="list-decimal pl-6 space-y-3 text-lg">
+                        <li>Browse today's games and available bets</li>
+                        <li>Select a side on any bet (team to win, player over/under, etc.)</li>
+                        <li>Choose to save as a single bet or start building a parlay</li>
+                        <li>Build parlays by combining 1-5 bets from any games</li>
+                        <li>Watch your parlays resolve as games finish</li>
+                        <li>Build your streak - all picks must hit to advance!</li>
+                    </ol>
+                </section>
+
+                <!-- Supported Sports -->
+                <section>
+                    <h2 class="text-3xl font-bold text-white mb-4">Supported Sports & Leagues</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-2">Basketball</h3>
+                            <ul class="list-disc pl-6 space-y-1">
+                                <li>NBA</li>
+                                <li>WNBA</li>
+                                <li>Men's College Basketball</li>
+                                <li>Women's College Basketball</li>
+                            </ul>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-2">Football</h3>
+                            <ul class="list-disc pl-6 space-y-1">
+                                <li>NFL</li>
+                                <li>College Football</li>
+                            </ul>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-2">Hockey</h3>
+                            <ul class="list-disc pl-6 space-y-1">
+                                <li>NHL</li>
+                            </ul>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-2">Baseball</h3>
+                            <ul class="list-disc pl-6 space-y-1">
+                                <li>MLB</li>
+                                <li>College Baseball</li>
+                            </ul>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-2">Soccer</h3>
+                            <ul class="list-disc pl-6 space-y-1">
+                                <li>All Leagues</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Bet Types -->
+                <section>
+                    <h2 class="text-3xl font-bold text-white mb-4">Types of Bets</h2>
+                    <div class="space-y-6">
+                        <div class="bg-slate-800/50 p-5 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-2">Comparison Bets</h3>
+                            <p class="mb-2">Compare two teams or players on the same metric:</p>
+                            <ul class="list-disc pl-6 space-y-1">
+                                <li><strong>Moneyline:</strong> Which team will win?</li>
+                                <li><strong>Spread:</strong> Team A vs Team B with a point spread</li>
+                                <li><strong>Player vs Player:</strong> Which player will score more points/goals/etc.?</li>
+                            </ul>
+                            <p class="mt-3 text-sm text-slate-400">Example: "Lakers vs Warriors - Who wins?" or "LeBron James vs Steph Curry - More points?"</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-5 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-2">Threshold Bets</h3>
+                            <p class="mb-2">Over/Under bets on a single team or player:</p>
+                            <ul class="list-disc pl-6 space-y-1">
+                                <li><strong>Team Totals:</strong> Will the team score over/under X points?</li>
+                                <li><strong>Player Props:</strong> Will the player score over/under X points/goals/etc.?</li>
+                            </ul>
+                            <p class="mt-3 text-sm text-slate-400">Example: "Steph Curry - Over 28.5 points" or "Lakers Team Total - Over 115.5"</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-5 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-2">Event Bets</h3>
+                            <p class="mb-2">Binary events that either happen or don't:</p>
+                            <ul class="list-disc pl-6 space-y-1">
+                                <li><strong>Scoring Events:</strong> Will a player score a touchdown/goal first?</li>
+                                <li><strong>Game Events:</strong> Will the game go to overtime?</li>
+                                <li><strong>Achievement Events:</strong> Will a player get a double-double or triple-double?</li>
+                            </ul>
+                            <p class="mt-3 text-sm text-slate-400">Example: "Game goes to overtime" or "Player scores first touchdown"</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Time Periods -->
+                <section>
+                    <h2 class="text-3xl font-bold text-white mb-4">Time Periods</h2>
+                    <p class="mb-4">Bets can be resolved for different time periods depending on the sport:</p>
+                    <div class="bg-slate-800/50 p-5 rounded-lg">
+                        <h3 class="text-xl font-semibold text-orange-500 mb-3">Basketball</h3>
+                        <ul class="list-disc pl-6 space-y-1">
+                            <li><strong>Full Game:</strong> Entire game including overtime</li>
+                            <li><strong>Quarters:</strong> Q1, Q2, Q3, Q4</li>
+                            <li><strong>Halves:</strong> 1st Half (Q1+Q2), 2nd Half (Q3+Q4)</li>
+                            <li><strong>Overtime:</strong> All overtime periods combined</li>
+                        </ul>
+                    </div>
+                    <div class="bg-slate-800/50 p-5 rounded-lg mt-4">
+                        <h3 class="text-xl font-semibold text-orange-500 mb-3">Hockey</h3>
+                        <ul class="list-disc pl-6 space-y-1">
+                            <li><strong>Full Game:</strong> Entire game including overtime</li>
+                            <li><strong>Periods:</strong> P1, P2, P3</li>
+                            <li><strong>Overtime:</strong> All overtime periods combined</li>
+                        </ul>
+                    </div>
+                    <p class="mt-4 text-sm text-slate-400">Note: Some metrics (like plus/minus in hockey) are only available for full game.</p>
+                </section>
+
+                <!-- Building Parlays -->
+                <section>
+                    <h2 class="text-3xl font-bold text-white mb-4">Building Parlays</h2>
+                    <div class="space-y-4">
+                        <p>Parlays let you combine multiple bets for bigger rewards. You can combine bets from <strong>any games</strong> - they don't have to be from the same game!</p>
+                        
+                        <div class="bg-slate-800/50 p-5 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-3">Parlay Values</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="border-b border-slate-700">
+                                            <th class="pb-2 pr-4">Number of Bets</th>
+                                            <th class="pb-2 pr-4">Streak Value</th>
+                                            <th class="pb-2">Insurance Available</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="space-y-2">
+                                        <tr class="border-b border-slate-700/50">
+                                            <td class="py-2 pr-4">1 bet</td>
+                                            <td class="py-2 pr-4 font-semibold text-green-400">+1</td>
+                                            <td class="py-2">No (single bet)</td>
+                                        </tr>
+                                        <tr class="border-b border-slate-700/50">
+                                            <td class="py-2 pr-4">2 bets</td>
+                                            <td class="py-2 pr-4 font-semibold text-green-400">+2</td>
+                                            <td class="py-2">No</td>
+                                        </tr>
+                                        <tr class="border-b border-slate-700/50">
+                                            <td class="py-2 pr-4">3 bets</td>
+                                            <td class="py-2 pr-4 font-semibold text-green-400">+4</td>
+                                            <td class="py-2">No</td>
+                                        </tr>
+                                        <tr class="border-b border-slate-700/50">
+                                            <td class="py-2 pr-4">4 bets</td>
+                                            <td class="py-2 pr-4 font-semibold text-green-400">+8</td>
+                                            <td class="py-2 font-semibold text-orange-400">Yes</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-2 pr-4">5 bets</td>
+                                            <td class="py-2 pr-4 font-semibold text-green-400">+16</td>
+                                            <td class="py-2 font-semibold text-orange-400">Yes</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-900/20 border border-blue-700/50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-blue-300 mb-2">Example Parlay</h4>
+                            <ul class="list-disc pl-6 space-y-1 text-sm">
+                                <li>Lakers ML (1pm game)</li>
+                                <li>Steph Curry over 28.5 pts (4pm game)</li>
+                                <li>Bucks -5 (7pm game)</li>
+                            </ul>
+                            <p class="mt-2 text-sm"><strong>Total:</strong> 3 bets = <span class="text-green-400 font-semibold">+4</span> to streak if all hit</p>
+                        </div>
+
+                        <div class="bg-red-900/20 border border-red-700/50 p-4 rounded-lg">
+                            <p class="font-semibold text-red-300 mb-2">⚠️ Important Rule</p>
+                            <p class="text-sm"><strong>ALL bets in a parlay must hit to advance your streak.</strong> If any bet misses (and the parlay isn't insured), your streak resets to 0.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Multiple Parlays -->
+                <section>
+                    <h2 class="text-3xl font-bold text-white mb-4">Multiple Active Parlays</h2>
+                    <p class="mb-4">You can have <strong>multiple parlays active at the same time</strong> throughout the day. Each parlay resolves independently as its games finish.</p>
+                    
+                    <div class="bg-slate-800/50 p-5 rounded-lg">
+                        <h3 class="text-xl font-semibold text-orange-500 mb-3">Resolution Order</h3>
+                        <p class="mb-3">Parlays resolve in <strong>chronological order</strong> - by when the last game in each parlay finishes. Your streak updates with each resolution.</p>
+                        
+                        <div class="bg-slate-900/50 p-4 rounded mt-4">
+                            <h4 class="font-semibold mb-2">Example Timeline:</h4>
+                            <ul class="space-y-2 text-sm">
+                                <li><strong>Start:</strong> Streak at 20</li>
+                                <li><strong>3pm:</strong> Parlay A finishes (+2) → HITS → Streak: 22</li>
+                                <li><strong>5pm:</strong> Parlay B finishes (+4) → HITS → Streak: 26</li>
+                                <li><strong>8pm:</strong> Parlay C finishes (+1) → MISSES → Streak: 0</li>
+                                <li><strong>9pm:</strong> Parlay D finishes (+8) → HITS → Streak: 8 (built from 0)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-900/20 border border-blue-700/50 p-4 rounded-lg mt-4">
+                        <p class="text-sm"><strong>Strategy Tip:</strong> Building multiple parlays lets you diversify risk across different games and time windows. If one parlay fails, others can still build your streak from 0.</p>
+                    </div>
+                </section>
+
+                <!-- Insurance System -->
+                <section>
+                    <h2 class="text-3xl font-bold text-white mb-4">Insurance System</h2>
+                    <p class="mb-4">Insurance protects your streak when playing big parlays. If your insured parlay misses, you only lose the insurance cost instead of your entire streak.</p>
+                    
+                    <div class="bg-slate-800/50 p-5 rounded-lg mb-4">
+                        <h3 class="text-xl font-semibold text-orange-500 mb-3">Insurance Rules</h3>
+                        <ul class="list-disc pl-6 space-y-2">
+                            <li>Only available on <strong>4-bet (+8)</strong> and <strong>5-bet (+16)</strong> parlays</li>
+                            <li>Insurance cost is deducted <strong>immediately</strong> when you place the bet</li>
+                            <li>If parlay <strong>HITS:</strong> Gain full value minus insurance cost</li>
+                            <li>If parlay <strong>MISSES:</strong> Only lose insurance cost (streak survives!)</li>
+                            <li>You can only have <strong>ONE insured parlay active at a time</strong></li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-5 rounded-lg mb-4">
+                        <h3 class="text-xl font-semibold text-orange-500 mb-3">Insurance Cost Scaling</h3>
+                        <p class="mb-3">Insurance becomes more expensive as your streak grows:</p>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="border-b border-slate-700">
+                                        <th class="pb-2 pr-4">Streak Level</th>
+                                        <th class="pb-2 pr-4">+8 Parlay Cost</th>
+                                        <th class="pb-2 pr-4">+16 Parlay Cost</th>
+                                        <th class="pb-2">Net Result (+8)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b border-slate-700/50">
+                                        <td class="py-2 pr-4">0-14</td>
+                                        <td class="py-2 pr-4">3</td>
+                                        <td class="py-2 pr-4">5</td>
+                                        <td class="py-2 text-green-400">Win: +5 / Lose: -3</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-700/50">
+                                        <td class="py-2 pr-4">15-24</td>
+                                        <td class="py-2 pr-4">5</td>
+                                        <td class="py-2 pr-4">8</td>
+                                        <td class="py-2 text-green-400">Win: +3 / Lose: -5</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-700/50">
+                                        <td class="py-2 pr-4">25-34</td>
+                                        <td class="py-2 pr-4">6</td>
+                                        <td class="py-2 pr-4">10</td>
+                                        <td class="py-2 text-yellow-400">Win: +2 / Lose: -6</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-700/50">
+                                        <td class="py-2 pr-4">35-44</td>
+                                        <td class="py-2 pr-4">8</td>
+                                        <td class="py-2 pr-4">13</td>
+                                        <td class="py-2 text-yellow-400">Win: 0 / Lose: -8</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 pr-4">45+</td>
+                                        <td class="py-2 pr-4">9</td>
+                                        <td class="py-2 pr-4">15</td>
+                                        <td class="py-2 text-red-400">Win: -1 / Lose: -9</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-5 rounded-lg">
+                        <h3 class="text-xl font-semibold text-orange-500 mb-3">Insurance Unlock Mechanic</h3>
+                        <p class="mb-3">After an insured parlay resolves, insurance becomes <strong>LOCKED</strong> until an uninsured bet/parlay resolves <strong>AFTER</strong> it.</p>
+                        
+                        <div class="bg-slate-900/50 p-4 rounded mt-4">
+                            <h4 class="font-semibold mb-2">Example Flow:</h4>
+                            <ul class="space-y-2 text-sm">
+                                <li><strong>2pm:</strong> Create Parlay A (4 bets, +8) with insurance (cost: 5)</li>
+                                <li class="pl-4">→ Streak: 20 → 15 (insurance deducted), Insurance LOCKED</li>
+                                <li><strong>3pm:</strong> Create Parlay B (1 bet, +1) uninsured</li>
+                                <li><strong>7pm:</strong> Parlay A finishes → MISSES</li>
+                                <li class="pl-4">→ Streak survives at 15 (was insured), Insurance still LOCKED</li>
+                                <li><strong>8pm:</strong> Parlay B finishes → HITS</li>
+                                <li class="pl-4">→ Streak: 15 + 1 = 16, Insurance <strong>UNLOCKS</strong></li>
+                                <li><strong>8:30pm:</strong> Can now insure another big parlay!</li>
+                            </ul>
+                        </div>
+
+                        <p class="mt-4 text-sm text-slate-400"><strong>Important:</strong> The uninsured bet that unlocks insurance must be from a different game (resolves at a different time) than the insured parlay.</p>
+                    </div>
+                </section>
+
+                <!-- Streak Mechanics -->
+                <section>
+                    <h2 class="text-3xl font-bold text-white mb-4">Streak Mechanics</h2>
+                    <div class="space-y-4">
+                        <div class="bg-slate-800/50 p-5 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-3">How Streaks Work</h3>
+                            <ul class="list-disc pl-6 space-y-2">
+                                <li>Your streak starts at <strong>0</strong></li>
+                                <li>When all bets in a parlay hit, add the parlay value to your streak</li>
+                                <li>When any bet in an uninsured parlay misses, your streak resets to <strong>0</strong></li>
+                                <li>When an insured parlay misses, you only lose the insurance cost</li>
+                                <li>Your streak can never go negative - it bottoms out at 0</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-slate-800/50 p-5 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-3">Game Phases</h3>
+                            <p class="mb-3">The insurance scaling creates natural phases of gameplay:</p>
+                            <ul class="list-disc pl-6 space-y-2 text-sm">
+                                <li><strong>Early Growth (0-14):</strong> Insurance is affordable and profitable. Build momentum safely.</li>
+                                <li><strong>Steady Climb (15-24):</strong> Insurance still profitable. Sweet spot for consistent growth.</li>
+                                <li><strong>Decision Point (25-34):</strong> Insurance is costly but still positive. Tough decisions ahead.</li>
+                                <li><strong>High Stakes (35-44):</strong> Insurance barely profitable. Must play safe or go big uninsured.</li>
+                                <li><strong>The Gauntlet (45+):</strong> Insurance is unprofitable. Pure skill and guts - this is where legends are made.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Locking & Resolution -->
+                <section>
+                    <h2 class="text-3xl font-bold text-white mb-4">Locking & Resolution</h2>
+                    <div class="space-y-4">
+                        <div class="bg-slate-800/50 p-5 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-3">When Parlays Lock</h3>
+                            <ul class="list-disc pl-6 space-y-2">
+                                <li>Parlays automatically lock when the <strong>first game</strong> in the parlay starts</li>
+                                <li>Once locked, you cannot edit or remove bets</li>
+                                <li>You can still add bets from games that haven't started yet (until the parlay locks)</li>
+                                <li>You can manually lock a parlay before any games start if you're ready</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-slate-800/50 p-5 rounded-lg">
+                            <h3 class="text-xl font-semibold text-orange-500 mb-3">How Resolution Works</h3>
+                            <ul class="list-disc pl-6 space-y-2">
+                                <li>Bets resolve automatically as games finish</li>
+                                <li>Parlays resolve when <strong>all games</strong> in the parlay are complete</li>
+                                <li>Resolution happens in chronological order (by completion time)</li>
+                                <li>Your streak updates immediately when each parlay resolves</li>
+                                <li>If a game is postponed, bets are voided and don't count toward your streak</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Strategy Tips -->
+                <section>
+                    <h2 class="text-3xl font-bold text-white mb-4">Strategy Tips</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-lg font-semibold text-orange-500 mb-2">The Hedge</h3>
+                            <p class="text-sm">Build a safe single bet that resolves early, then a risky 5-bet parlay that resolves late. The early win gives you cushion if the big parlay misses.</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-lg font-semibold text-orange-500 mb-2">Insurance Dance</h3>
+                            <p class="text-sm">Build a 4-bet insured parlay, then a single uninsured bet to unlock insurance. Once unlocked, build another insured parlay to maximize protection.</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-lg font-semibold text-orange-500 mb-2">The Ladder</h3>
+                            <p class="text-sm">Build multiple small parlays throughout the day. Each builds on previous success for steady, safe growth.</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-lg font-semibold text-orange-500 mb-2">All or Nothing</h3>
+                            <p class="text-sm">Put everything into one massive 5-bet parlay. High risk, high reward - either climb 16+ in one day or reset to 0.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Leaderboards -->
+                <section>
+                    <h2 class="text-3xl font-bold text-white mb-4">Leaderboards & Competition</h2>
+                    <div class="bg-slate-800/50 p-5 rounded-lg">
+                        <ul class="list-disc pl-6 space-y-2">
+                            <li><strong>Longest Current Streak:</strong> Who's hot right now</li>
+                            <li><strong>Longest Streak Ever:</strong> All-time legends</li>
+                            <li><strong>Hot Hand:</strong> Fastest streak growth (points per hour over last 24 hours)</li>
+                            <li><strong>Total Streak Points Earned:</strong> Lifetime accumulation</li>
+                        </ul>
+                        <p class="mt-4 text-sm text-slate-400">Compete with friends and climb the leaderboards. Monthly and weekly competitions add extra stakes!</p>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- Company Info -->
+                <div class="col-span-1 md:col-span-2">
+                    <h3 class="text-lg font-bold text-white mb-4">Parlay Streak</h3>
+                    <p class="text-sm text-slate-400 mb-4">
+                        Build your streak with strategic parlay betting. Compete with friends and climb the leaderboards.
+                    </p>
+                    <p class="text-xs text-slate-500">
+                        © 2025 Parlay Streak. All rights reserved.
+                    </p>
+                </div>
+
+                <!-- Legal -->
+                <div>
+                    <h4 class="text-sm font-semibold text-white mb-4">Legal</h4>
+                    <ul class="space-y-2">
+                        <li>
+                            <a href="/legal/terms" class="text-sm text-slate-400 hover:text-white transition">Terms of Use</a>
+                        </li>
+                        <li>
+                            <a href="/legal/privacy" class="text-sm text-slate-400 hover:text-white transition">Privacy Policy</a>
+                        </li>
+                        <li>
+                            <a href="/legal/responsible-gaming" class="text-sm text-slate-400 hover:text-white transition">Responsible Gaming</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Company -->
+                <div>
+                    <h4 class="text-sm font-semibold text-white mb-4">Company</h4>
+                    <ul class="space-y-2">
+                        <li>
+                            <a href="/company/about" class="text-sm text-slate-400 hover:text-white transition">About Us</a>
+                        </li>
+                        <li>
+                            <a href="/company/careers" class="text-sm text-slate-400 hover:text-white transition">Careers</a>
+                        </li>
+                        <li>
+                            <a href="/company/contact" class="text-sm text-slate-400 hover:text-white transition">Contact</a>
+                        </li>
+                        <li>
+                            <a href="/company/help" class="text-sm text-slate-400 hover:text-white transition">Help Center</a>
+                        </li>
+                        <li>
+                            <a href="/company/gameplay" class="text-sm text-slate-400 hover:text-white transition">How to Play</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
+

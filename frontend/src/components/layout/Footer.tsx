@@ -64,6 +64,11 @@ export function Footer() {
                   Help Center
                 </a>
               </li>
+              <li>
+                <a href="https://parlaystreak.com/company/gameplay" className="text-sm text-slate-400 hover:text-white transition">
+                  Official Rules
+                </a>
+              </li>
             </ul>
           </div>
         </div>

@@ -103,7 +103,7 @@ export function resolveBet(
   betConfig: BetConfig,
   gameData: EspnBoxscore,
   statExtractionConfig: Record<string, StatExtractionConfig>,
-  getPeriodNumbers: (timePeriod: TimePeriod) => number[]
+  getPeriodNumbers: (timePeriod: TimePeriod, gameData?: any) => number[]
 ): ResolutionResult {
   try {
     // Check if game/period is complete
@@ -164,7 +164,7 @@ export function resolveBet(
 function checkPeriodComplete(
   betConfig: BetConfig,
   gameData: EspnBoxscore,
-  getPeriodNumbers: (timePeriod: TimePeriod) => number[]
+  getPeriodNumbers: (timePeriod: TimePeriod, gameData?: any) => number[]
 ): { complete: boolean; reason?: string } {
   // Try to get status from statusType at root, or assume complete if we have plays
   const gameStatus = gameData.statusType;
@@ -197,7 +197,7 @@ function checkPeriodComplete(
 
   // Period-specific - check if period is complete
   // Use period numbers from config to check if period is complete
-  const periodNumbers = getPeriodNumbers(timePeriod);
+  const periodNumbers = getPeriodNumbers(timePeriod, gameData);
   if (periodNumbers.length > 0) {
     const competitor = gameData.competitors?.[0];
     
@@ -228,7 +228,7 @@ function resolveComparison(
   config: ComparisonConfig,
   gameData: EspnBoxscore,
   statExtractionConfig: Record<string, StatExtractionConfig>,
-  getPeriodNumbers: (timePeriod: TimePeriod) => number[]
+  getPeriodNumbers: (timePeriod: TimePeriod, gameData?: any) => number[]
 ): { outcome: 'win' | 'loss' | 'push' | 'void'; statSnapshot: Record<string, any> } {
   const value1 = extractStatValue(config.participant_1, gameData, statExtractionConfig, getPeriodNumbers);
   const value2 = extractStatValue(config.participant_2, gameData, statExtractionConfig, getPeriodNumbers);
@@ -290,7 +290,7 @@ function resolveThreshold(
   config: ThresholdConfig,
   gameData: EspnBoxscore,
   statExtractionConfig: Record<string, StatExtractionConfig>,
-  getPeriodNumbers: (timePeriod: TimePeriod) => number[]
+  getPeriodNumbers: (timePeriod: TimePeriod, gameData?: any) => number[]
 ): { outcome: 'win' | 'loss' | 'push' | 'void'; statSnapshot: Record<string, any> } {
   const value = extractStatValue(config.participant, gameData, statExtractionConfig, getPeriodNumbers);
 
@@ -337,7 +337,7 @@ function resolveEvent(
   config: EventConfig,
   gameData: EspnBoxscore,
   statExtractionConfig: Record<string, StatExtractionConfig>,
-  getPeriodNumbers: (timePeriod: TimePeriod) => number[]
+  getPeriodNumbers: (timePeriod: TimePeriod, gameData?: any) => number[]
 ): { outcome: 'win' | 'loss' | 'push' | 'void'; statSnapshot: Record<string, any> } {
   const statSnapshot: Record<string, any> = {
     participant: config.participant,
@@ -400,7 +400,7 @@ function extractStatValue(
   participant: Participant,
   gameData: EspnBoxscore,
   statExtractionConfig: Record<string, StatExtractionConfig>,
-  getPeriodNumbers: (timePeriod: TimePeriod) => number[]
+  getPeriodNumbers: (timePeriod: TimePeriod, gameData?: any) => number[]
 ): number | null {
   const { subject_type, subject_id, metric, time_period } = participant;
 
@@ -576,13 +576,13 @@ function extractPeriodStat(
   participant: Participant,
   gameData: EspnBoxscore,
   statExtractionConfig: Record<string, StatExtractionConfig>,
-  getPeriodNumbers: (timePeriod: TimePeriod) => number[]
+  getPeriodNumbers: (timePeriod: TimePeriod, gameData?: any) => number[]
 ): number | null {
   const { subject_type, subject_id, metric, time_period } = participant;
   const plays = gameData.plays || [];
 
-  // Map time period to period numbers using config function
-  const periodNumbers = getPeriodNumbers(time_period);
+  // Map time period to period numbers using config function (pass gameData for dynamic OT detection)
+  const periodNumbers = getPeriodNumbers(time_period, gameData);
   if (periodNumbers.length === 0) {
     return null;
   }
@@ -865,7 +865,7 @@ function parseStatValue(
 function getResolutionTiming(
   betConfig: BetConfig,
   gameData: EspnBoxscore,
-  getPeriodNumbers: (timePeriod: TimePeriod) => number[]
+  getPeriodNumbers: (timePeriod: TimePeriod, gameData?: any) => number[]
 ): { eventTime?: Date; quarter?: string } {
   // Get time period
   let timePeriod: TimePeriod;
@@ -879,7 +879,7 @@ function getResolutionTiming(
 
   // Get last play in the period for event time
   const plays = gameData.plays || [];
-  const periodNumbers = getPeriodNumbers(timePeriod);
+  const periodNumbers = getPeriodNumbers(timePeriod, gameData);
   
   if (periodNumbers.length > 0) {
     const periodPlays = plays.filter(play => 

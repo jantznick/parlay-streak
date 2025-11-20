@@ -153,7 +153,12 @@ if (betOutcome === 'win') {
 **Process:**
 1. Worker receives job: `{ betId, gameId }`
 2. Fetch bet from database
-3. Fetch game data from ESPN API (using gameId, sport, league)
+3. Fetch game data from ESPN API using summary endpoint:
+   - **Endpoint:** `site.api.espn.com/apis/site/v2/sports/{sport}/{league}/summary?event={gameId}`
+   - **Sport/League:** Mapped from game metadata (see `ApiSportsService.getSupportedSports()`)
+   - **Example:** `/apis/site/v2/sports/basketball/nba/summary?event=401585401`
+   - **Note:** This endpoint provides boxscore, play-by-play, and statistics data needed for resolution
+   - **Live Updates:** To be verified if this endpoint updates during live games
 4. Call resolution function with bet + game data
 5. Parse result:
    - If `resolved: true` → Update database

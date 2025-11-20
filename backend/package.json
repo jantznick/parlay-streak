@@ -17,7 +17,7 @@
     "fetch-teams": "ts-node scripts/fetch-teams.ts",
     "fetch-rosters": "ts-node scripts/fetch-rosters.ts",
     "upload-to-backblaze": "ts-node scripts/upload-to-backblaze.ts",
-    "test-bet-resolution": "ts-node src/scripts/testBetResolution.ts",
+    "test-basketball-resolution": "ts-node src/scripts/testBasketballResolution.ts",
     "test-hockey-resolution": "ts-node src/scripts/testHockeyResolution.ts"
   },
   "keywords": [],

@@ -9,11 +9,11 @@ import { TimePeriod } from '../../types/bets';
 
 /**
  * Maps time periods to period numbers for this sport
+ * For OT and FULL_GAME, dynamically detects all periods from game data
+ * For other periods, returns static period numbers
  */
-export function getPeriodNumbers(timePeriod: TimePeriod): number[] {
+export function getPeriodNumbers(timePeriod: TimePeriod, gameData?: any): number[] {
   switch (timePeriod) {
-    case 'FULL_GAME':
-      return [1, 2, 3, 4, 5, 6, 7, 8]; // All quarters + OT
     case 'Q1':
       return [1];
     case 'Q2':
@@ -27,10 +27,61 @@ export function getPeriodNumbers(timePeriod: TimePeriod): number[] {
     case 'H2':
       return [3, 4];
     case 'OT':
-      return [5, 6, 7, 8]; // All OT periods
+      // Dynamically detect all OT periods (periods > 4)
+      if (gameData) {
+        return getAllOTPeriods(gameData);
+      }
+      // Fallback: return common OT periods if no game data
+      return [5, 6, 7, 8];
+    case 'FULL_GAME':
+      // Dynamically detect all periods in the game
+      if (gameData) {
+        return getAllPeriods(gameData);
+      }
+      // Fallback: return standard periods if no game data
+      return [1, 2, 3, 4, 5, 6, 7, 8];
     default:
       return [];
   }
+}
+
+/**
+ * Helper: Get all periods that exist in the game (from linescores or plays)
+ */
+function getAllPeriods(gameData: any): number[] {
+  const periods = new Set<number>();
+  
+  // Get periods from linescores
+  const competitor = gameData.competitors?.[0];
+  if (competitor?.linescores) {
+    for (let i = 0; i < competitor.linescores.length; i++) {
+      periods.add(i + 1); // Periods are 1-indexed
+    }
+  }
+  
+  // Also check plays for any additional periods
+  const plays = gameData.plays || [];
+  for (const play of plays) {
+    if (play.period?.number) {
+      periods.add(play.period.number);
+    }
+  }
+  
+  // If we found periods, return sorted array
+  if (periods.size > 0) {
+    return Array.from(periods).sort((a, b) => a - b);
+  }
+  
+  // Fallback to standard periods
+  return [1, 2, 3, 4, 5, 6, 7, 8];
+}
+
+/**
+ * Helper: Get all OT periods (periods > 4) from the game
+ */
+function getAllOTPeriods(gameData: any): number[] {
+  const allPeriods = getAllPeriods(gameData);
+  return allPeriods.filter(p => p > 4); // OT periods are 5+
 }
 
 export interface StatExtractionConfig {

@@ -520,6 +520,33 @@ export class ApiSportsService {
   }
 
   /**
+   * Fetch game summary/boxscore data for bet resolution
+   * This endpoint provides detailed game statistics, play-by-play, and boxscore data
+   * Used for resolving bets after games complete (and potentially during live games)
+   * 
+   * @param sport - Sport name (e.g., 'basketball', 'hockey', 'football', 'baseball')
+   * @param league - League name (e.g., 'nba', 'nhl', 'nfl', 'mlb')
+   * @param gameId - Game/event ID from ESPN
+   * @returns Game boxscore/summary data or null if not found
+   * 
+   * Endpoint: /apis/site/v2/sports/{sport}/{league}/summary?event={gameId}
+   * Example: /apis/site/v2/sports/basketball/nba/summary?event=401585401
+   * 
+   * Note: This endpoint may also be updated live during games (to be verified)
+   */
+  async getGameSummary(sport: string, league: string, gameId: string): Promise<any | null> {
+    const url = `${this.baseUrl}/${sport}/${league}/summary?event=${gameId}`;
+    logger.info('Fetching game summary from ESPN API', { url, sport, league, gameId });
+
+    // TODO: Implement with retry logic, timeout handling, and error handling
+    // TODO: Add caching strategy for completed games
+    // TODO: Verify if this endpoint updates live during games
+    // TODO: Add rate limiting considerations
+    
+    throw new Error('Not yet implemented');
+  }
+
+  /**
    * Fetch roster for a specific team
    * First checks local cached data, falls back to ESPN API if not found
    * @param sport - Sport name (e.g., 'basketball', 'hockey')
