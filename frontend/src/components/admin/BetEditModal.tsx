@@ -139,6 +139,19 @@ function ParticipantSelector({
     subjectType === 'TEAM' ? m.team : m.player
   );
 
+  // Get available time periods based on selected metric
+  const selectedMetric = availableMetrics.find(m => m.value === metric);
+  const availableTimePeriods = selectedMetric?.timePeriods 
+    ? sportConfig.time_periods.filter(tp => selectedMetric.timePeriods!.includes(tp.value))
+    : sportConfig.time_periods;
+
+  // Reset time period if current selection is not available for the metric
+  useEffect(() => {
+    if (metric && selectedMetric?.timePeriods && !selectedMetric.timePeriods.includes(timePeriod)) {
+      setTimePeriod('FULL_GAME');
+    }
+  }, [metric, selectedMetric, timePeriod]);
+
   return (
     <div className="space-y-3 p-4 bg-slate-800 rounded-lg">
       <label className="block text-sm font-medium text-slate-300">{label}</label>
@@ -243,13 +256,19 @@ function ParticipantSelector({
           value={timePeriod}
           onChange={(e) => setTimePeriod(e.target.value as TimePeriod)}
           className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+          disabled={!metric || availableTimePeriods.length === 0}
         >
-          {sportConfig.time_periods.map((tp) => (
+          {availableTimePeriods.map((tp) => (
             <option key={tp.value} value={tp.value}>
               {tp.label}
             </option>
           ))}
         </select>
+        {metric && selectedMetric?.timePeriods && selectedMetric.timePeriods.length === 1 && (
+          <p className="text-xs text-slate-500 mt-1">
+            This metric is only available for {availableTimePeriods[0]?.label || 'Full Game'}
+          </p>
+        )}
       </div>
     </div>
   );

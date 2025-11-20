@@ -4,7 +4,7 @@
 
 export type BetType = 'COMPARISON' | 'THRESHOLD' | 'EVENT';
 export type SubjectType = 'TEAM' | 'PLAYER';
-export type TimePeriod = 'FULL_GAME' | 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'H1' | 'H2' | 'OT';
+export type TimePeriod = 'FULL_GAME' | 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'H1' | 'H2' | 'OT' | 'P1' | 'P2' | 'P3';
 export type ComparisonOperator = 'GREATER_THAN' | 'GREATER_EQUAL';
 export type ThresholdOperator = 'OVER' | 'UNDER';
 export type EventType = 'SCORES_TD' | 'SCORES_FIRST' | 'GAME_GOES_TO_OT' | 'SHUTOUT' | 'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE';

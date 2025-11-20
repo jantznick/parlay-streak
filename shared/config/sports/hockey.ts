@@ -1,9 +1,10 @@
 /**
- * Basketball sport configuration
+ * Hockey sport configuration
  * Defines available metrics, time periods, and bet templates
  */
 
 import { TimePeriod } from '../../types/bets';
+import { BASKETBALL_CONFIG } from './basketball';
 
 export interface SportMetric {
   value: string;
@@ -29,32 +30,22 @@ export interface SportConfig {
   metrics: SportMetric[];
 }
 
-export const BASKETBALL_CONFIG: SportConfig = {
-  sport_key: 'basketball',
-  display_name: 'Basketball',
+export const HOCKEY_CONFIG: SportConfig = {
+  sport_key: 'hockey',
+  display_name: 'Hockey',
   
   time_periods: [
     { value: 'FULL_GAME', label: 'Full Game', api_key: 'game' },
-    { value: 'Q1', label: '1st Quarter', api_key: 'quarter_1' },
-    { value: 'Q2', label: '2nd Quarter', api_key: 'quarter_2' },
-    { value: 'Q3', label: '3rd Quarter', api_key: 'quarter_3' },
-    { value: 'Q4', label: '4th Quarter', api_key: 'quarter_4' },
-    { value: 'H1', label: '1st Half', api_key: 'half_1' },
-    { value: 'H2', label: '2nd Half', api_key: 'half_2' },
+    { value: 'P1', label: '1st Period', api_key: 'period_1' },
+    { value: 'P2', label: '2nd Period', api_key: 'period_2' },
+    { value: 'P3', label: '3rd Period', api_key: 'period_3' },
     { value: 'OT', label: 'Overtime', api_key: 'overtime' },
   ],
   
   metrics: [
     {
-      value: 'points',
-      label: 'Points',
-      team: true,
-      player: true,
-      resolvable: true
-    },
-    {
-      value: 'rebounds',
-      label: 'Rebounds',
+      value: 'goals',
+      label: 'Goals',
       team: true,
       player: true,
       resolvable: true
@@ -67,53 +58,96 @@ export const BASKETBALL_CONFIG: SportConfig = {
       resolvable: true
     },
     {
-      value: 'steals',
-      label: 'Steals',
+      value: 'points',
+      label: 'Points',
       team: true,
       player: true,
       resolvable: true
     },
     {
-      value: 'blocks',
-      label: 'Blocks',
+      value: 'shots',
+      label: 'Shots',
       team: true,
       player: true,
       resolvable: true
     },
     {
-      value: 'turnovers',
-      label: 'Turnovers',
+      value: 'saves',
+      label: 'Saves',
+      team: false, // Team saves would be sum of goalie saves
+      player: true, // Goalies only
+      resolvable: true
+    },
+    {
+      value: 'goals_against',
+      label: 'Goals Against',
+      team: true, // Team goals against would be sum of goalie goals against
+      player: true, // Goalies only
+      resolvable: true
+    },
+    {
+      value: 'power_play_goals',
+      label: 'Power Play Goals',
       team: true,
       player: true,
       resolvable: true
     },
     {
-      value: 'field_goals_made',
-      label: 'Field Goals Made',
+      value: 'short_handed_goals',
+      label: 'Short Handed Goals',
       team: true,
       player: true,
       resolvable: true
     },
     {
-      value: 'field_goals_attempted',
-      label: 'Field Goals Attempted',
+      value: 'hits',
+      label: 'Hits',
       team: true,
       player: true,
       resolvable: true
     },
     {
-      value: 'three_pointers_made',
-      label: '3-Pointers Made',
+      value: 'blocked_shots',
+      label: 'Blocked Shots',
       team: true,
       player: true,
       resolvable: true
     },
     {
-      value: 'free_throws_made',
-      label: 'Free Throws Made',
+      value: 'faceoffs_won',
+      label: 'Faceoffs Won',
       team: true,
       player: true,
       resolvable: true
+    },
+    {
+      value: 'takeaways',
+      label: 'Takeaways',
+      team: true,
+      player: true,
+      resolvable: true
+    },
+    {
+      value: 'giveaways',
+      label: 'Giveaways',
+      team: true,
+      player: true,
+      resolvable: true
+    },
+    {
+      value: 'penalty_minutes',
+      label: 'Penalty Minutes',
+      team: true,
+      player: true,
+      resolvable: true
+    },
+    {
+      value: 'plus_minus',
+      label: 'Plus/Minus',
+      team: false, // Plus/minus is a player stat
+      player: true,
+      resolvable: true,
+      timePeriods: ['FULL_GAME'] // Plus/minus is only available for full game
     },
   ]
 };
@@ -121,6 +155,7 @@ export const BASKETBALL_CONFIG: SportConfig = {
 // Export registry for all sports
 export const SPORT_CONFIGS: Record<string, SportConfig> = {
   basketball: BASKETBALL_CONFIG,
+  hockey: HOCKEY_CONFIG,
   // Add more sports here as they're implemented
 };
 
