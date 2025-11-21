@@ -54,6 +54,23 @@ const bets: ComparisonConfig[] = [{
       time_period: 'FULL_GAME'
     },
     operator: 'GREATER_THAN'
+  }, {
+    type: 'COMPARISON',
+    participant_1: {
+      subject_type: 'TEAM',
+      subject_id: '28',
+      subject_name: 'Toronto Raptors',
+      metric: 'points',
+      time_period: 'Q1'
+    },
+    participant_2: {
+      subject_type: 'TEAM',
+      subject_id: '5',
+      subject_name: 'Cleveland Cavaliers',
+      metric: 'points',
+      time_period: 'Q1'
+    },
+    operator: 'GREATER_THAN'
   } as ComparisonConfig];
 
 console.log('Testing bet resolution...');
