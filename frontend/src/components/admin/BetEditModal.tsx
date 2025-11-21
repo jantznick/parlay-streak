@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { api } from '../../services/api';
-import { BASKETBALL_CONFIG } from '@shared/config/sports/basketball';
+import { SPORT_CONFIGS, type SportConfig } from '@shared/config/sports';
 import type { BetType, Participant, ComparisonConfig, ThresholdConfig, EventConfig, BetConfig, TimePeriod } from '@shared/types/bets';
 
 interface Game {
@@ -71,7 +71,7 @@ function ParticipantSelector({
   label: string;
   game: Game;
   players: Player[];
-  sportConfig: typeof BASKETBALL_CONFIG;
+  sportConfig: SportConfig;
 }) {
   const [subjectType, setSubjectType] = useState<'TEAM' | 'PLAYER'>(value?.subject_type || 'TEAM');
   const [selectedId, setSelectedId] = useState<string>(value?.subject_id || '');
@@ -385,7 +385,7 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
     return playersList;
   }, [rosterData, game.homeTeam, game.awayTeam]);
 
-  const sportConfig = BASKETBALL_CONFIG;
+  const sportConfig = SPORT_CONFIGS[game.sport.toLowerCase()] || SPORT_CONFIGS.basketball; // Fallback to basketball for now
 
   const handleUpdateBet = async () => {
     setLoading(true);

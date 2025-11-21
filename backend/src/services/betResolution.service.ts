@@ -5,9 +5,9 @@
  * No database access - fully testable.
  */
 
-import { BetConfig, ComparisonConfig, ThresholdConfig, EventConfig, Participant, TimePeriod } from '../../shared/types/bets';
+import { BetConfig, ComparisonConfig, ThresholdConfig, EventConfig, Participant, TimePeriod } from '../../../shared/types/bets';
 import { logger } from '../utils/logger';
-import { StatExtractionConfig } from '../../shared/config/sports/basketball-data-paths';
+import { StatExtractionConfig } from '../../../shared/config/sports/basketball-data-paths';
 
 // ESPN Boxscore API Response Types
 export interface EspnBoxscore {

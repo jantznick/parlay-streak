@@ -8,8 +8,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { resolveBet } from '../services/betResolution.service';
-import { BetConfig, ComparisonConfig, ThresholdConfig, EventConfig } from '../../shared/types/bets';
-import { BASKETBALL_STAT_PATHS, getPeriodNumbers as getBasketballPeriodNumbers } from '../../shared/config/sports/basketball-data-paths';
+import { BetConfig, ComparisonConfig, ThresholdConfig, EventConfig } from '../../../shared/types/bets';
+import { BASKETBALL_STAT_PATHS, getPeriodNumbers as getBasketballPeriodNumbers } from '../../../shared/config/sports/basketball-data-paths';
 
 // Load the sample game data
 // Path from backend/src/scripts to root/sample-basketball-end.json

@@ -4,31 +4,7 @@
  */
 
 import { TimePeriod } from '../../types/bets';
-import { BASKETBALL_CONFIG } from './basketball';
-
-export interface SportMetric {
-  value: string;
-  label: string;
-  team: boolean;
-  player: boolean;
-  api_path_team?: string;
-  api_path_player?: string;
-  resolvable: boolean;
-  // Optional: restrict which time periods are available for this metric
-  // If not specified, all time periods are available
-  timePeriods?: TimePeriod[];
-}
-
-export interface SportConfig {
-  sport_key: string;
-  display_name: string;
-  time_periods: Array<{
-    value: TimePeriod;
-    label: string;
-    api_key: string;
-  }>;
-  metrics: SportMetric[];
-}
+import type { SportConfig } from './index';
 
 export const HOCKEY_CONFIG: SportConfig = {
   sport_key: 'hockey',
@@ -150,12 +126,5 @@ export const HOCKEY_CONFIG: SportConfig = {
       timePeriods: ['FULL_GAME'] // Plus/minus is only available for full game
     },
   ]
-};
-
-// Export registry for all sports
-export const SPORT_CONFIGS: Record<string, SportConfig> = {
-  basketball: BASKETBALL_CONFIG,
-  hockey: HOCKEY_CONFIG,
-  // Add more sports here as they're implemented
 };
 

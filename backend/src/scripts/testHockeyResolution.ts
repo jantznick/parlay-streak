@@ -7,8 +7,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { resolveBet } from '../services/betResolution.service';
-import { BetConfig, ComparisonConfig, ThresholdConfig } from '../../shared/types/bets';
-import { HOCKEY_STAT_PATHS, getPeriodNumbers as getHockeyPeriodNumbers } from '../../shared/config/sports/hockey-data-paths';
+import { BetConfig, ComparisonConfig, ThresholdConfig } from '../../../shared/types/bets';
+import { HOCKEY_STAT_PATHS, getPeriodNumbers as getHockeyPeriodNumbers } from '../../../shared/config/sports/hockey-data-paths';
 
 // Load the sample game data
 const sampleGamePath = path.resolve(__dirname, '../../../sample-hockey-end.json');
