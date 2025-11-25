@@ -104,14 +104,13 @@ export function BetListItem({
           disabled={
             resolvingBet === bet.id || 
             bet.outcome !== 'pending' ||
-            game.status === 'scheduled' ||
-            new Date(game.startTime) > new Date()
+            (game.status === 'scheduled' && new Date(game.startTime) > new Date())
           }
           className="px-3 py-1.5 text-xs bg-green-900/50 hover:bg-green-900/70 disabled:bg-slate-700 disabled:text-slate-500 text-green-400 rounded transition"
           title={
             bet.outcome !== 'pending' 
               ? 'Bet already resolved' 
-              : game.status === 'scheduled' || new Date(game.startTime) > new Date()
+              : game.status === 'scheduled' && new Date(game.startTime) > new Date()
               ? 'Game has not started yet'
               : 'Manually resolve this bet'
           }
