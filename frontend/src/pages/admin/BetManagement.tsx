@@ -51,6 +51,57 @@ const getTimezoneOffset = (): number => {
   return -new Date().getTimezoneOffset() / 60;
 };
 
+// Helper to get team name from participant
+const getTeamName = (participant: any, game: Game): string => {
+  if (participant?.subject_type === 'TEAM') {
+    const metadata = game.metadata;
+    const apiData = metadata?.apiData;
+    if (apiData?.teams?.home?.id === participant.subject_id) {
+      return game.homeTeam;
+    } else if (apiData?.teams?.away?.id === participant.subject_id) {
+      return game.awayTeam;
+    }
+  }
+  return participant?.subject_name || 'Unknown';
+};
+
+// Format a resolved bet for display when we don't have a user selection
+// Shows what actually happened based on outcome and scores
+const formatResolvedBetText = (bet: Bet, game: Game): string => {
+  if (!bet.outcome || bet.outcome === 'pending' || !bet.config) {
+    return bet.displayTextOverride || bet.displayText;
+  }
+
+  if (bet.betType === 'COMPARISON' && bet.config) {
+    const compConfig = bet.config;
+    const p1 = compConfig.participant_1;
+    const p2 = compConfig.participant_2;
+    
+    if (p1?.subject_type === 'TEAM' && p2?.subject_type === 'TEAM' && 
+        game.homeScore !== null && game.awayScore !== null) {
+      const name1 = getTeamName(p1, game);
+      const name2 = getTeamName(p2, game);
+      const shortName1 = name1.split(' ').pop() || name1;
+      const shortName2 = name2.split(' ').pop() || name2;
+      
+      // Determine which team won based on scores
+      const p1IsHome = game.metadata?.apiData?.teams?.home?.id === p1?.subject_id;
+      const p1Score = p1IsHome ? game.homeScore : game.awayScore;
+      const p2Score = p1IsHome ? game.awayScore : game.homeScore;
+      
+      if (p1Score > p2Score) {
+        return `${shortName1} over ${shortName2} (${p1Score}-${p2Score})`;
+      } else if (p2Score > p1Score) {
+        return `${shortName2} over ${shortName1} (${p2Score}-${p1Score})`;
+      } else {
+        return `${shortName1} vs ${shortName2} (${p1Score}-${p2Score})`;
+      }
+    }
+  }
+  
+  return bet.displayTextOverride || bet.displayText;
+};
+
 export function BetManagement() {
   const { user, logout } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string>(getLocalTodayDateString());
@@ -703,7 +754,7 @@ export function BetManagement() {
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="text-xs font-medium text-slate-400">#{bet.priority}</span>
                                   <span className="text-sm font-medium text-white">
-                                    {bet.displayTextOverride || bet.displayText}
+                                    {formatResolvedBetText(bet, game)}
                                   </span>
                                   <span
                                     className={`px-2 py-0.5 text-xs font-medium rounded ${

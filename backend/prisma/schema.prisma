@@ -167,6 +167,12 @@ model UserBetSelection {
   // 'locked' - game started, can't modify
   // 'resolved' - bet resolved
   
+  outcome         String?  @db.VarChar(20) // 'win', 'loss', 'push' - only set when status is 'resolved'
+  // null when status is not 'resolved'
+  // 'win' - user's selection won
+  // 'loss' - user's selection lost
+  // 'push' - bet was a push (tie)
+  
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
   

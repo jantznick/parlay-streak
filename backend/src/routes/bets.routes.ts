@@ -62,14 +62,15 @@ router.get('/today', requireFeature('PUBLIC_BETS_VIEW'), async (req: Request, re
     
     const { start: today, end: tomorrow } = getUTCDateRange(localDateStr, timezoneOffset);
 
-    logger.info('Fetching today\'s bets', { 
+    logger.info('Fetching bets', { 
       localDate: localDateStr,
       timezoneOffset: timezoneOffset ?? 'not provided (using UTC)',
       today: today.toISOString(), 
-      tomorrow: tomorrow.toISOString() 
+      tomorrow: tomorrow.toISOString()
     });
 
-    // Get all games that start today (in UTC) and have at least one available bet
+    // Get all games that start on the requested date (in UTC) and have at least one bet
+    // Show all bets regardless of outcome (pending, win, loss, push) so users can see all available bets
     const allGames = await prisma.game.findMany({
       where: {
         startTime: {
@@ -80,19 +81,10 @@ router.get('/today', requireFeature('PUBLIC_BETS_VIEW'), async (req: Request, re
       include: {
         bets: {
           where: {
-            // Only show bets that are:
-            // 1. Visible (visible_from is null or in the past)
-            // 2. Pending (available to bet on)
-            AND: [
-              {
-                OR: [
-                  { visibleFrom: null },
-                  { visibleFrom: { lte: new Date() } }
-                ]
-              },
-              {
-                outcome: 'pending'
-              }
+            // Only filter by visibility - show all bets that are visible
+            OR: [
+              { visibleFrom: null },
+              { visibleFrom: { lte: new Date() } }
             ]
           },
           orderBy: { priority: 'asc' }
@@ -435,6 +427,8 @@ router.get('/my-selections', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), as
                 startTime: true,
                 status: true,
                 sport: true,
+                homeScore: true,
+                awayScore: true,
                 metadata: true
               }
             }
@@ -459,6 +453,7 @@ router.get('/my-selections', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), as
           betId: sel.betId,
           selectedSide: sel.selectedSide,
           status: sel.status,
+          outcome: sel.outcome, // Include selection outcome (win/loss/push)
           createdAt: sel.createdAt,
           bet: {
             id: sel.bet.id,
@@ -466,7 +461,17 @@ router.get('/my-selections', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), as
             betType: sel.bet.betType,
             outcome: sel.bet.outcome,
             config: sel.bet.config, // Include config for participant names
-            game: sel.bet.game
+            game: {
+              id: sel.bet.game.id,
+              homeTeam: sel.bet.game.homeTeam,
+              awayTeam: sel.bet.game.awayTeam,
+              startTime: sel.bet.game.startTime,
+              status: sel.bet.game.status,
+              sport: sel.bet.game.sport,
+              homeScore: sel.bet.game.homeScore, // Include scores
+              awayScore: sel.bet.game.awayScore, // Include scores
+              metadata: sel.bet.game.metadata
+            }
           }
         }))
       }

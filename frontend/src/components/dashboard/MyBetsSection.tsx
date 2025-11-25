@@ -10,6 +10,7 @@ interface BetSelection {
   betId: string;
   selectedSide: string;
   status: string;
+  outcome?: string; // 'win', 'loss', 'push' - only set when resolved
   createdAt: string;
   bet: {
     id: string;
@@ -24,6 +25,8 @@ interface BetSelection {
       startTime: string;
       status: string;
       sport: string;
+      homeScore?: number | null;
+      awayScore?: number | null;
       metadata?: any;
     };
   };
@@ -39,6 +42,7 @@ interface ParlaySelection {
   };
   selectedSide: string;
   status: string;
+  outcome?: string; // 'win', 'loss', 'push' - only set when resolved
   game: {
     id: string;
     homeTeam: string;
@@ -46,6 +50,8 @@ interface ParlaySelection {
     startTime: string;
     status: string;
     sport: string;
+    homeScore?: number | null;
+    awayScore?: number | null;
     metadata?: any;
   };
 }
@@ -69,6 +75,8 @@ interface HistoricalGame {
   startTime: string;
   status: string;
   sport: string;
+  homeScore?: number | null;
+  awayScore?: number | null;
   bets: Array<{
     id: string;
     displayText: string;
@@ -312,65 +320,133 @@ export function MyBetsSection() {
     }
   };
 
-  const formatSelectionText = (side: string, betType: string, config: any, game: any) => {
+  const getTeamName = (participant: any, game: any): string => {
+    if (participant?.subject_type === 'TEAM') {
+      const metadata = game.metadata;
+      const apiData = metadata?.apiData;
+      if (apiData?.teams?.home?.id === participant.subject_id) {
+        return game.homeTeam;
+      } else if (apiData?.teams?.away?.id === participant.subject_id) {
+        return game.awayTeam;
+      }
+    }
+    return participant?.subject_name || 'Unknown';
+  };
+
+  // Format a resolved bet for display when we don't have a user selection
+  // Shows what actually happened based on outcome and scores
+  const formatResolvedBetText = (bet: any, game: any): string => {
+    if (!bet.outcome || bet.outcome === 'pending' || !bet.config) {
+      return bet.displayText;
+    }
+
+    if (bet.betType === 'COMPARISON' && bet.config) {
+      const compConfig = bet.config;
+      const p1 = compConfig.participant_1;
+      const p2 = compConfig.participant_2;
+      
+      if (p1?.subject_type === 'TEAM' && p2?.subject_type === 'TEAM' && 
+          game.homeScore !== null && game.awayScore !== null) {
+        const name1 = getTeamName(p1, game);
+        const name2 = getTeamName(p2, game);
+        const shortName1 = name1.split(' ').pop() || name1;
+        const shortName2 = name2.split(' ').pop() || name2;
+        
+        // Determine which team won based on scores
+        const p1IsHome = game.metadata?.apiData?.teams?.home?.id === p1?.subject_id;
+        const p1Score = p1IsHome ? game.homeScore : game.awayScore;
+        const p2Score = p1IsHome ? game.awayScore : game.homeScore;
+        
+        if (p1Score > p2Score) {
+          return `${shortName1} over ${shortName2} (${p1Score}-${p2Score})`;
+        } else if (p2Score > p1Score) {
+          return `${shortName2} over ${shortName1} (${p2Score}-${p1Score})`;
+        } else {
+          return `${shortName1} vs ${shortName2} (${p1Score}-${p2Score})`;
+        }
+      }
+    }
+    
+    return bet.displayText;
+  };
+
+  const formatSelectionText = (side: string, betType: string, config: any, game: any, outcome?: string) => {
     if (betType === 'COMPARISON' && config) {
       const compConfig = config;
       const p1 = compConfig.participant_1;
       const p2 = compConfig.participant_2;
       
-      let name1 = p1?.subject_name || 'A';
-      let name2 = p2?.subject_name || 'B';
+      let name1 = getTeamName(p1, game);
+      let name2 = getTeamName(p2, game);
       
-      // Use short names if available
-      if (p1?.subject_type === 'TEAM') {
-        const metadata = game.metadata;
-        const apiData = metadata?.apiData;
-        if (apiData?.teams?.home?.id === p1.subject_id) {
-          name1 = game.homeTeam.split(' ').pop() || name1;
-        } else if (apiData?.teams?.away?.id === p1.subject_id) {
-          name1 = game.awayTeam.split(' ').pop() || name1;
-        }
-      }
-      
-      if (p2?.subject_type === 'TEAM') {
-        const metadata = game.metadata;
-        const apiData = metadata?.apiData;
-        if (apiData?.teams?.home?.id === p2.subject_id) {
-          name2 = game.homeTeam.split(' ').pop() || name2;
-        } else if (apiData?.teams?.away?.id === p2.subject_id) {
-          name2 = game.awayTeam.split(' ').pop() || name2;
-        }
-      }
+      // Use short names for display
+      const shortName1 = name1.split(' ').pop() || name1;
+      const shortName2 = name2.split(' ').pop() || name2;
       
       // Handle spread
       if (compConfig.spread) {
         const spreadValue = compConfig.spread.value;
         const spreadDir = compConfig.spread.direction;
         if (side === 'participant_1') {
-          name1 = spreadDir === '+' ? `${name1} +${spreadValue}` : `${name1} -${spreadValue}`;
+          name1 = spreadDir === '+' ? `${shortName1} +${spreadValue}` : `${shortName1} -${spreadValue}`;
         } else {
-          name2 = spreadDir === '+' ? `${name2} +${spreadValue}` : `${name2} -${spreadValue}`;
+          name2 = spreadDir === '+' ? `${shortName2} +${spreadValue}` : `${shortName2} -${spreadValue}`;
         }
+      } else {
+        name1 = shortName1;
+        name2 = shortName2;
       }
       
+      // If bet is resolved, show what actually happened with scores
+      if (outcome && outcome !== 'pending' && game.homeScore !== null && game.awayScore !== null) {
+        // Determine which participant won based on outcome and user's selection
+        let winner: any;
+        let loser: any;
+        let winnerScore: number;
+        let loserScore: number;
+        
+        if (outcome === 'push') {
+          // Push means tie - show both teams with same score
+          const p1IsHome = game.metadata?.apiData?.teams?.home?.id === p1?.subject_id;
+          const p1Score = p1IsHome ? game.homeScore : game.awayScore;
+          return `${shortName1} vs ${shortName2} (${p1Score}-${p1Score})`;
+        } else if (outcome === 'win') {
+          // User's selection won
+          winner = side === 'participant_1' ? p1 : p2;
+          loser = side === 'participant_1' ? p2 : p1;
+        } else {
+          // outcome === 'loss' - user's selection lost, so the other participant won
+          winner = side === 'participant_1' ? p2 : p1;
+          loser = side === 'participant_1' ? p1 : p2;
+        }
+        
+        // Get scores for winner and loser
+        const winnerIsHome = game.metadata?.apiData?.teams?.home?.id === winner?.subject_id;
+        winnerScore = winnerIsHome ? game.homeScore : game.awayScore;
+        loserScore = winnerIsHome ? game.awayScore : game.homeScore;
+        
+        const winnerShortName = (winner === p1 ? shortName1 : shortName2);
+        const loserShortName = (winner === p1 ? shortName2 : shortName1);
+        
+        return `${winnerShortName} over ${loserShortName} (${winnerScore}-${loserScore})`;
+      }
+      
+      // Not resolved yet - show user's selection
       return side === 'participant_1' ? `${name1} over ${name2}` : `${name2} over ${name1}`;
     } else if (betType === 'THRESHOLD' && config) {
       const threshold = config.threshold;
       const participant = config.participant;
-      let name = participant?.subject_name || 'Player';
+      let name = getTeamName(participant, game);
+      const shortName = name.split(' ').pop() || name;
       
-      // Use short name
-      if (participant?.subject_type === 'TEAM') {
-        const metadata = game.metadata;
-        const apiData = metadata?.apiData;
-        if (apiData?.teams?.home?.id === participant.subject_id) {
-          name = game.homeTeam.split(' ').pop() || name;
-        } else if (apiData?.teams?.away?.id === participant.subject_id) {
-          name = game.awayTeam.split(' ').pop() || name;
-        }
+      // If resolved, show what actually happened
+      if (outcome && outcome !== 'pending' && game.homeScore !== null && game.awayScore !== null && participant?.subject_type === 'TEAM') {
+        const pIsHome = game.metadata?.apiData?.teams?.home?.id === participant?.subject_id;
+        const pScore = pIsHome ? game.homeScore : game.awayScore;
+        return `${shortName} ${side} ${threshold} (${pScore})`;
       }
       
-      return side === 'over' ? `${name} over ${threshold}` : `${name} under ${threshold}`;
+      return side === 'over' ? `${shortName} over ${threshold}` : `${shortName} under ${threshold}`;
     } else if (betType === 'EVENT' && config) {
       const event = config.event || 'Event';
       return side === 'yes' ? `${event} ✓` : `${event} ✗`;
@@ -622,15 +698,31 @@ export function MyBetsSection() {
                   <div className="flex items-center gap-3">
                     <span className="text-lg flex-shrink-0">{getSportEmoji(selection.bet.game.sport)}</span>
                     <span className="text-xs text-slate-400 flex-shrink-0">{formatTime(selection.bet.game.startTime)}</span>
-                    <span className="flex-1 text-sm text-white font-medium truncate">
-                      {formatSelectionText(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.bet.game)}
-                    </span>
-                    {selection.status === 'locked' && (
-                      <span className="px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 bg-yellow-900/30 text-yellow-400 border border-yellow-600/30">
-                        🔒
-                      </span>
-                    )}
-                    {canModify && (
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-white font-medium truncate">
+                          {formatSelectionText(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.bet.game, selection.outcome || selection.bet.outcome)}
+                        </div>
+                        {selection.bet.game.status === 'completed' && selection.bet.game.homeScore !== null && selection.bet.game.awayScore !== null && (
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {selection.bet.game.awayTeam} {selection.bet.game.awayScore} - {selection.bet.game.homeScore} {selection.bet.game.homeTeam}
+                          </div>
+                        )}
+                      </div>
+                      {selection.status === 'locked' && (
+                        <span className="px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 bg-yellow-900/30 text-yellow-400 border border-yellow-600/30">
+                          🔒
+                        </span>
+                      )}
+                      {selection.outcome && selection.outcome !== 'pending' && (
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
+                          selection.outcome === 'win' ? 'bg-green-900/50 text-green-400' :
+                          selection.outcome === 'loss' ? 'bg-red-900/50 text-red-400' :
+                          'bg-yellow-900/50 text-yellow-400'
+                        }`}>
+                          {selection.outcome.toUpperCase()}
+                        </span>
+                      )}
+                      {canModify && (
                       <div className="flex gap-1.5 flex-shrink-0">
                         <button
                           onClick={() => handleStartParlay(selection.id, selection.bet.id, selection.selectedSide)}
@@ -682,11 +774,20 @@ export function MyBetsSection() {
                           <span className="text-xs">{getSportEmoji(selection.game.sport)}</span>
                           <span className="text-xs text-slate-400">{formatTime(selection.game.startTime)}</span>
                           <span className="text-xs text-white font-medium whitespace-nowrap">
-                            {formatSelectionText(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.game)}
+                            {formatSelectionText(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.game, selection.outcome)}
                           </span>
                           {selection.status === 'locked' && (
                             <span className="px-1 py-0.5 rounded text-xs flex-shrink-0 bg-yellow-900/30 text-yellow-400">
                               🔒
+                            </span>
+                          )}
+                          {selection.outcome && selection.outcome !== 'pending' && (
+                            <span className={`px-1 py-0.5 rounded text-xs flex-shrink-0 ${
+                              selection.outcome === 'win' ? 'bg-green-900/50 text-green-400' :
+                              selection.outcome === 'loss' ? 'bg-red-900/50 text-red-400' :
+                              'bg-yellow-900/50 text-yellow-400'
+                            }`}>
+                              {selection.outcome.toUpperCase()}
                             </span>
                           )}
                         </div>
@@ -750,12 +851,28 @@ export function MyBetsSection() {
                     <div className="flex items-center gap-3">
                       <span className="text-lg flex-shrink-0">{getSportEmoji(selection.bet.game.sport)}</span>
                       <span className="text-xs text-slate-400 flex-shrink-0">{formatTime(selection.bet.game.startTime)}</span>
-                      <span className="flex-1 text-sm text-white font-medium truncate">
-                        {formatSelectionText(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.bet.game)}
-                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-white font-medium truncate">
+                          {formatSelectionText(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.bet.game, selection.outcome || selection.bet.outcome)}
+                        </div>
+                        {selection.bet.game.status === 'completed' && selection.bet.game.homeScore !== null && selection.bet.game.awayScore !== null && (
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {selection.bet.game.awayTeam} {selection.bet.game.awayScore} - {selection.bet.game.homeScore} {selection.bet.game.homeTeam}
+                          </div>
+                        )}
+                      </div>
                       {selection.status === 'locked' && (
                         <span className="px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 bg-yellow-900/30 text-yellow-400 border border-yellow-600/30">
                           🔒
+                        </span>
+                      )}
+                      {selection.outcome && selection.outcome !== 'pending' && (
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
+                          selection.outcome === 'win' ? 'bg-green-900/50 text-green-400' :
+                          selection.outcome === 'loss' ? 'bg-red-900/50 text-red-400' :
+                          'bg-yellow-900/50 text-yellow-400'
+                        }`}>
+                          {selection.outcome.toUpperCase()}
                         </span>
                       )}
                       {canModify && (
@@ -810,7 +927,7 @@ export function MyBetsSection() {
                             <span className="text-xs">{getSportEmoji(selection.game.sport)}</span>
                             <span className="text-xs text-slate-400">{formatTime(selection.game.startTime)}</span>
                             <span className="text-xs text-white font-medium whitespace-nowrap">
-                              {formatSelectionText(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.game)}
+                              {formatSelectionText(selection.selectedSide, selection.bet.betType, selection.bet.config, selection.game, selection.outcome)}
                             </span>
                             {selection.status === 'locked' && (
                               <span className="px-1 py-0.5 rounded text-xs flex-shrink-0 bg-yellow-900/30 text-yellow-400">
@@ -883,6 +1000,9 @@ export function MyBetsSection() {
                         {sortedBets.map((bet) => {
                           const isSelected = userSelectedBetIds.has(bet.id);
                           
+                          // Format resolved bets to show what actually happened
+                          const formattedText = formatResolvedBetText(bet, game);
+                          
                           // Always show read-only for past/future dates (non-interactive)
                           return (
                             <div
@@ -895,18 +1015,9 @@ export function MyBetsSection() {
                             >
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-slate-400">#{bet.priority}</span>
-                                <span className="flex-1">{bet.displayText}</span>
+                                <span className="flex-1">{formattedText}</span>
                                 {isSelected && (
                                   <span className="text-xs text-blue-400">✓ Selected</span>
-                                )}
-                                {bet.outcome !== 'pending' && (
-                                  <span className={`text-xs px-2 py-0.5 rounded ${
-                                    bet.outcome === 'win' ? 'bg-green-900/30 text-green-400' :
-                                    bet.outcome === 'loss' ? 'bg-red-900/30 text-red-400' :
-                                    'bg-slate-700/50 text-slate-400'
-                                  }`}>
-                                    {bet.outcome}
-                                  </span>
                                 )}
                               </div>
                             </div>

@@ -1230,11 +1230,12 @@ router.post('/bets/:betId/resolve', requireAuth, requireAdmin, requireFeature('A
         selectionOutcome = 'loss';
       }
 
-      // Update selection status to resolved
+      // Update selection status to resolved and store the outcome
       await prisma.userBetSelection.update({
         where: { id: selection.id },
         data: {
-          status: 'resolved'
+          status: 'resolved',
+          outcome: selectionOutcome
         }
       });
       
