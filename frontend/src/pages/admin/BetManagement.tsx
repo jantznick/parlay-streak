@@ -3,8 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { Header } from '../../components/layout/Header';
 import { Footer } from '../../components/layout/Footer';
-import { BetCreationModal } from '../../components/admin/BetCreationModal';
-import { BetEditModal } from '../../components/admin/BetEditModal';
+import { BetModal } from '../../components/admin/BetModal';
 
 interface Bet {
   id: string;
@@ -829,9 +828,9 @@ export function BetManagement() {
         </div>
       </main>
 
-      {/* Bet Creation Modal */}
+      {/* Bet Modal (Create or Edit) */}
       {selectedGame && (
-        <BetCreationModal
+        <BetModal
           game={selectedGame}
           rosterData={rosterData}
           onClose={handleCloseModal}
@@ -839,9 +838,8 @@ export function BetManagement() {
         />
       )}
 
-      {/* Bet Edit Modal */}
       {editingBet && (
-        <BetEditModal
+        <BetModal
           bet={editingBet.bet}
           game={editingBet.game}
           rosterData={rosterData}

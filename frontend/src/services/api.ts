@@ -152,13 +152,14 @@ class ApiService {
     return this.request(`/api/admin/teams/${gameId}/roster`);
   }
 
-  async createBet(gameId: string, betType: string, config: any) {
+  async createBet(gameId: string, betType: string, config: any, displayTextOverride?: string) {
     return this.request('/api/admin/bets', {
       method: 'POST',
       body: JSON.stringify({
         game_id: gameId,
         bet_type: betType,
-        config
+        config,
+        display_text_override: displayTextOverride || undefined
       }),
     });
   }
