@@ -1,6 +1,6 @@
 import React from 'react';
 import { BetListItem } from './BetListItem';
-import { formatDate, formatTime, formatResolvedBetText } from '../../utils/formatting';
+import { formatDate, formatTime, formatResolvedBetText, getSportEmoji } from '../../utils/formatting';
 
 interface Bet {
   id: string;
@@ -41,22 +41,6 @@ interface GameCardProps {
   resolvingBet: string | null;
 }
 
-function getSportEmoji(sport: string): string {
-  switch (sport) {
-    case 'BASKETBALL':
-      return '🏀';
-    case 'FOOTBALL':
-      return '🏈';
-    case 'BASEBALL':
-      return '⚾';
-    case 'HOCKEY':
-      return '🏒';
-    case 'SOCCER':
-      return '⚽';
-    default:
-      return '🏆';
-  }
-}
 
 export function GameCard({
   game,

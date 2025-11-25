@@ -4,7 +4,7 @@ import { api } from '../../services/api';
 import { Header } from '../../components/layout/Header';
 import { Footer } from '../../components/layout/Footer';
 import { BetModal } from '../../components/admin/BetModal';
-import { formatResolvedBetText } from '../../utils/formatting';
+import { formatResolvedBetText, getTodayDateString, getTimezoneOffset } from '../../utils/formatting';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { BetListItem } from '../../components/admin/BetListItem';
 import { GameCard } from '../../components/admin/GameCard';
@@ -39,26 +39,11 @@ interface SportConfig {
   leagues: Array<{ id: string; name: string }>;
 }
 
-// Helper function to get today's date in local timezone (not UTC)
-const getLocalTodayDateString = (): string => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-// Helper function to get timezone offset in hours
-const getTimezoneOffset = (): number => {
-  // getTimezoneOffset() returns offset in minutes, negative for ahead of UTC
-  // We want hours, positive for ahead of UTC (e.g., EST is -5, so offset is -5)
-  return -new Date().getTimezoneOffset() / 60;
-};
 
 
 export function BetManagement() {
   const { user, logout } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<string>(getLocalTodayDateString());
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString());
   const [sportsConfig, setSportsConfig] = useState<SportConfig[]>([]);
   const [selectedSport, setSelectedSport] = useState<string>('basketball');
   const [selectedLeague, setSelectedLeague] = useState<string>('nba');
