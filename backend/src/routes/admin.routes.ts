@@ -1107,26 +1107,36 @@ router.post('/bets/:betId/resolve', requireAuth, requireAdmin, requireFeature('A
     const liveGameInfo = extractLiveGameInfo(gameData, sportConfig);
     const currentMetadata = (bet.game.metadata as any) || {};
     
+    // Build update data - only update scores if we got valid values (don't overwrite with null)
+    const updateData: any = {
+      status: liveGameInfo.status,
+      metadata: {
+        ...currentMetadata,
+        liveInfo: {
+          period: liveGameInfo.period,
+          displayClock: liveGameInfo.displayClock,
+          periodDisplay: liveGameInfo.periodDisplay,
+          lastUpdated: new Date().toISOString()
+        }
+      }
+    };
+
+    // Only update scores if we got valid values (preserve existing scores if extraction returns null)
+    if (liveGameInfo.homeScore !== null) {
+      updateData.homeScore = liveGameInfo.homeScore;
+    }
+    if (liveGameInfo.awayScore !== null) {
+      updateData.awayScore = liveGameInfo.awayScore;
+    }
+
+    // Set endTime if game is completed
+    if (liveGameInfo.status === 'completed' && !bet.game.endTime) {
+      updateData.endTime = new Date();
+    }
+    
     await prisma.game.update({
       where: { id: bet.gameId },
-      data: {
-        status: liveGameInfo.status,
-        homeScore: liveGameInfo.homeScore,
-        awayScore: liveGameInfo.awayScore,
-        metadata: {
-          ...currentMetadata,
-          liveInfo: {
-            period: liveGameInfo.period,
-            displayClock: liveGameInfo.displayClock,
-            periodDisplay: liveGameInfo.periodDisplay,
-            lastUpdated: new Date().toISOString()
-          }
-        },
-        // Set endTime if game is completed
-        ...(liveGameInfo.status === 'completed' && !bet.game.endTime ? {
-          endTime: new Date()
-        } : {})
-      }
+      data: updateData
     });
 
     logger.info('Updated game with live info', {

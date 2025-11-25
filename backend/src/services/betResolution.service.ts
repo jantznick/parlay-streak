@@ -55,11 +55,24 @@ export function extractLiveGameInfo(
   displayClock: string | null;
   periodDisplay: string | null;
 } {
-  // Find the competition (filter by header.id if available)
-  const headerId = gameData?.header?.id;
-  const competition = gameData?.header?.competitions?.find((c: any) => 
-    String(c.id) === String(headerId)
-  ) || gameData?.header?.competitions?.[0];
+  // Find the competition using the same logic as bet resolution
+  // Try header.competitions first (sample file structure), then top-level competitions (API structure)
+  const gameId = gameData?.id || gameData?.header?.id;
+  const competitions = gameData?.header?.competitions || gameData?.competitions;
+  
+  if (!competitions || !Array.isArray(competitions)) {
+    return {
+      status: 'scheduled',
+      homeScore: null,
+      awayScore: null,
+      period: null,
+      displayClock: null,
+      periodDisplay: null,
+    };
+  }
+
+  // Find competition by matching id to game id (same as bet resolution)
+  const competition = competitions.find((c: any) => String(c.id) === String(gameId)) || competitions[0];
 
   if (!competition) {
     return {
@@ -72,10 +85,8 @@ export function extractLiveGameInfo(
     };
   }
 
-  // Get status from competition or event
-  const statusState = competition?.status?.type?.state || 
-                     gameData?.header?.competitions?.[0]?.status?.type?.state || 
-                     'pre';
+  // Get status from competition
+  const statusState = competition?.status?.type?.state || 'pre';
   
   // Map ESPN status to our status
   let status = 'scheduled';
@@ -87,7 +98,7 @@ export function extractLiveGameInfo(
     status = 'scheduled';
   }
 
-  // Get scores from competitors
+  // Get scores from competitors (same structure as bet resolution)
   const competitors = competition?.competitors || [];
   const homeTeam = competitors.find((c: any) => c.homeAway === 'home');
   const awayTeam = competitors.find((c: any) => c.homeAway === 'away');
@@ -95,10 +106,11 @@ export function extractLiveGameInfo(
   const homeScore = homeTeam?.score ? parseInt(homeTeam.score, 10) : null;
   const awayScore = awayTeam?.score ? parseInt(awayTeam.score, 10) : null;
 
-  // Get period and clock information
-  const statusInfo = competition?.status || gameData?.header?.competitions?.[0]?.status;
+  // Get period and clock information from competition status
+  const statusInfo = competition?.status;
   const period = statusInfo?.period || null;
-  const displayClock = statusInfo?.displayClock || statusInfo?.type?.shortDetail || null;
+  // Try displayClock first, then shortDetail, then detail
+  const displayClock = statusInfo?.displayClock || statusInfo?.type?.shortDetail || statusInfo?.type?.detail || null;
 
   // Format period display using sport-specific config
   let periodDisplay: string | null = null;
