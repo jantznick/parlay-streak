@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDateDisplay } from './DateNavigation';
 
 interface HistoricalGame {
   id: string;
@@ -31,7 +32,6 @@ interface AvailableBetsSectionProps {
   formatResolvedBetText: (bet: any, game: any) => string;
   formatTime: (dateString: string) => string;
   getSportEmoji: (sport: string) => string;
-  formatDateDisplay: (dateString: string) => string;
   selectedDate: string;
   loading: boolean;
   isPastDate: boolean;
@@ -43,7 +43,6 @@ export function AvailableBetsSection({
   formatResolvedBetText,
   formatTime,
   getSportEmoji,
-  formatDateDisplay,
   selectedDate,
   loading,
   isPastDate

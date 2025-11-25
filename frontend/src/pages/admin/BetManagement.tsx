@@ -4,6 +4,10 @@ import { api } from '../../services/api';
 import { Header } from '../../components/layout/Header';
 import { Footer } from '../../components/layout/Footer';
 import { BetModal } from '../../components/admin/BetModal';
+import { DateNavigation, formatDateDisplay } from '../../components/dashboard/DateNavigation';
+import { formatDate, formatTime, getTeamName, formatResolvedBetText } from '../../utils/formatting';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
+import { BetListItem } from '../../components/admin/BetListItem';
 
 interface Bet {
   id: string;
@@ -50,56 +54,6 @@ const getTimezoneOffset = (): number => {
   return -new Date().getTimezoneOffset() / 60;
 };
 
-// Helper to get team name from participant
-const getTeamName = (participant: any, game: Game): string => {
-  if (participant?.subject_type === 'TEAM') {
-    const metadata = game.metadata;
-    const apiData = metadata?.apiData;
-    if (apiData?.teams?.home?.id === participant.subject_id) {
-      return game.homeTeam;
-    } else if (apiData?.teams?.away?.id === participant.subject_id) {
-      return game.awayTeam;
-    }
-  }
-  return participant?.subject_name || 'Unknown';
-};
-
-// Format a resolved bet for display when we don't have a user selection
-// Shows what actually happened based on outcome and scores
-const formatResolvedBetText = (bet: Bet, game: Game): string => {
-  if (!bet.outcome || bet.outcome === 'pending' || !bet.config) {
-    return bet.displayTextOverride || bet.displayText;
-  }
-
-  if (bet.betType === 'COMPARISON' && bet.config) {
-    const compConfig = bet.config;
-    const p1 = compConfig.participant_1;
-    const p2 = compConfig.participant_2;
-    
-    if (p1?.subject_type === 'TEAM' && p2?.subject_type === 'TEAM' && 
-        game.homeScore !== null && game.awayScore !== null) {
-      const name1 = getTeamName(p1, game);
-      const name2 = getTeamName(p2, game);
-      const shortName1 = name1.split(' ').pop() || name1;
-      const shortName2 = name2.split(' ').pop() || name2;
-      
-      // Determine which team won based on scores
-      const p1IsHome = game.metadata?.apiData?.teams?.home?.id === p1?.subject_id;
-      const p1Score = p1IsHome ? game.homeScore : game.awayScore;
-      const p2Score = p1IsHome ? game.awayScore : game.homeScore;
-      
-      if (p1Score > p2Score) {
-        return `${shortName1} over ${shortName2} (${p1Score}-${p2Score})`;
-      } else if (p2Score > p1Score) {
-        return `${shortName2} over ${shortName1} (${p2Score}-${p1Score})`;
-      } else {
-        return `${shortName1} vs ${shortName2} (${p1Score}-${p2Score})`;
-      }
-    }
-  }
-  
-  return bet.displayTextOverride || bet.displayText;
-};
 
 export function BetManagement() {
   const { user, logout } = useAuth();
@@ -474,39 +428,6 @@ export function BetManagement() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    // Handle YYYY-MM-DD format from date input (treat as local date, not UTC)
-    // Or ISO date string from database
-    let date: Date;
-    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      // YYYY-MM-DD format (from date input)
-      const [year, month, day] = dateString.split('-').map(Number);
-      date = new Date(year, month - 1, day); // month is 0-indexed
-    } else {
-      // ISO date string (from database)
-      date = new Date(dateString);
-    }
-    
-    if (isNaN(date.getTime())) {
-      return 'Invalid Date';
-    }
-    
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  };
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
@@ -518,15 +439,12 @@ export function BetManagement() {
         <div className="bg-slate-900 rounded-lg p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Select Date
               </label>
-              <input
-                type="date"
-                id="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <DateNavigation
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
               />
             </div>
 
@@ -725,92 +643,19 @@ export function BetManagement() {
                     {isExpanded && sortedBets.length > 0 && (
                       <div className="border-t border-slate-800 p-4 space-y-2">
                         {sortedBets.map((bet, index) => (
-                          <div
+                          <BetListItem
                             key={bet.id}
-                            className="bg-slate-800 rounded-lg p-4 flex items-center justify-between hover:bg-slate-750 transition"
-                          >
-                            <div className="flex items-center gap-3 flex-1">
-                              <div className="flex flex-col gap-1">
-                                <button
-                                  onClick={() => handleMoveBetPriority(game.id, bet.id, 'up')}
-                                  disabled={index === 0}
-                                  className="text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed text-xs"
-                                  title="Move up"
-                                >
-                                  ▲
-                                </button>
-                                <button
-                                  onClick={() => handleMoveBetPriority(game.id, bet.id, 'down')}
-                                  disabled={index === sortedBets.length - 1}
-                                  className="text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed text-xs"
-                                  title="Move down"
-                                >
-                                  ▼
-                                </button>
-                              </div>
-                              
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs font-medium text-slate-400">#{bet.priority}</span>
-                                  <span className="text-sm font-medium text-white">
-                                    {formatResolvedBetText(bet, game)}
-                                  </span>
-                                  <span
-                                    className={`px-2 py-0.5 text-xs font-medium rounded ${
-                                      bet.outcome === 'win'
-                                        ? 'bg-green-900/50 text-green-400'
-                                        : bet.outcome === 'loss'
-                                        ? 'bg-red-900/50 text-red-400'
-                                        : bet.outcome === 'push'
-                                        ? 'bg-yellow-900/50 text-yellow-400'
-                                        : bet.outcome === 'void'
-                                        ? 'bg-slate-700 text-slate-300'
-                                        : 'bg-slate-700 text-slate-400'
-                                    }`}
-                                  >
-                                    {bet.outcome.toUpperCase()}
-                                  </span>
-                                </div>
-                                <div className="text-xs text-slate-500">
-                                  {bet.betType}
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleResolveBet(bet)}
-                                disabled={
-                                  resolvingBet === bet.id || 
-                                  bet.outcome !== 'pending' ||
-                                  game.status === 'scheduled' ||
-                                  new Date(game.startTime) > new Date()
-                                }
-                                className="px-3 py-1.5 text-xs bg-green-900/50 hover:bg-green-900/70 disabled:bg-slate-700 disabled:text-slate-500 text-green-400 rounded transition"
-                                title={
-                                  bet.outcome !== 'pending' 
-                                    ? 'Bet already resolved' 
-                                    : game.status === 'scheduled' || new Date(game.startTime) > new Date()
-                                    ? 'Game has not started yet'
-                                    : 'Manually resolve this bet'
-                                }
-                              >
-                                {resolvingBet === bet.id ? 'Resolving...' : 'Resolve'}
-                              </button>
-                              <button
-                                onClick={() => handleEditBet(bet, game)}
-                                className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded transition"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteBet(bet, game)}
-                                className="px-3 py-1.5 text-xs bg-red-900/50 hover:bg-red-900/70 text-red-400 rounded transition"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
+                            bet={bet}
+                            game={game}
+                            index={index}
+                            totalBets={sortedBets.length}
+                            onEdit={handleEditBet}
+                            onDelete={handleDeleteBet}
+                            onResolve={handleResolveBet}
+                            onMovePriority={handleMoveBetPriority}
+                            resolvingBet={resolvingBet}
+                            formatResolvedBetText={formatResolvedBetText}
+                          />
                         ))}
                       </div>
                     )}
@@ -849,36 +694,25 @@ export function BetManagement() {
       )}
 
       {/* Delete Confirmation Modal */}
-      {deletingBet && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-900 rounded-lg border border-slate-700 p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-white mb-4">Delete Bet</h3>
-            <p className="text-slate-300 mb-2">
-              Are you sure you want to delete this bet?
+      <ConfirmModal
+        isOpen={!!deletingBet}
+        title="Delete Bet"
+        message="Are you sure you want to delete this bet?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={confirmDeleteBet}
+        onCancel={() => setDeletingBet(null)}
+      >
+        {deletingBet && (
+          <div className="bg-slate-800 rounded p-3">
+            <p className="text-white font-medium">{deletingBet.bet.displayText}</p>
+            <p className="text-slate-400 text-sm mt-1">
+              {deletingBet.game.awayTeam} @ {deletingBet.game.homeTeam}
             </p>
-            <div className="bg-slate-800 rounded p-3 mb-6">
-              <p className="text-white font-medium">{deletingBet.bet.displayText}</p>
-              <p className="text-slate-400 text-sm mt-1">
-                {deletingBet.game.awayTeam} @ {deletingBet.game.homeTeam}
-              </p>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setDeletingBet(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDeleteBet}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-              >
-                Delete
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        )}
+      </ConfirmModal>
       <Footer />
     </div>
   );

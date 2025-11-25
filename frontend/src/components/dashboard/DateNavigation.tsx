@@ -3,10 +3,50 @@ import { useState, ChangeEvent } from 'react';
 interface DateNavigationProps {
   selectedDate: string;
   onDateChange: (date: string) => void;
-  formatDateDisplay: (date: string) => string;
+  formatDateDisplay?: (date: string) => string;
 }
 
-export function DateNavigation({ selectedDate, onDateChange, formatDateDisplay }: DateNavigationProps) {
+// Export the default date formatting function so it can be used elsewhere
+export function formatDateDisplay(dateString: string): string {
+  const date = new Date(dateString + 'T00:00:00'); // Add time to avoid timezone issues
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const selected = new Date(date);
+  selected.setHours(0, 0, 0, 0);
+  
+  const diffTime = selected.getTime() - today.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) {
+    return 'Today';
+  } else if (diffDays === -1) {
+    return 'Yesterday';
+  } else if (diffDays === 1) {
+    return 'Tomorrow';
+  } else {
+    // Format: "Mon, Nov 21" or "Mon, Nov 21, 2024" if different year
+    const currentYear = today.getFullYear();
+    const selectedYear = selected.getFullYear();
+    
+    if (selectedYear === currentYear) {
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      });
+    } else {
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    }
+  }
+}
+
+export function DateNavigation({ selectedDate, onDateChange, formatDateDisplay: customFormatDateDisplay }: DateNavigationProps) {
+  const formatDate = customFormatDateDisplay || formatDateDisplay;
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const navigateDate = (direction: 'prev' | 'next') => {
@@ -50,7 +90,7 @@ export function DateNavigation({ selectedDate, onDateChange, formatDateDisplay }
           className="px-3 py-1 bg-slate-800 text-slate-200 rounded text-sm font-medium min-w-[140px] text-center hover:bg-slate-700 transition cursor-pointer"
           title="Click to pick a date"
         >
-          {formatDateDisplay(selectedDate)}
+          {formatDate(selectedDate)}
         </button>
         {showDatePicker && (
           <div className="absolute top-full left-0 mt-1 z-50 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-2">

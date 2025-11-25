@@ -4,7 +4,7 @@ import { useParlay } from '../../context/ParlayContext';
 import { useBets } from '../../context/BetsContext';
 import { ConfirmModal } from '../common/ConfirmModal';
 import { BetSelectionGroup } from '../bets/BetSelectionGroup';
-import { DateNavigation } from './DateNavigation';
+import { DateNavigation, formatDateDisplay } from './DateNavigation';
 import { SingleBetCard } from './SingleBetCard';
 import { ParlayCard } from './ParlayCard';
 import { AvailableBetsSection } from './AvailableBetsSection';
@@ -476,43 +476,6 @@ export function MyBetsSection() {
     });
   };
 
-  const formatDateDisplay = (dateString: string) => {
-    const date = new Date(dateString + 'T00:00:00'); // Add time to avoid timezone issues
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const selected = new Date(date);
-    selected.setHours(0, 0, 0, 0);
-    
-    const diffTime = selected.getTime() - today.getTime();
-    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) {
-      return 'Today';
-    } else if (diffDays === -1) {
-      return 'Yesterday';
-    } else if (diffDays === 1) {
-      return 'Tomorrow';
-    } else {
-      // Format: "Mon, Nov 21" or "Mon, Nov 21, 2024" if different year
-      const currentYear = today.getFullYear();
-      const selectedYear = selected.getFullYear();
-      
-      if (selectedYear === currentYear) {
-        return date.toLocaleDateString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-        });
-      } else {
-        return date.toLocaleDateString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        });
-      }
-    }
-  };
 
 
   // Check if a bet is in the active parlay builder
@@ -582,7 +545,6 @@ export function MyBetsSection() {
               <DateNavigation
                 selectedDate={selectedDate}
                 onDateChange={setSelectedDate}
-                formatDateDisplay={formatDateDisplay}
               />
             </div>
             <p className="text-slate-400 text-sm mt-1">
@@ -720,7 +682,6 @@ export function MyBetsSection() {
               formatResolvedBetText={formatResolvedBetText}
               formatTime={formatTime}
               getSportEmoji={getSportEmoji}
-              formatDateDisplay={formatDateDisplay}
               selectedDate={selectedDate}
               loading={loadingHistorical}
               isPastDate={isPastDate}
