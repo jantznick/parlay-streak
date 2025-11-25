@@ -418,9 +418,9 @@ export const BASKETBALL_CONFIG: SportConfig = {
         path: 'status.type.completed',
         expectedValue: true,
         filter: {
-          arrayPath: 'header.competitions',
+          arrayPath: 'competitions',
           filterKey: 'id',
-          filterValuePath: 'header.id'
+          filterValuePath: 'id'
         }
       }
     },
@@ -521,15 +521,21 @@ export const BASKETBALL_CONFIG: SportConfig = {
         
         if (subjectType === 'TEAM') {
           // For team points, use the score from competitors
-          // Filter competition by matching id to header.id
-          const headerId = gameData?.header?.id;
-          if (!headerId) {
-            console.log(`[points stat] ❌ No header.id found in gameData`);
+          // Filter competition by matching id to top-level game id
+          const gameId = gameData?.id;
+          if (!gameId) {
+            console.log(`[points stat] ❌ No game id found in gameData`);
             return null;
           }
-          const competition = gameData?.header?.competitions?.find((c: any) => String(c.id) === String(headerId));
+          // Try header.competitions first (sample file structure), then top-level competitions (API structure)
+          const competitions = gameData?.header?.competitions || gameData?.competitions;
+          if (!competitions || !Array.isArray(competitions)) {
+            console.log(`[points stat] ❌ No competitions array found in gameData`);
+            return null;
+          }
+          const competition = competitions.find((c: any) => String(c.id) === String(gameId));
           if (!competition) {
-            console.log(`[points stat] ❌ No competition found matching header.id=${headerId}`);
+            console.log(`[points stat] ❌ No competition found matching game.id=${gameId}`);
             return null;
           }
           

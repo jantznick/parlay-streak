@@ -183,6 +183,12 @@ class ApiService {
     });
   }
 
+  async resolveBet(betId: string) {
+    return this.request(`/api/admin/bets/${betId}/resolve`, {
+      method: 'POST',
+    });
+  }
+
   // Parlay endpoints
   async startParlay(betId: string, selectedSide: string, existingSelectionId?: string) {
     return this.request('/api/parlays/start', {

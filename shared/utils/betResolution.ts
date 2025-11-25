@@ -117,6 +117,23 @@ function checkBetEndPoint(gameData: any, betEndPointKey: BetEndPointKey): boolea
   }
   
   console.log(`[checkBetEndPoint] Checking path: ${betEndPointKey.path}, expected: ${JSON.stringify(betEndPointKey.expectedValue)}`);
+  
+  // Log game data structure for debugging
+  console.log(`[checkBetEndPoint] Game data structure:`, {
+    topLevelKeys: gameData ? Object.keys(gameData).slice(0, 10) : 'null',
+    hasHeader: !!gameData?.header,
+    hasBoxscore: !!gameData?.boxscore,
+    hasPlays: !!gameData?.plays,
+    hasMeta: !!gameData?.meta,
+    headerKeys: gameData?.header ? Object.keys(gameData.header).slice(0, 10) : 'no header',
+    hasHeaderId: !!gameData?.header?.id,
+    hasCompetitions: !!gameData?.header?.competitions,
+    competitionsLength: gameData?.header?.competitions?.length,
+    headerId: gameData?.header?.id,
+    firstCompetitionId: gameData?.header?.competitions?.[0]?.id,
+    firstCompetitionStatus: gameData?.header?.competitions?.[0]?.status?.type?.completed
+  });
+  
   const value = getNestedValue(gameData, betEndPointKey.path, betEndPointKey.filter);
   
   if (betEndPointKey.expectedValue === 'exists') {

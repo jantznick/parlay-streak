@@ -66,6 +66,8 @@ export function BetManagement() {
   const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
   const [editingBet, setEditingBet] = useState<{ bet: Bet; game: Game } | null>(null);
   const [deletingBet, setDeletingBet] = useState<{ bet: Bet; game: Game } | null>(null);
+  const [resolvingBet, setResolvingBet] = useState<string | null>(null);
+  const [creatingMoneyline, setCreatingMoneyline] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Load sports configuration on mount
@@ -261,6 +263,103 @@ export function BetManagement() {
       }
     } catch (error: any) {
       setError(error.message || 'Failed to delete bet');
+    }
+  };
+
+  const handleResolveBet = async (bet: Bet) => {
+    if (resolvingBet) return; // Prevent multiple simultaneous resolutions
+
+    setResolvingBet(bet.id);
+    setError(null);
+
+    try {
+      const response = await api.resolveBet(bet.id);
+      if (response.success) {
+        // Refresh games to show updated bet outcome
+        await fetchGames();
+      } else {
+        // Extract detailed error message
+        const errorCode = response.error?.code;
+        const errorDetails = response.error as any; // Type assertion for additional error properties
+        let errorMessage = response.error?.message || 'Failed to resolve bet';
+        
+        // Add more context for specific error codes
+        if (errorCode === 'GAME_NOT_STARTED') {
+          const timeUntilStart = errorDetails?.timeUntilStartMinutes;
+          if (timeUntilStart !== undefined) {
+            errorMessage = `Game has not started yet. ${timeUntilStart > 0 ? `Starts in ${timeUntilStart} minutes.` : 'Game is scheduled to start soon.'}`;
+          }
+        } else if (errorCode === 'ALREADY_RESOLVED') {
+          errorMessage = `Bet is already resolved with outcome: ${errorDetails?.currentOutcome || 'unknown'}`;
+        } else if (errorCode === 'GAME_INVALID_STATUS') {
+          errorMessage = `Cannot resolve bet: Game is ${errorDetails?.gameStatus || 'in an invalid state'}`;
+        } else if (errorCode === 'RESOLUTION_FAILED') {
+          // Keep the detailed reason from the resolution function
+          errorMessage = response.error?.message || 'Bet cannot be resolved at this time';
+        } else if (errorCode === 'GAME_DATA_FETCH_FAILED') {
+          errorMessage = `Failed to fetch game data: ${errorDetails?.details || 'Unable to retrieve latest game statistics'}`;
+        }
+        
+        setError(errorMessage);
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to resolve bet');
+    } finally {
+      setResolvingBet(null);
+    }
+  };
+
+  const handleQuickMoneyline = async (game: Game) => {
+    if (creatingMoneyline) return; // Prevent multiple simultaneous creations
+
+    setCreatingMoneyline(game.id);
+    setError(null);
+
+    try {
+      // Extract team IDs from game metadata
+      const metadata = (game as any).metadata;
+      const apiData = metadata?.apiData;
+      
+      const homeTeamId = apiData?.teams?.home?.id;
+      const awayTeamId = apiData?.teams?.away?.id;
+
+      if (!homeTeamId || !awayTeamId) {
+        setError('Game missing team IDs. Please refresh the game data first.');
+        setCreatingMoneyline(null);
+        return;
+      }
+
+      // Create moneyline bet config (home team vs away team, points, FULL_GAME)
+      const moneylineConfig = {
+        type: 'COMPARISON' as const,
+        participant_1: {
+          subject_type: 'TEAM' as const,
+          subject_id: homeTeamId,
+          subject_name: game.homeTeam,
+          metric: 'points',
+          time_period: 'FULL_GAME' as const
+        },
+        participant_2: {
+          subject_type: 'TEAM' as const,
+          subject_id: awayTeamId,
+          subject_name: game.awayTeam,
+          metric: 'points',
+          time_period: 'FULL_GAME' as const
+        },
+        operator: 'GREATER_THAN' as const
+      };
+
+      const response = await api.createBet(game.id, 'COMPARISON', moneylineConfig);
+      if (response.success) {
+        // Refresh games to show the new bet
+        await fetchGames();
+      } else {
+        setError(response.error?.message || 'Failed to create moneyline bet');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to create moneyline bet');
+    } finally {
+      setCreatingMoneyline(null);
     }
   };
 
@@ -552,7 +651,15 @@ export function BetManagement() {
                         </div>
 
                         {/* Actions */}
-                        <div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleQuickMoneyline(game)}
+                            disabled={creatingMoneyline === game.id}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition text-sm font-medium"
+                            title="Quickly create a moneyline bet (home team vs away team)"
+                          >
+                            {creatingMoneyline === game.id ? 'Creating...' : 'Quick Moneyline'}
+                          </button>
                           <button
                             onClick={() => handleCreateBets(game)}
                             disabled={loadingRoster}
@@ -621,6 +728,25 @@ export function BetManagement() {
                             </div>
 
                             <div className="flex gap-2">
+                              <button
+                                onClick={() => handleResolveBet(bet)}
+                                disabled={
+                                  resolvingBet === bet.id || 
+                                  bet.outcome !== 'pending' ||
+                                  game.status === 'scheduled' ||
+                                  new Date(game.startTime) > new Date()
+                                }
+                                className="px-3 py-1.5 text-xs bg-green-900/50 hover:bg-green-900/70 disabled:bg-slate-700 disabled:text-slate-500 text-green-400 rounded transition"
+                                title={
+                                  bet.outcome !== 'pending' 
+                                    ? 'Bet already resolved' 
+                                    : game.status === 'scheduled' || new Date(game.startTime) > new Date()
+                                    ? 'Game has not started yet'
+                                    : 'Manually resolve this bet'
+                                }
+                              >
+                                {resolvingBet === bet.id ? 'Resolving...' : 'Resolve'}
+                              </button>
                               <button
                                 onClick={() => handleEditBet(bet, game)}
                                 className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded transition"
