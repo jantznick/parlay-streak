@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
 import { requireAuth } from '../middleware/auth';
 import { requireFeature } from '../middleware/featureFlags';
+import { parseDateAndTimezone, getUTCDateRange } from '../utils/dateUtils';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -711,7 +712,8 @@ router.delete('/:parlayId/selections/:selectionId', requireAuth, requireFeature(
 router.get('/', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), async (req: Request, res: Response) => {
   try {
     const userId = req.session.userId;
-    const { status, includeSelections, date, timezoneOffset } = req.query;
+    const { status, includeSelections } = req.query;
+    const { date, timezoneOffset } = parseDateAndTimezone(req);
 
     if (!userId) {
       return res.status(401).json({
@@ -753,19 +755,7 @@ router.get('/', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), async (req: Req
     // If date is provided, filter parlays to only those with games on that date
     if (date && typeof date === 'string') {
       // Convert user's local date + timezone to UTC date range
-      function getUTCDateRange(dateStr: string, offset: number | undefined): { start: Date; end: Date } {
-        const [year, month, day] = dateStr.split('-').map(Number);
-        const offsetHours = offset ?? 0;
-        // Create date representing midnight in user's local timezone
-        const localMidnight = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-        // Convert to UTC by subtracting the offset
-        const startUTC = new Date(localMidnight.getTime() - (offsetHours * 60 * 60 * 1000));
-        const endUTC = new Date(startUTC.getTime() + (24 * 60 * 60 * 1000));
-        return { start: startUTC, end: endUTC };
-      }
-
-      const tzOffset = timezoneOffset ? parseInt(timezoneOffset as string, 10) : undefined;
-      const { start: dateStart, end: dateEnd } = getUTCDateRange(date, tzOffset);
+      const { start: dateStart, end: dateEnd } = getUTCDateRange(date, timezoneOffset);
 
       // Filter parlays to only those where at least one game starts on the selected date
       parlays = parlays.filter(parlay => {

@@ -5,6 +5,14 @@ import { requireFeature } from '../middleware/featureFlags';
 import { ApiSportsService } from '../services/apiSports.service';
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
+import { resolveBet, getSportConfig } from '../services/betResolution.service';
+import { getUTCDateRange } from '../utils/dateUtils';
+
+// Type for bet config (from shared types)
+type BetConfig = {
+  type: 'COMPARISON' | 'THRESHOLD' | 'EVENT';
+  [key: string]: any;
+};
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -43,32 +51,6 @@ const apiSportsService = new ApiSportsService();
  *       200:
  *         description: Games fetched from ESPN, stored in DB, and returned
  */
-/**
- * Convert a date string and timezone offset to UTC date range
- * @param dateStr - Date in YYYY-MM-DD format (user's local date)
- * @param timezoneOffset - Timezone offset in hours (e.g., -5 for EST, -6 for CST)
- * @returns Object with start and end UTC dates for the date range
- */
-function getUTCDateRange(dateStr: string, timezoneOffset: number | undefined): { start: Date; end: Date } {
-  // Parse date components
-  const [year, month, day] = dateStr.split('-').map(Number);
-  
-  // Default to UTC if no timezone offset provided (backward compatibility)
-  const offset = timezoneOffset ?? 0;
-  
-  // Create date representing midnight in the user's timezone
-  // We create it as UTC first, then adjust by the offset
-  const localMidnight = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-  
-  // Convert to UTC by subtracting the offset (offset is hours, convert to milliseconds)
-  // If user is in EST (UTC-5), offset is -5, so we subtract -5 hours = add 5 hours to get UTC
-  const startUTC = new Date(localMidnight.getTime() - (offset * 60 * 60 * 1000));
-  
-  // End is 24 hours later
-  const endUTC = new Date(startUTC.getTime() + (24 * 60 * 60 * 1000));
-  
-  return { start: startUTC, end: endUTC };
-}
 
 router.post('/games/fetch', requireAuth, requireAdmin, requireFeature('ADMIN_GAME_MANAGEMENT'), async (req: Request, res: Response) => {
   try {
@@ -913,6 +895,355 @@ router.get('/feature-flags', requireAuth, requireAdmin, async (req: Request, res
     res.status(500).json({
       success: false,
       error: { message: error.message || 'Failed to fetch feature flags', code: 'SERVER_ERROR' }
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/bets/{betId}/resolve:
+ *   post:
+ *     summary: Manually trigger bet resolution for a specific bet
+ *     tags: [Admin]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: betId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the bet to resolve
+ *     responses:
+ *       200:
+ *         description: Bet resolved successfully
+ *       400:
+ *         description: Bet cannot be resolved (e.g., game not complete)
+ *       404:
+ *         description: Bet not found
+ *       500:
+ *         description: Server error
+ */
+router.post('/bets/:betId/resolve', requireAuth, requireAdmin, requireFeature('ADMIN_BET_MANAGEMENT'), async (req: Request, res: Response) => {
+  try {
+    const { betId } = req.params;
+
+    if (!betId) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'betId is required', code: 'VALIDATION_ERROR' }
+      });
+    }
+
+    // Get the bet with its game
+    const bet = await prisma.bet.findUnique({
+      where: { id: betId },
+      include: {
+        game: true
+      }
+    });
+
+    if (!bet) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Bet not found', code: 'NOT_FOUND' }
+      });
+    }
+
+    logger.info('Resolving bet', { betId, gameId: bet.gameId, betType: bet.betType });
+
+    // Check if bet is already resolved
+    if (bet.outcome && bet.outcome !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        error: { 
+          message: `Bet is already resolved with outcome: ${bet.outcome}`,
+          code: 'ALREADY_RESOLVED',
+          currentOutcome: bet.outcome
+        }
+      });
+    }
+
+    // Check if game has started
+    const now = new Date();
+    const gameStartTime = new Date(bet.game.startTime);
+    
+    if (gameStartTime > now) {
+      const timeUntilStart = Math.round((gameStartTime.getTime() - now.getTime()) / 1000 / 60); // minutes
+      return res.status(400).json({
+        success: false,
+        error: { 
+          message: `Game has not started yet. Start time: ${gameStartTime.toISOString()}. Time until start: ${timeUntilStart} minutes`,
+          code: 'GAME_NOT_STARTED',
+          gameStartTime: gameStartTime.toISOString(),
+          timeUntilStartMinutes: timeUntilStart
+        }
+      });
+    }
+
+    // Check game status - should be in_progress or completed
+    const gameStatus = bet.game.status;
+    if (gameStatus === 'scheduled') {
+      return res.status(400).json({
+        success: false,
+        error: { 
+          message: 'Game is still scheduled and has not started yet',
+          code: 'GAME_NOT_STARTED',
+          gameStatus
+        }
+      });
+    }
+
+    if (gameStatus === 'postponed' || gameStatus === 'canceled') {
+      return res.status(400).json({
+        success: false,
+        error: { 
+          message: `Game is ${gameStatus}. Cannot resolve bets for ${gameStatus} games`,
+          code: 'GAME_INVALID_STATUS',
+          gameStatus
+        }
+      });
+    }
+
+    // Get game metadata to extract sport, league, and external ID
+    const gameMetadata = bet.game.metadata as any;
+    const apiData = gameMetadata?.apiData;
+    const league = gameMetadata?.league;
+
+    if (!apiData || !league) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Game metadata missing API data or league information', code: 'VALIDATION_ERROR' }
+      });
+    }
+
+    // Extract sport and league from metadata
+    // League structure: { id: 'nba', name: 'NBA', ... }
+    const leagueId = league.id || league.abbreviation || league.slug;
+    const sport = bet.game.sport; // e.g., 'basketball'
+    
+    if (!leagueId || !sport) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Unable to determine sport or league from game data', code: 'VALIDATION_ERROR' }
+      });
+    }
+
+    // Get external game ID (ESPN game ID)
+    const externalGameId = bet.game.externalId || apiData.id || apiData.externalId;
+    
+    if (!externalGameId) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Unable to determine external game ID', code: 'VALIDATION_ERROR' }
+      });
+    }
+
+    // Fetch full game data from ESPN API
+    // Fetch fresh game data from ESPN API
+    logger.info(`Fetching game data from ESPN API for bet resolution: betId=${betId}, sport=${sport}, league=${leagueId}, gameId=${externalGameId}, gameExternalId=${bet.game.externalId}`);
+    let gameData;
+    try {
+      gameData = await apiSportsService.getGameData(sport, leagueId, externalGameId);
+      
+      // Verify we got valid game data
+      if (!gameData) {
+        logger.error('Empty response from ESPN API', { sport, league: leagueId, gameId: externalGameId });
+        return res.status(500).json({
+          success: false,
+          error: { 
+            message: 'Failed to fetch game data from ESPN API (empty response)',
+            code: 'GAME_DATA_FETCH_FAILED',
+            url: `ESPN API: /${sport}/${leagueId}/scoreboard/${externalGameId}`
+          }
+        });
+      }
+
+      // Check if game has scores/status indicating it has started
+      const gameStatusFromApi = gameData?.header?.competitions?.[0]?.status?.type?.state;
+      logger.info('Game data fetched successfully', { 
+        gameId: externalGameId,
+        apiGameStatus: gameStatusFromApi,
+        hasHeader: !!gameData?.header,
+        hasCompetitions: !!gameData?.header?.competitions
+      });
+      
+      if (gameStatusFromApi === 'pre') {
+        return res.status(400).json({
+          success: false,
+          error: { 
+            message: 'Game has not started yet according to ESPN API',
+            code: 'GAME_NOT_STARTED',
+            apiGameStatus: gameStatusFromApi
+          }
+        });
+      }
+
+    } catch (error: any) {
+      const errorUrl = `ESPN API: /${sport}/${leagueId}/scoreboard/${externalGameId}`;
+      logger.error(`Error fetching game data from ESPN API in bet resolution: ${error.message || error.name || 'Unknown error'}`);
+      logger.error(`URL: ${errorUrl}`);
+      logger.error(`Parameters: betId=${betId}, sport=${sport}, league=${leagueId}, gameId=${externalGameId}, gameExternalId=${bet.game.externalId}`);
+      logger.error(`Error name: ${error.name}, Error message: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        error: { 
+          message: `Failed to fetch game data from ESPN API: ${error.message || 'Unknown error'}`,
+          code: 'GAME_DATA_FETCH_FAILED',
+          details: error.message,
+          url: errorUrl
+        }
+      });
+    }
+
+    // Get sport config dynamically based on sport
+    let sportConfig;
+    try {
+      sportConfig = getSportConfig(sport);
+    } catch (error: any) {
+      logger.error('Sport config not found', { sport, error: error.message });
+      return res.status(400).json({
+        success: false,
+        error: { 
+          message: error.message || `Sport config not found for: ${sport}`,
+          code: 'SPORT_CONFIG_NOT_FOUND'
+        }
+      });
+    }
+
+    // Resolve the bet
+    const betConfig = bet.config as unknown as BetConfig;
+    let resolutionResult;
+    try {
+      resolutionResult = resolveBet(betConfig, gameData, sportConfig);
+    } catch (error: any) {
+      logger.error('Error during bet resolution', { error, betId, betType: bet.betType });
+      return res.status(500).json({
+        success: false,
+        error: { 
+          message: `Error during bet resolution: ${error.message || 'Unknown error'}`,
+          code: 'RESOLUTION_ERROR',
+          details: error.message
+        }
+      });
+    }
+
+    if (!resolutionResult.resolved) {
+      logger.warn('Bet resolution failed', { betId, reason: resolutionResult.reason });
+      return res.status(400).json({
+        success: false,
+        error: { 
+          message: resolutionResult.reason || 'Bet cannot be resolved at this time',
+          code: 'RESOLUTION_FAILED',
+          details: resolutionResult
+        }
+      });
+    }
+
+    // Update bet in database
+    const updatedBet = await prisma.bet.update({
+      where: { id: betId },
+      data: {
+        outcome: resolutionResult.outcome || 'pending',
+        resolvedAt: resolutionResult.resolutionUTCTime || new Date(),
+        lastFetchedAt: new Date(),
+        metadata: {
+          ...((bet.metadata as any) || {}),
+          resolution: {
+            resolutionEventTime: resolutionResult.resolutionEventTime,
+            resolutionUTCTime: resolutionResult.resolutionUTCTime,
+            resolutionQuarter: resolutionResult.resolutionQuarter,
+            resolutionStatSnapshot: resolutionResult.resolutionStatSnapshot
+          }
+        }
+      }
+    });
+
+    // Update all user bet selections for this bet
+    // Determine the winning side based on the actual stat values
+    let winningSide: string | null = null;
+    const statSnapshot = resolutionResult.resolutionStatSnapshot as any;
+    
+    if (betConfig.type === 'COMPARISON') {
+      // For COMPARISON bets, determine which participant won
+      if (statSnapshot?.participant_1?.adjustedStat > statSnapshot?.participant_2?.adjustedStat) {
+        winningSide = 'participant_1';
+      } else if (statSnapshot?.participant_1?.adjustedStat < statSnapshot?.participant_2?.adjustedStat) {
+        winningSide = 'participant_2';
+      }
+      // If equal, it's a push (winningSide stays null)
+    } else if (betConfig.type === 'THRESHOLD') {
+      // For threshold bets, determine if over or under won based on actual stat
+      const participantStat = statSnapshot?.participant?.stat;
+      const threshold = statSnapshot?.threshold;
+      
+      if (participantStat > threshold) {
+        winningSide = 'over';
+      } else if (participantStat < threshold) {
+        winningSide = 'under';
+      }
+      // If equal, it's a push (winningSide stays null)
+    }
+
+    // Update user bet selections
+    const userSelections = await prisma.userBetSelection.findMany({
+      where: { betId: betId }
+    });
+
+    let updatedSelections = 0;
+    for (const selection of userSelections) {
+      let selectionOutcome: 'win' | 'loss' | 'push' = 'loss';
+      
+      if (resolutionResult.outcome === 'push' || winningSide === null) {
+        // Push: stat equals threshold or participants tied
+        selectionOutcome = 'push';
+      } else if (selection.selectedSide === winningSide) {
+        // User selected the winning side
+        selectionOutcome = 'win';
+      } else {
+        // User selected the losing side
+        selectionOutcome = 'loss';
+      }
+
+      // Update selection status to resolved and store the outcome
+      await prisma.userBetSelection.update({
+        where: { id: selection.id },
+        data: {
+          status: 'resolved',
+          outcome: selectionOutcome
+        }
+      });
+      
+      logger.info('Updated user bet selection', {
+        selectionId: selection.id,
+        userId: selection.userId,
+        selectedSide: selection.selectedSide,
+        outcome: selectionOutcome,
+        winningSide
+      });
+      
+      updatedSelections++;
+    }
+
+    logger.info('Bet resolved successfully', {
+      betId,
+      outcome: resolutionResult.outcome,
+      updatedSelections
+    });
+
+    res.json({
+      success: true,
+      data: {
+        bet: updatedBet,
+        resolution: resolutionResult,
+        updatedSelections
+      }
+    });
+  } catch (error: any) {
+    logger.error('Error resolving bet', { error, betId: req.params.betId });
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || 'Failed to resolve bet', code: 'SERVER_ERROR' }
     });
   }
 });

@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
 import { requireFeature } from '../middleware/featureFlags';
 import { requireAuth } from '../middleware/auth';
+import { parseDateAndTimezone, getLocalDateString, getUTCDateRange } from '../utils/dateUtils';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -20,56 +21,23 @@ const prisma = new PrismaClient();
 router.get('/today', requireFeature('PUBLIC_BETS_VIEW'), async (req: Request, res: Response) => {
   try {
     // Get date and timezone offset from query params
-    // date should be in format YYYY-MM-DD (user's local date)
-    // timezoneOffset is the user's timezone offset in hours (e.g., -5 for EST)
-    const date = req.query.date as string | undefined;
-    const timezoneOffset = req.query.timezoneOffset 
-      ? parseInt(req.query.timezoneOffset as string, 10) 
-      : undefined;
+    const { date, timezoneOffset } = parseDateAndTimezone(req);
     
     // If no date provided, fallback to calculating from timezone offset or server date
-    let localDateStr: string;
-    if (date) {
-      // Use the provided date (user's local date)
-      localDateStr = date;
-    } else if (timezoneOffset !== undefined) {
-      // Calculate what date it is in the user's timezone
-      const now = new Date();
-      const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-      const localTime = utcTime + (timezoneOffset * 60 * 60 * 1000);
-      const localDate = new Date(localTime);
-      localDateStr = localDate.toISOString().split('T')[0];
-    } else {
-      // Fallback to server's local date
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      localDateStr = `${year}-${month}-${day}`;
-    }
+    const localDateStr = getLocalDateString(date, timezoneOffset);
     
     // Convert user's local date + timezone to UTC date range
-    function getUTCDateRange(dateStr: string, offset: number | undefined): { start: Date; end: Date } {
-      const [year, month, day] = dateStr.split('-').map(Number);
-      const offsetHours = offset ?? 0;
-      // Create date representing midnight in user's local timezone
-      const localMidnight = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-      // Convert to UTC by subtracting the offset
-      const startUTC = new Date(localMidnight.getTime() - (offsetHours * 60 * 60 * 1000));
-      const endUTC = new Date(startUTC.getTime() + (24 * 60 * 60 * 1000));
-      return { start: startUTC, end: endUTC };
-    }
-    
     const { start: today, end: tomorrow } = getUTCDateRange(localDateStr, timezoneOffset);
 
-    logger.info('Fetching today\'s bets', { 
+    logger.info('Fetching bets', { 
       localDate: localDateStr,
       timezoneOffset: timezoneOffset ?? 'not provided (using UTC)',
       today: today.toISOString(), 
-      tomorrow: tomorrow.toISOString() 
+      tomorrow: tomorrow.toISOString()
     });
 
-    // Get all games that start today (in UTC) and have at least one available bet
+    // Get all games that start on the requested date (in UTC) and have at least one bet
+    // Show all bets regardless of outcome (pending, win, loss, push) so users can see all available bets
     const allGames = await prisma.game.findMany({
       where: {
         startTime: {
@@ -80,19 +48,10 @@ router.get('/today', requireFeature('PUBLIC_BETS_VIEW'), async (req: Request, re
       include: {
         bets: {
           where: {
-            // Only show bets that are:
-            // 1. Visible (visible_from is null or in the past)
-            // 2. Pending (available to bet on)
-            AND: [
-              {
-                OR: [
-                  { visibleFrom: null },
-                  { visibleFrom: { lte: new Date() } }
-                ]
-              },
-              {
-                outcome: 'pending'
-              }
+            // Only filter by visibility - show all bets that are visible
+            OR: [
+              { visibleFrom: null },
+              { visibleFrom: { lte: new Date() } }
             ]
           },
           orderBy: { priority: 'asc' }
@@ -345,10 +304,7 @@ router.get('/my-selections', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), as
 
     // Get date and timezone offset from query params (optional)
     // If provided, filter by game start time for that date
-    const date = req.query.date as string | undefined;
-    const timezoneOffset = req.query.timezoneOffset 
-      ? parseInt(req.query.timezoneOffset as string, 10) 
-      : undefined;
+    const { date, timezoneOffset } = parseDateAndTimezone(req);
 
     // Build where clause
     let where: any = {
@@ -366,17 +322,6 @@ router.get('/my-selections', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), as
     let betIdsInDateRange: string[] | undefined;
     if (date) {
       // Convert user's local date + timezone to UTC date range
-      function getUTCDateRange(dateStr: string, offset: number | undefined): { start: Date; end: Date } {
-        const [year, month, day] = dateStr.split('-').map(Number);
-        const offsetHours = offset ?? 0;
-        // Create date representing midnight in user's local timezone
-        const localMidnight = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-        // Convert to UTC by subtracting the offset
-        const startUTC = new Date(localMidnight.getTime() - (offsetHours * 60 * 60 * 1000));
-        const endUTC = new Date(startUTC.getTime() + (24 * 60 * 60 * 1000));
-        return { start: startUTC, end: endUTC };
-      }
-
       const { start: dateStart, end: dateEnd } = getUTCDateRange(date, timezoneOffset);
       
       // Find all games in the date range
@@ -435,6 +380,8 @@ router.get('/my-selections', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), as
                 startTime: true,
                 status: true,
                 sport: true,
+                homeScore: true,
+                awayScore: true,
                 metadata: true
               }
             }
@@ -459,6 +406,7 @@ router.get('/my-selections', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), as
           betId: sel.betId,
           selectedSide: sel.selectedSide,
           status: sel.status,
+          outcome: sel.outcome, // Include selection outcome (win/loss/push)
           createdAt: sel.createdAt,
           bet: {
             id: sel.bet.id,
@@ -466,7 +414,17 @@ router.get('/my-selections', requireAuth, requireFeature('PUBLIC_BETS_VIEW'), as
             betType: sel.bet.betType,
             outcome: sel.bet.outcome,
             config: sel.bet.config, // Include config for participant names
-            game: sel.bet.game
+            game: {
+              id: sel.bet.game.id,
+              homeTeam: sel.bet.game.homeTeam,
+              awayTeam: sel.bet.game.awayTeam,
+              startTime: sel.bet.game.startTime,
+              status: sel.bet.game.status,
+              sport: sel.bet.game.sport,
+              homeScore: sel.bet.game.homeScore, // Include scores
+              awayScore: sel.bet.game.awayScore, // Include scores
+              metadata: sel.bet.game.metadata
+            }
           }
         }))
       }

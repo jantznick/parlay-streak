@@ -1,3 +1,5 @@
+import React from 'react';
+
 interface ConfirmModalProps {
   isOpen: boolean;
   title: string;
@@ -7,6 +9,7 @@ interface ConfirmModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   variant?: 'danger' | 'default';
+  children?: React.ReactNode; // For custom content (e.g., bet details, item preview)
 }
 
 export function ConfirmModal({
@@ -17,7 +20,8 @@ export function ConfirmModal({
   cancelText = 'Cancel',
   onConfirm,
   onCancel,
-  variant = 'default'
+  variant = 'default',
+  children
 }: ConfirmModalProps) {
   if (!isOpen) return null;
 
@@ -30,7 +34,12 @@ export function ConfirmModal({
       <div className="bg-slate-900 rounded-lg max-w-md w-full border border-slate-800">
         <div className="p-6">
           <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-          <p className="text-slate-300 mb-6">{message}</p>
+          <p className="text-slate-300 mb-4">{message}</p>
+          {children && (
+            <div className="mb-6">
+              {children}
+            </div>
+          )}
           <div className="flex gap-3 justify-end">
             <button
               onClick={onCancel}

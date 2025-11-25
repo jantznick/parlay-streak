@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { api } from '../../services/api';
 import { BASKETBALL_CONFIG } from '@shared/config/sports/basketball';
 import type { BetType, Participant, ComparisonConfig, ThresholdConfig, EventConfig, BetConfig, TimePeriod } from '@shared/types/bets';
+import { Modal } from '../common/Modal';
 
 interface Game {
   id: string;
@@ -49,12 +50,13 @@ interface Bet {
   displayTextOverride?: string;
 }
 
-interface BetEditModalProps {
-  bet: Bet;
+interface BetModalProps {
   game: Game;
   rosterData: RosterData | null;
+  bet?: Bet; // If provided, we're in edit mode
   onClose: () => void;
-  onBetUpdated: () => void;
+  onBetCreated?: () => void;
+  onBetUpdated?: () => void;
 }
 
 // Extract ParticipantSelector as a separate component
@@ -64,7 +66,16 @@ function ParticipantSelector({
   label,
   game,
   players,
-  sportConfig
+  sportConfig,
+  betType,
+  // For THRESHOLD bets
+  thresholdOperator,
+  onThresholdOperatorChange,
+  threshold,
+  onThresholdChange,
+  // For EVENT bets
+  eventType,
+  onEventTypeChange
 }: { 
   value: Participant | null; 
   onChange: (p: Participant | null) => void;
@@ -72,9 +83,35 @@ function ParticipantSelector({
   game: Game;
   players: Player[];
   sportConfig: typeof BASKETBALL_CONFIG;
+  betType?: BetType;
+  // For THRESHOLD bets
+  thresholdOperator?: 'OVER' | 'UNDER';
+  onThresholdOperatorChange?: (op: 'OVER' | 'UNDER') => void;
+  threshold?: number;
+  onThresholdChange?: (val: number) => void;
+  // For EVENT bets
+  eventType?: 'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE';
+  onEventTypeChange?: (et: 'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE') => void;
 }) {
+  // Initialize from value if provided (for edit mode)
   const [subjectType, setSubjectType] = useState<'TEAM' | 'PLAYER'>(value?.subject_type || 'TEAM');
-  const [selectedId, setSelectedId] = useState<string>(value?.subject_id || '');
+  const [selectedId, setSelectedId] = useState<string>(() => {
+    if (value?.subject_type === 'TEAM') {
+      // Check if it's a team ID that needs to be mapped to 'home' or 'away'
+      const metadata = (game as any).metadata;
+      const apiData = metadata?.apiData;
+      if (apiData?.teams?.home?.id === value.subject_id) {
+        return 'home';
+      } else if (apiData?.teams?.away?.id === value.subject_id) {
+        return 'away';
+      }
+      // If it's already 'home' or 'away', use it
+      if (value.subject_id === 'home' || value.subject_id === 'away') {
+        return value.subject_id;
+      }
+    }
+    return value?.subject_id || '';
+  });
   const [metric, setMetric] = useState<string>(value?.metric || '');
   const [timePeriod, setTimePeriod] = useState<TimePeriod>(value?.time_period || 'FULL_GAME');
 
@@ -251,19 +288,67 @@ function ParticipantSelector({
           ))}
         </select>
       </div>
+
+      {/* THRESHOLD-specific fields */}
+      {betType === 'THRESHOLD' && (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Operator</label>
+              <select
+                value={thresholdOperator || 'OVER'}
+                onChange={(e) => onThresholdOperatorChange?.(e.target.value as 'OVER' | 'UNDER')}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+              >
+                <option value="OVER">Over</option>
+                <option value="UNDER">Under</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Threshold</label>
+              <input
+                type="number"
+                step="0.5"
+                value={threshold || 0}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val)) onThresholdChange?.(val);
+                }}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                placeholder="28.5"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* EVENT-specific fields */}
+      {betType === 'EVENT' && (
+        <div>
+          <label className="block text-xs text-slate-400 mb-1">Event Type</label>
+          <select
+            value={eventType || 'DOUBLE_DOUBLE'}
+            onChange={(e) => onEventTypeChange?.(e.target.value as 'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE')}
+            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+          >
+            <option value="DOUBLE_DOUBLE">Double Double</option>
+            <option value="TRIPLE_DOUBLE">Triple Double</option>
+          </select>
+        </div>
+      )}
     </div>
   );
 }
 
-export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: BetEditModalProps) {
-  const [betType, setBetType] = useState<BetType>(bet.betType as BetType);
+export function BetModal({ game, rosterData, bet, onClose, onBetCreated, onBetUpdated }: BetModalProps) {
+  const isEditMode = !!bet;
+  const initialConfig = bet?.config || {};
+  
+  const [betType, setBetType] = useState<BetType>((bet?.betType as BetType) || 'COMPARISON');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [displayTextOverride, setDisplayTextOverride] = useState<string>(bet.displayTextOverride || '');
+  const [displayTextOverride, setDisplayTextOverride] = useState<string>(bet?.displayTextOverride || '');
 
-  // Initialize state from bet config
-  const initialConfig = bet.config || {};
-  
   // Helper to get initial participant with proper team ID resolution
   const getInitialParticipant = (participant: any): Participant | null => {
     if (!participant) return null;
@@ -320,17 +405,6 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
     initialConfig.threshold || 0
   );
 
-  // EVENT state
-  const [eventParticipant, setEventParticipant] = useState<Participant | null>(
-    getInitialParticipant(initialConfig.participant)
-  );
-  const [eventType, setEventType] = useState<'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE'>(
-    initialConfig.event_type || 'DOUBLE_DOUBLE'
-  );
-  const [eventTimePeriod, setEventTimePeriod] = useState<TimePeriod>(
-    initialConfig.time_period || 'FULL_GAME'
-  );
-
   // Memoize players list
   const players = useMemo((): Player[] => {
     if (!rosterData) return [];
@@ -366,9 +440,90 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
     return playersList;
   }, [rosterData, game.homeTeam, game.awayTeam]);
 
-  const sportConfig = BASKETBALL_CONFIG;
+  const sportConfig = BASKETBALL_CONFIG; // TODO: Get from game.sport
 
-  const handleUpdateBet = async () => {
+  // Helper to format metric label
+  const formatMetricLabel = (metric: string): string => {
+    return metric.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Helper to format time period label
+  const formatTimePeriodLabel = (period: string): string => {
+    const periodMap: Record<string, string> = {
+      'FULL_GAME': 'Full Game',
+      'Q1': 'Q1',
+      'Q2': 'Q2',
+      'Q3': 'Q3',
+      'Q4': 'Q4',
+      'H1': '1H',
+      'H2': '2H',
+      'OT': 'OT'
+    };
+    return periodMap[period] || period;
+  };
+
+  // Generate display text preview (matches backend logic)
+  const generateDisplayTextPreview = (): string => {
+    if (betType === 'COMPARISON' && compParticipant1 && compParticipant2) {
+      const { participant_1, participant_2 } = { participant_1: compParticipant1, participant_2: compParticipant2 };
+      const spread = compOperator === 'spread' ? { direction: spreadDirection, value: spreadValue } : undefined;
+      
+      // Moneyline (simple comparison, no spread, both teams, points, full game)
+      if (!spread && 
+          participant_1.metric === 'points' && 
+          participant_1.time_period === 'FULL_GAME' &&
+          participant_1.subject_type === 'TEAM' &&
+          participant_2.subject_type === 'TEAM' &&
+          participant_2.metric === 'points' &&
+          participant_2.time_period === 'FULL_GAME') {
+        return `${participant_1.subject_name} ML`;
+      }
+      
+      // Spread (both teams, points, full game)
+      if (spread && 
+          participant_1.metric === 'points' && 
+          participant_1.time_period === 'FULL_GAME' &&
+          participant_1.subject_type === 'TEAM' &&
+          participant_2.subject_type === 'TEAM' &&
+          participant_2.metric === 'points' &&
+          participant_2.time_period === 'FULL_GAME') {
+        return `${participant_1.subject_name} ${spread.direction}${spread.value}`;
+      }
+      
+      // Generic comparison - always show all values explicitly
+      const metric1Label = formatMetricLabel(participant_1.metric);
+      const metric2Label = formatMetricLabel(participant_2.metric);
+      const period1 = participant_1.time_period !== 'FULL_GAME'
+        ? ` (${formatTimePeriodLabel(participant_1.time_period)})`
+        : '';
+      const period2 = participant_2.time_period !== 'FULL_GAME'
+        ? ` (${formatTimePeriodLabel(participant_2.time_period)})`
+        : '';
+      
+      // Always show both metrics and periods explicitly
+      if (spread) {
+        return `${participant_1.subject_name} ${metric1Label}${period1} ${spread.direction}${spread.value} > ${participant_2.subject_name} ${metric2Label}${period2}`;
+      } else {
+        return `${participant_1.subject_name} ${metric1Label}${period1} > ${participant_2.subject_name} ${metric2Label}${period2}`;
+      }
+    }
+    
+    if (betType === 'THRESHOLD' && threshParticipant) {
+      const participant = threshParticipant;
+      const operator = threshOperator;
+      const thresholdValue = threshold;
+      const metricLabel = formatMetricLabel(participant.metric);
+      const period = participant.time_period !== 'FULL_GAME'
+        ? ` (${formatTimePeriodLabel(participant.time_period)})`
+        : '';
+      
+      return `${participant.subject_name} ${operator} ${thresholdValue} ${metricLabel}${period}`;
+    }
+    
+    return 'Complete the form to see preview';
+  };
+
+  const handleSubmit = async () => {
     setLoading(true);
     setError(null);
 
@@ -406,60 +561,69 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
           threshold
         } as ThresholdConfig;
       } else {
-        if (!eventParticipant) {
-          setError('Please select a participant');
-          setLoading(false);
-          return;
-        }
-
-        config = {
-          type: 'EVENT',
-          participant: eventParticipant,
-          event_type: eventType,
-          time_period: eventTimePeriod
-        } as EventConfig;
+        setError('Invalid bet type');
+        setLoading(false);
+        return;
       }
 
-      const response = await api.updateBet(bet.id, {
-        bet_type: betType,
-        config,
-        display_text_override: displayTextOverride || undefined
-      });
-      
-      if (response.success) {
-        onBetUpdated();
-        onClose();
+      if (isEditMode && bet) {
+        // Update existing bet
+        const response = await api.updateBet(bet.id, {
+          bet_type: betType,
+          config,
+          display_text_override: displayTextOverride || undefined
+        });
+        
+        if (response.success) {
+          onBetUpdated?.();
+          onClose();
+        } else {
+          setError(response.error?.message || 'Failed to update bet');
+        }
       } else {
-        setError(response.error?.message || 'Failed to update bet');
+        // Create new bet
+        const response = await api.createBet(game.id, betType, config, displayTextOverride || undefined);
+        
+        if (response.success) {
+          onBetCreated?.();
+          onClose();
+        } else {
+          setError(response.error?.message || 'Failed to create bet');
+        }
       }
     } catch (error: any) {
-      setError(error.message || 'Failed to update bet');
+      setError(error.message || (isEditMode ? 'Failed to update bet' : 'Failed to create bet'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-slate-800">
-        {/* Header */}
-        <div className="sticky top-0 bg-slate-900 border-b border-slate-800 p-6 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-white">Edit Bet</h2>
-            <p className="text-slate-400 text-sm mt-1">
-              {game.awayTeam} @ {game.homeTeam}
-            </p>
-          </div>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={isEditMode ? 'Edit Bet' : 'Create Bet'}
+      subtitle={`${game.awayTeam} @ ${game.homeTeam}`}
+      size="xl"
+      footer={
+        <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white text-2xl"
+            className="px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition"
           >
-            ×
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium"
+          >
+            {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Bet' : 'Create Bet')}
           </button>
         </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-6">
+      }
+    >
+      <div className="p-6 space-y-6">
           {error && (
             <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
               <p className="text-red-400 text-sm">{error}</p>
@@ -478,9 +642,11 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
               className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
               placeholder="Leave empty to use auto-generated text"
             />
-            <p className="text-xs text-slate-400 mt-1">
-              Current: {bet.displayText}
-            </p>
+            {isEditMode && bet?.displayText && (
+              <p className="text-xs text-slate-400 mt-1">
+                Current: {bet.displayText}
+              </p>
+            )}
           </div>
 
           {/* Bet Type Selector */}
@@ -495,7 +661,6 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
             >
               <option value="COMPARISON">Comparison (vs)</option>
               <option value="THRESHOLD">Threshold (Over/Under)</option>
-              <option value="EVENT">Event</option>
             </select>
           </div>
 
@@ -509,6 +674,7 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
                 game={game}
                 players={players}
                 sportConfig={sportConfig}
+                betType="COMPARISON"
               />
 
               <div>
@@ -562,6 +728,7 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
                 game={game}
                 players={players}
                 sportConfig={sportConfig}
+                betType="COMPARISON"
               />
             </div>
           )}
@@ -576,109 +743,29 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
                 game={game}
                 players={players}
                 sportConfig={sportConfig}
+                betType="THRESHOLD"
+                thresholdOperator={threshOperator}
+                onThresholdOperatorChange={setThreshOperator}
+                threshold={threshold}
+                onThresholdChange={setThreshold}
               />
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Operator
-                  </label>
-                  <select
-                    value={threshOperator}
-                    onChange={(e) => setThreshOperator(e.target.value as 'OVER' | 'UNDER')}
-                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                  >
-                    <option value="OVER">Over</option>
-                    <option value="UNDER">Under</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Threshold
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={threshold}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value);
-                      if (!isNaN(val)) setThreshold(val);
-                    }}
-                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    placeholder="28.5"
-                  />
-                </div>
-              </div>
             </div>
           )}
 
-          {/* EVENT Form */}
-          {betType === 'EVENT' && (
-            <div className="space-y-4">
-              <ParticipantSelector
-                label="Participant"
-                value={eventParticipant}
-                onChange={setEventParticipant}
-                game={game}
-                players={players}
-                sportConfig={sportConfig}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Event Type
-                  </label>
-                  <select
-                    value={eventType}
-                    onChange={(e) => setEventType(e.target.value as 'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE')}
-                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                  >
-                    <option value="DOUBLE_DOUBLE">Double Double</option>
-                    <option value="TRIPLE_DOUBLE">Triple Double</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Time Period
-                  </label>
-                  <select
-                    value={eventTimePeriod}
-                    onChange={(e) => setEventTimePeriod(e.target.value as TimePeriod)}
-                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                  >
-                    {sportConfig.time_periods.map((tp) => (
-                      <option key={tp.value} value={tp.value}>
-                        {tp.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-slate-900 border-t border-slate-800 p-6 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleUpdateBet}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium"
-          >
-            {loading ? 'Updating...' : 'Update Bet'}
-          </button>
-        </div>
+          {/* Preview */}
+          <div className="bg-slate-800 rounded-lg p-4">
+            <p className="text-xs text-slate-400 mb-2">Preview:</p>
+            <p className="text-white font-medium">
+              {isEditMode && displayTextOverride ? displayTextOverride : generateDisplayTextPreview()}
+            </p>
+            {isEditMode && displayTextOverride && (
+              <p className="text-xs text-slate-500 mt-1">
+                (Override active - auto-generated: {generateDisplayTextPreview()})
+              </p>
+            )}
+          </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

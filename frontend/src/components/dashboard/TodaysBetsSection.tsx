@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BetSelectionGroup } from '../bets/BetSelectionGroup';
 import { useBets } from '../../context/BetsContext';
 import { api } from '../../services/api';
+import { getSportEmoji, getTodayDateString, getTimezoneOffset } from '../../utils/formatting';
 
 interface Bet {
   id: string;
@@ -32,14 +33,6 @@ export function TodaysBetsSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Get today's date string
-  const getTodayDateString = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
   
   // Check if we're viewing today or a future date
   const isViewingTodayOrFuture = () => {
@@ -81,7 +74,7 @@ export function TodaysBetsSection() {
     try {
       // Use selected date from context, or default to today
       const dateToFetch = selectedDate || getTodayDateString();
-      const timezoneOffset = -new Date().getTimezoneOffset() / 60;
+      const timezoneOffset = getTimezoneOffset();
       const response = await api.getTodaysBets(dateToFetch, timezoneOffset);
       if (response.success && response.data?.games) {
         const sortedGames = [...response.data.games].sort((a, b) => {
@@ -120,16 +113,6 @@ export function TodaysBetsSection() {
     });
   };
 
-  const getSportEmoji = (sport: string) => {
-    switch (sport) {
-      case 'BASKETBALL': return '🏀';
-      case 'FOOTBALL': return '🏈';
-      case 'BASEBALL': return '⚾';
-      case 'HOCKEY': return '🏒';
-      case 'SOCCER': return '⚽';
-      default: return '🏆';
-    }
-  };
 
   if (loading) {
     return (
