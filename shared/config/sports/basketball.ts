@@ -418,9 +418,9 @@ export const BASKETBALL_CONFIG: SportConfig = {
         path: 'status.type.completed',
         expectedValue: true,
         filter: {
-          arrayPath: 'competitions',
+          arrayPath: 'competitions', // API structure - checkBetEndPoint will try header.competitions as fallback
           filterKey: 'id',
-          filterValuePath: 'id'
+          filterValuePath: 'id' // API structure - checkBetEndPoint will try header.id as fallback
         }
       }
     },
@@ -487,9 +487,9 @@ export const BASKETBALL_CONFIG: SportConfig = {
         path: 'status.type.completed',
         expectedValue: true,
         filter: {
-          arrayPath: 'header.competitions',
+          arrayPath: 'competitions', // API structure - checkBetEndPoint will try header.competitions as fallback
           filterKey: 'id',
-          filterValuePath: 'header.id'
+          filterValuePath: 'id' // API structure - checkBetEndPoint will try header.id as fallback
         }
       }
     },
@@ -501,9 +501,9 @@ export const BASKETBALL_CONFIG: SportConfig = {
         path: 'status.type.completed',
         expectedValue: true,
         filter: {
-          arrayPath: 'header.competitions',
+          arrayPath: 'competitions', // API structure - checkBetEndPoint will try header.competitions as fallback
           filterKey: 'id',
-          filterValuePath: 'header.id'
+          filterValuePath: 'id' // API structure - checkBetEndPoint will try header.id as fallback
         }
       }
     },
@@ -521,8 +521,8 @@ export const BASKETBALL_CONFIG: SportConfig = {
         
         if (subjectType === 'TEAM') {
           // For team points, use the score from competitors
-          // Filter competition by matching id to top-level game id
-          const gameId = gameData?.id;
+          // Filter competition by matching id to game id (check both top-level and header.id)
+          const gameId = gameData?.id || gameData?.header?.id;
           if (!gameId) {
             console.log(`[points stat] ❌ No game id found in gameData`);
             return null;
