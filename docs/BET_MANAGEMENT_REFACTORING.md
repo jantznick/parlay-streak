@@ -45,6 +45,24 @@ This document outlines refactoring opportunities for the `BetManagement.tsx` com
 - **Files Modified**:
   - `frontend/src/pages/admin/BetManagement.tsx` - Replaced inline bet item rendering with `BetListItem` component
 
+### ✅ Game Card Component
+- **Status**: Completed
+- **Change**: Extracted entire game card rendering logic into `GameCard` component
+- **Impact**: Significantly reduced `BetManagement.tsx` complexity (~270 lines removed), better code organization, reusable component
+- **Files Created**:
+  - `frontend/src/components/admin/GameCard.tsx` - New component for game cards with header, bets list, and actions
+- **Files Modified**:
+  - `frontend/src/pages/admin/BetManagement.tsx` - Replaced inline game card rendering with `GameCard` component
+
+### ✅ Filter Controls Component
+- **Status**: Completed
+- **Change**: Extracted sport/league selectors and fetch buttons into `GameFilters` component
+- **Impact**: Cleaner main component, easier to modify filter logic, could be reused if needed
+- **Files Created**:
+  - `frontend/src/components/admin/GameFilters.tsx` - New component for date, sport, league filters and fetch buttons
+- **Files Modified**:
+  - `frontend/src/pages/admin/BetManagement.tsx` - Replaced inline filter controls with `GameFilters` component
+
 ## Planned Refactorings
 
 ### 1. Utility Functions Extraction
@@ -212,18 +230,19 @@ interface GameFiltersProps {
 2. ✅ **Utility Functions** - Completed
 3. ✅ **Delete Confirmation Modal** - Completed
 4. ✅ **Bet List Item Component** - Completed
-5. **Game Card Component** - Larger refactor, high impact (Pending)
-6. **Filter Controls Component** - Lower priority, nice to have (Pending)
+5. ✅ **Game Card Component** - Completed
+6. ✅ **Filter Controls Component** - Completed
 
 ## Summary
 
-**Completed**: 4 out of 6 planned refactorings
+**Completed**: 6 out of 6 planned refactorings ✅
 - Reduced code duplication
 - Improved code organization
 - Enhanced component reusability
 - Maintained 100% functionality and UX compatibility
+- Significantly reduced `BetManagement.tsx` complexity (from ~720 lines to ~450 lines)
 
-**Remaining**: 2 refactorings (Game Card and Filter Controls) - can be done as needed
+**All refactorings complete!**
 
 ## Testing Checklist
 

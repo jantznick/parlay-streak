@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { api } from '../../services/api';
 import { BASKETBALL_CONFIG } from '@shared/config/sports/basketball';
 import type { BetType, Participant, ComparisonConfig, ThresholdConfig, EventConfig, BetConfig, TimePeriod } from '@shared/types/bets';
+import { Modal } from '../common/Modal';
 
 interface Game {
   id: string;
@@ -598,26 +599,31 @@ export function BetModal({ game, rosterData, bet, onClose, onBetCreated, onBetUp
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-slate-800">
-        {/* Header */}
-        <div className="sticky top-0 bg-slate-900 border-b border-slate-800 p-6 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-white">{isEditMode ? 'Edit Bet' : 'Create Bet'}</h2>
-            <p className="text-slate-400 text-sm mt-1">
-              {game.awayTeam} @ {game.homeTeam}
-            </p>
-          </div>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={isEditMode ? 'Edit Bet' : 'Create Bet'}
+      subtitle={`${game.awayTeam} @ ${game.homeTeam}`}
+      size="xl"
+      footer={
+        <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white text-2xl"
+            className="px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition"
           >
-            ×
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium"
+          >
+            {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Bet' : 'Create Bet')}
           </button>
         </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-6">
+      }
+    >
+      <div className="p-6 space-y-6">
           {error && (
             <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
               <p className="text-red-400 text-sm">{error}</p>
@@ -758,26 +764,8 @@ export function BetModal({ game, rosterData, bet, onClose, onBetCreated, onBetUp
               </p>
             )}
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-slate-900 border-t border-slate-800 p-6 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium"
-          >
-            {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Bet' : 'Create Bet')}
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

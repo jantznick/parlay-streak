@@ -4,10 +4,11 @@ import { api } from '../../services/api';
 import { Header } from '../../components/layout/Header';
 import { Footer } from '../../components/layout/Footer';
 import { BetModal } from '../../components/admin/BetModal';
-import { DateNavigation, formatDateDisplay } from '../../components/dashboard/DateNavigation';
-import { formatDate, formatTime, getTeamName, formatResolvedBetText } from '../../utils/formatting';
+import { formatResolvedBetText } from '../../utils/formatting';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { BetListItem } from '../../components/admin/BetListItem';
+import { GameCard } from '../../components/admin/GameCard';
+import { GameFilters } from '../../components/admin/GameFilters';
 
 interface Bet {
   id: string;
@@ -436,88 +437,18 @@ export function BetManagement() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Date Selector, Sport/League Selectors & Fetch Button */}
-        <div className="bg-slate-900 rounded-lg p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Select Date
-              </label>
-              <DateNavigation
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="sport" className="block text-sm font-medium text-slate-300 mb-2">
-                Sport
-              </label>
-              <select
-                id="sport"
-                value={selectedSport}
-                onChange={(e) => setSelectedSport(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {sportsConfig.map((sport) => (
-                  <option key={sport.sport} value={sport.sport}>
-                    {sport.sport.charAt(0).toUpperCase() + sport.sport.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="league" className="block text-sm font-medium text-slate-300 mb-2">
-                League
-              </label>
-              <select
-                id="league"
-                value={selectedLeague}
-                onChange={(e) => setSelectedLeague(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={!selectedSport}
-              >
-                {sportsConfig
-                  .find((s) => s.sport === selectedSport)
-                  ?.leagues.map((league) => (
-                    <option key={league.id} value={league.id}>
-                      {league.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="flex items-end gap-3">
-              <button
-                onClick={() => fetchGames(false)}
-                disabled={loading || !selectedSport || !selectedLeague}
-                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium"
-              >
-                {loading ? 'Fetching...' : 'Fetch Games'}
-              </button>
-              <button
-                onClick={() => fetchGames(true)}
-                disabled={loading || !selectedSport || !selectedLeague}
-                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium"
-                title="Force refresh from ESPN API (bypasses database cache)"
-              >
-                Force Refresh
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4 text-sm text-slate-400">
-            Viewing games for <span className="text-white font-medium">{formatDate(selectedDate)}</span>
-            {selectedSport && selectedLeague && (
-              <span className="ml-2">
-                • {sportsConfig.find(s => s.sport === selectedSport)?.leagues.find(l => l.id === selectedLeague)?.name || selectedLeague}
-              </span>
-            )}
-            {games.length > 0 && (
-              <span className="ml-2">• {games.length} game{games.length !== 1 ? 's' : ''} loaded</span>
-            )}
-          </div>
-        </div>
+        <GameFilters
+          selectedDate={selectedDate}
+          sportsConfig={sportsConfig}
+          selectedSport={selectedSport}
+          selectedLeague={selectedLeague}
+          onDateChange={setSelectedDate}
+          onSportChange={setSelectedSport}
+          onLeagueChange={setSelectedLeague}
+          onFetchGames={fetchGames}
+          loading={loading}
+          gamesCount={games.length}
+        />
 
         {/* Error Message */}
         {error && (
@@ -547,127 +478,23 @@ export function BetManagement() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {games.map((game) => {
-                const isExpanded = expandedGames.has(game.id);
-                const sortedBets = [...game.bets].sort((a, b) => a.priority - b.priority);
-                
-                return (
-                  <div
-                    key={game.id}
-                    className="bg-slate-900 border border-slate-800 rounded-lg hover:border-slate-700 transition"
-                  >
-                    {/* Game Header */}
-                    <div className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          {/* Game Info */}
-                          <div className="flex items-center gap-3 mb-3">
-                            <button
-                              onClick={() => toggleGameExpanded(game.id)}
-                              className="text-slate-400 hover:text-white transition"
-                            >
-                              {isExpanded ? '▼' : '▶'}
-                            </button>
-                            <span className="text-2xl">
-                              {game.sport === 'BASKETBALL' ? '🏀' : 
-                               game.sport === 'FOOTBALL' ? '🏈' :
-                               game.sport === 'BASEBALL' ? '⚾' :
-                               game.sport === 'HOCKEY' ? '🏒' :
-                               game.sport === 'SOCCER' ? '⚽' : '🏆'}
-                            </span>
-                            <div>
-                              <div className="text-lg font-semibold text-white">
-                                {game.awayTeam} @ {game.homeTeam}
-                              </div>
-                              <div className="text-sm text-slate-400">
-                                {formatTime(game.startTime)} • {formatDate(game.startTime)}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Score (if game started) */}
-                          {(game.homeScore !== null || game.awayScore !== null) && (
-                            <div className="flex gap-4 text-sm mb-3 ml-8">
-                              <span className="text-slate-300">
-                                {game.awayTeam}: <span className="font-bold text-white">{game.awayScore}</span>
-                              </span>
-                              <span className="text-slate-300">
-                                {game.homeTeam}: <span className="font-bold text-white">{game.homeScore}</span>
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Status Badge */}
-                          <div className="flex gap-2 items-center ml-8">
-                            <span
-                              className={`px-2 py-1 text-xs font-medium rounded ${
-                                game.status === 'completed'
-                                  ? 'bg-green-900/50 text-green-400'
-                                  : game.status === 'in_progress'
-                                  ? 'bg-yellow-900/50 text-yellow-400'
-                                  : 'bg-slate-800 text-slate-400'
-                              }`}
-                            >
-                              {game.status.replace('_', ' ').toUpperCase()}
-                            </span>
-                            
-                            {/* Bet Count */}
-                            <span className="px-2 py-1 text-xs font-medium rounded bg-blue-900/50 text-blue-400">
-                              {game.bets.length} bet{game.bets.length !== 1 ? 's' : ''}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleQuickMoneyline(game)}
-                            disabled={creatingMoneyline === game.id}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition text-sm font-medium"
-                            title="Quickly create a moneyline bet (home team vs away team)"
-                          >
-                            {creatingMoneyline === game.id ? 'Creating...' : 'Quick Moneyline'}
-                          </button>
-                          <button
-                            onClick={() => handleCreateBets(game)}
-                            disabled={loadingRoster}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition text-sm font-medium"
-                          >
-                            {loadingRoster ? 'Loading...' : 'Create Bets'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bets Accordion */}
-                    {isExpanded && sortedBets.length > 0 && (
-                      <div className="border-t border-slate-800 p-4 space-y-2">
-                        {sortedBets.map((bet, index) => (
-                          <BetListItem
-                            key={bet.id}
-                            bet={bet}
-                            game={game}
-                            index={index}
-                            totalBets={sortedBets.length}
-                            onEdit={handleEditBet}
-                            onDelete={handleDeleteBet}
-                            onResolve={handleResolveBet}
-                            onMovePriority={handleMoveBetPriority}
-                            resolvingBet={resolvingBet}
-                            formatResolvedBetText={formatResolvedBetText}
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    {isExpanded && sortedBets.length === 0 && (
-                      <div className="border-t border-slate-800 p-4 text-center text-slate-400 text-sm">
-                        No bets created yet. Click "Create Bets" to add some.
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {games.map((game) => (
+                <GameCard
+                  key={game.id}
+                  game={game}
+                  isExpanded={expandedGames.has(game.id)}
+                  onToggle={toggleGameExpanded}
+                  onCreateBets={handleCreateBets}
+                  onQuickMoneyline={handleQuickMoneyline}
+                  onEditBet={handleEditBet}
+                  onDeleteBet={handleDeleteBet}
+                  onResolveBet={handleResolveBet}
+                  onMoveBetPriority={handleMoveBetPriority}
+                  creatingMoneyline={creatingMoneyline}
+                  loadingRoster={loadingRoster}
+                  resolvingBet={resolvingBet}
+                />
+              ))}
             </div>
           )}
         </div>
