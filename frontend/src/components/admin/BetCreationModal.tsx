@@ -53,7 +53,16 @@ function ParticipantSelector({
   label,
   game,
   players,
-  sportConfig
+  sportConfig,
+  betType,
+  // For THRESHOLD bets
+  thresholdOperator,
+  onThresholdOperatorChange,
+  threshold,
+  onThresholdChange,
+  // For EVENT bets
+  eventType,
+  onEventTypeChange
 }: { 
   value: Participant | null; 
   onChange: (p: Participant | null) => void;
@@ -61,6 +70,15 @@ function ParticipantSelector({
   game: Game;
   players: Player[];
   sportConfig: typeof BASKETBALL_CONFIG;
+  betType?: BetType;
+  // For THRESHOLD bets
+  thresholdOperator?: 'OVER' | 'UNDER';
+  onThresholdOperatorChange?: (op: 'OVER' | 'UNDER') => void;
+  threshold?: number;
+  onThresholdChange?: (val: number) => void;
+  // For EVENT bets
+  eventType?: 'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE';
+  onEventTypeChange?: (et: 'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE') => void;
 }) {
   const [subjectType, setSubjectType] = useState<'TEAM' | 'PLAYER'>('TEAM');
   const [selectedId, setSelectedId] = useState<string>('');
@@ -227,6 +245,54 @@ function ParticipantSelector({
           ))}
         </select>
       </div>
+
+      {/* THRESHOLD-specific fields */}
+      {betType === 'THRESHOLD' && (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Operator</label>
+              <select
+                value={thresholdOperator || 'OVER'}
+                onChange={(e) => onThresholdOperatorChange?.(e.target.value as 'OVER' | 'UNDER')}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+              >
+                <option value="OVER">Over</option>
+                <option value="UNDER">Under</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Threshold</label>
+              <input
+                type="number"
+                step="0.5"
+                value={threshold || 0}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val)) onThresholdChange?.(val);
+                }}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                placeholder="28.5"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* EVENT-specific fields */}
+      {betType === 'EVENT' && (
+        <div>
+          <label className="block text-xs text-slate-400 mb-1">Event Type</label>
+          <select
+            value={eventType || 'DOUBLE_DOUBLE'}
+            onChange={(e) => onEventTypeChange?.(e.target.value as 'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE')}
+            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+          >
+            <option value="DOUBLE_DOUBLE">Double Double</option>
+            <option value="TRIPLE_DOUBLE">Triple Double</option>
+          </select>
+        </div>
+      )}
     </div>
   );
 }
@@ -248,10 +314,9 @@ export function BetCreationModal({ game, rosterData, onClose, onBetCreated }: Be
   const [threshOperator, setThreshOperator] = useState<'OVER' | 'UNDER'>('OVER');
   const [threshold, setThreshold] = useState<number>(0);
 
-  // EVENT state
-  const [eventParticipant, setEventParticipant] = useState<Participant | null>(null);
-  const [eventType, setEventType] = useState<'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE'>('DOUBLE_DOUBLE');
-  const [eventTimePeriod, setEventTimePeriod] = useState<TimePeriod>('FULL_GAME');
+  // EVENT state - removed for now, will be re-added later
+  // const [eventParticipant, setEventParticipant] = useState<Participant | null>(null);
+  // const [eventType, setEventType] = useState<'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE'>('DOUBLE_DOUBLE');
 
   // Memoize players list to prevent unnecessary recalculations
   const players = useMemo((): Player[] => {
@@ -335,18 +400,9 @@ export function BetCreationModal({ game, rosterData, onClose, onBetCreated }: Be
           threshold
         } as ThresholdConfig;
       } else {
-        if (!eventParticipant) {
-          setError('Please select a participant');
-          setLoading(false);
-          return;
-        }
-
-        config = {
-          type: 'EVENT',
-          participant: eventParticipant,
-          event_type: eventType,
-          time_period: eventTimePeriod
-        } as EventConfig;
+        setError('Invalid bet type');
+        setLoading(false);
+        return;
       }
 
       const response = await api.createBet(game.id, betType, config);
@@ -404,7 +460,6 @@ export function BetCreationModal({ game, rosterData, onClose, onBetCreated }: Be
             >
               <option value="COMPARISON">Comparison (vs)</option>
               <option value="THRESHOLD">Threshold (Over/Under)</option>
-              <option value="EVENT">Event</option>
             </select>
           </div>
 
@@ -418,6 +473,7 @@ export function BetCreationModal({ game, rosterData, onClose, onBetCreated }: Be
                 game={game}
                 players={players}
                 sportConfig={sportConfig}
+                betType="COMPARISON"
               />
 
               <div>
@@ -471,6 +527,7 @@ export function BetCreationModal({ game, rosterData, onClose, onBetCreated }: Be
                 game={game}
                 players={players}
                 sportConfig={sportConfig}
+                betType="COMPARISON"
               />
             </div>
           )}
@@ -485,89 +542,15 @@ export function BetCreationModal({ game, rosterData, onClose, onBetCreated }: Be
                 game={game}
                 players={players}
                 sportConfig={sportConfig}
+                betType="THRESHOLD"
+                thresholdOperator={threshOperator}
+                onThresholdOperatorChange={setThreshOperator}
+                threshold={threshold}
+                onThresholdChange={setThreshold}
               />
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Operator
-                  </label>
-                  <select
-                    value={threshOperator}
-                    onChange={(e) => setThreshOperator(e.target.value as 'OVER' | 'UNDER')}
-                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                  >
-                    <option value="OVER">Over</option>
-                    <option value="UNDER">Under</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Threshold
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={threshold}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value);
-                      if (!isNaN(val)) setThreshold(val);
-                    }}
-                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    placeholder="28.5"
-                  />
-                </div>
-              </div>
             </div>
           )}
 
-          {/* EVENT Form */}
-          {betType === 'EVENT' && (
-            <div className="space-y-4">
-              <ParticipantSelector
-                label="Participant"
-                value={eventParticipant}
-                onChange={setEventParticipant}
-                game={game}
-                players={players}
-                sportConfig={sportConfig}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Event Type
-                  </label>
-                  <select
-                    value={eventType}
-                    onChange={(e) => setEventType(e.target.value as 'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE')}
-                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                  >
-                    <option value="DOUBLE_DOUBLE">Double Double</option>
-                    <option value="TRIPLE_DOUBLE">Triple Double</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Time Period
-                  </label>
-                  <select
-                    value={eventTimePeriod}
-                    onChange={(e) => setEventTimePeriod(e.target.value as TimePeriod)}
-                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                  >
-                    {sportConfig.time_periods.map((tp) => (
-                      <option key={tp.value} value={tp.value}>
-                        {tp.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Preview */}
           <div className="bg-slate-800 rounded-lg p-4">
@@ -581,12 +564,8 @@ export function BetCreationModal({ game, rosterData, onClose, onBetCreated }: Be
               {betType === 'THRESHOLD' && threshParticipant && (
                 `${threshParticipant.subject_name} ${threshOperator} ${threshold} ${threshParticipant.metric}`
               )}
-              {betType === 'EVENT' && eventParticipant && (
-                `${eventParticipant.subject_name} ${eventType.replace(/_/g, ' ').toLowerCase()}`
-              )}
               {!((betType === 'COMPARISON' && compParticipant1 && compParticipant2) ||
-                 (betType === 'THRESHOLD' && threshParticipant) ||
-                 (betType === 'EVENT' && eventParticipant)) && (
+                 (betType === 'THRESHOLD' && threshParticipant)) && (
                 'Complete the form to see preview'
               )}
             </p>

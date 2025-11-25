@@ -320,16 +320,16 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
     initialConfig.threshold || 0
   );
 
-  // EVENT state
-  const [eventParticipant, setEventParticipant] = useState<Participant | null>(
-    getInitialParticipant(initialConfig.participant)
-  );
-  const [eventType, setEventType] = useState<'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE'>(
-    initialConfig.event_type || 'DOUBLE_DOUBLE'
-  );
-  const [eventTimePeriod, setEventTimePeriod] = useState<TimePeriod>(
-    initialConfig.time_period || 'FULL_GAME'
-  );
+  // EVENT state - removed for now, will be re-added later
+  // const [eventParticipant, setEventParticipant] = useState<Participant | null>(
+  //   getInitialParticipant(initialConfig.participant)
+  // );
+  // const [eventType, setEventType] = useState<'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE'>(
+  //   initialConfig.event_type || 'DOUBLE_DOUBLE'
+  // );
+  // const [eventTimePeriod, setEventTimePeriod] = useState<TimePeriod>(
+  //   initialConfig.time_period || 'FULL_GAME'
+  // );
 
   // Memoize players list
   const players = useMemo((): Player[] => {
@@ -406,18 +406,10 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
           threshold
         } as ThresholdConfig;
       } else {
-        if (!eventParticipant) {
-          setError('Please select a participant');
-          setLoading(false);
-          return;
-        }
-
-        config = {
-          type: 'EVENT',
-          participant: eventParticipant,
-          event_type: eventType,
-          time_period: eventTimePeriod
-        } as EventConfig;
+        // EVENT bets removed for now
+        setError('Event bets are not yet available');
+        setLoading(false);
+        return;
       }
 
       const response = await api.updateBet(bet.id, {
@@ -495,7 +487,7 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
             >
               <option value="COMPARISON">Comparison (vs)</option>
               <option value="THRESHOLD">Threshold (Over/Under)</option>
-              <option value="EVENT">Event</option>
+              {/* EVENT bets removed for now - will be re-added later */}
             </select>
           </div>
 
@@ -613,50 +605,12 @@ export function BetEditModal({ bet, game, rosterData, onClose, onBetUpdated }: B
             </div>
           )}
 
-          {/* EVENT Form */}
+          {/* EVENT Form - Removed for now, will be re-added later */}
           {betType === 'EVENT' && (
-            <div className="space-y-4">
-              <ParticipantSelector
-                label="Participant"
-                value={eventParticipant}
-                onChange={setEventParticipant}
-                game={game}
-                players={players}
-                sportConfig={sportConfig}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Event Type
-                  </label>
-                  <select
-                    value={eventType}
-                    onChange={(e) => setEventType(e.target.value as 'DOUBLE_DOUBLE' | 'TRIPLE_DOUBLE')}
-                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                  >
-                    <option value="DOUBLE_DOUBLE">Double Double</option>
-                    <option value="TRIPLE_DOUBLE">Triple Double</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Time Period
-                  </label>
-                  <select
-                    value={eventTimePeriod}
-                    onChange={(e) => setEventTimePeriod(e.target.value as TimePeriod)}
-                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                  >
-                    {sportConfig.time_periods.map((tp) => (
-                      <option key={tp.value} value={tp.value}>
-                        {tp.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+            <div className="bg-yellow-900/20 border border-yellow-800 rounded-lg p-4">
+              <p className="text-yellow-400 text-sm">
+                Event bets are temporarily disabled. They will be re-added in a future update.
+              </p>
             </div>
           )}
         </div>
