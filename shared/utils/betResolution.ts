@@ -3,7 +3,7 @@
  * Pure functions for resolving bets from game data
  */
 
-import { BetConfig, ComparisonConfig, Participant, TimePeriod } from '../types/bets';
+import { BetConfig, ComparisonConfig, ThresholdConfig, Participant, TimePeriod } from '../types/bets';
 import { SportConfig, BetEndPointKey } from '../config/sports/basketball';
 
 export interface ResolutionResult {
@@ -136,6 +136,7 @@ function checkBetEndPoint(gameData: any, betEndPointKey: BetEndPointKey): boolea
 function compareIds(id1: string | number, id2: string | number): boolean {
   return String(id1) === String(id2);
 }
+
 
 /**
  * Get stat value for a participant
@@ -295,15 +296,31 @@ function resolveComparisonBet(
   
   console.log(`[resolveComparisonBet] resolutionEventTime: ${resolutionEventTime.toISOString()}`);
   
-  // resolutionUTCTime: When the event actually completed (end time)
-  // Use meta.lastPlayWallClock which contains the UTC time of the last play (game end)
+  // resolutionUTCTime: When the bet was actually resolved (end time of the relevant period)
+  // For comparison bets, use the later of the two periods (or the period if they're the same)
+  // This ensures we use the actual end time of when the bet was resolved
   let resolutionUTCTime: Date | undefined;
   
-  if (gameData?.meta?.lastPlayWallClock) {
-    resolutionUTCTime = new Date(gameData.meta.lastPlayWallClock);
-    console.log(`[resolveComparisonBet] Found resolutionUTCTime from meta.lastPlayWallClock: ${gameData.meta.lastPlayWallClock} (UTC)`);
+  if (sportConfig.getResolutionUTCTime) {
+    const period1EndTime = sportConfig.getResolutionUTCTime(gameData, bet.participant_1.time_period);
+    const period2EndTime = sportConfig.getResolutionUTCTime(gameData, bet.participant_2.time_period);
+    
+    // Use the later of the two periods (or the period if they're the same)
+    if (period1EndTime && period2EndTime) {
+      resolutionUTCTime = period1EndTime > period2EndTime ? period1EndTime : period2EndTime;
+      console.log(`[resolveComparisonBet] Using later period end time: ${resolutionUTCTime.toISOString()}`);
+    } else if (period1EndTime) {
+      resolutionUTCTime = period1EndTime;
+      console.log(`[resolveComparisonBet] Using period 1 end time: ${resolutionUTCTime.toISOString()}`);
+    } else if (period2EndTime) {
+      resolutionUTCTime = period2EndTime;
+      console.log(`[resolveComparisonBet] Using period 2 end time: ${resolutionUTCTime.toISOString()}`);
+    } else {
+      console.log(`[resolveComparisonBet] ⚠️  Could not determine period end times, using event date as fallback`);
+      resolutionUTCTime = resolutionEventTime;
+    }
   } else {
-    console.log(`[resolveComparisonBet] ⚠️  meta.lastPlayWallClock not found, using event date as fallback`);
+    console.log(`[resolveComparisonBet] ⚠️  Sport config does not have getResolutionUTCTime, using event date as fallback`);
     resolutionUTCTime = resolutionEventTime;
   }
   
@@ -336,6 +353,142 @@ function resolveComparisonBet(
 }
 
 /**
+ * Resolve a threshold bet (over/under)
+ */
+function resolveThresholdBet(
+  bet: ThresholdConfig,
+  gameData: any,
+  sportConfig: SportConfig
+): ResolutionResult {
+  console.log('\n[resolveThresholdBet] ===== Starting threshold bet resolution =====');
+  console.log('[resolveThresholdBet] Bet config:', JSON.stringify(bet, null, 2));
+  
+  // Get bet end point for the participant
+  const period = sportConfig.time_periods.find(tp => tp.value === bet.participant.time_period);
+  
+  console.log(`[resolveThresholdBet] Period config:`, period);
+  
+  if (!period?.betEndPointKey) {
+    const reason = `Missing bet end point configuration for time period: ${bet.participant.time_period}`;
+    console.log(`[resolveThresholdBet] ❌ ${reason}`);
+    return {
+      resolved: false,
+      reason
+    };
+  }
+  
+  // Check if the period has ended
+  console.log(`[resolveThresholdBet] Checking if period (${bet.participant.time_period}) is complete...`);
+  const periodComplete = checkBetEndPoint(gameData, period.betEndPointKey);
+  
+  console.log(`[resolveThresholdBet] Period completion status: ${periodComplete}`);
+  
+  if (!periodComplete) {
+    const reason = `Period not complete: ${bet.participant.time_period}=${periodComplete}`;
+    console.log(`[resolveThresholdBet] ❌ ${reason}`);
+    return {
+      resolved: false,
+      reason
+    };
+  }
+  
+  // Get stat value for the participant
+  console.log(`[resolveThresholdBet] Extracting stat for participant...`);
+  const stat = getParticipantStat(gameData, bet.participant, sportConfig);
+  
+  console.log(`[resolveThresholdBet] Extracted stat: ${stat}`);
+  
+  if (stat === null) {
+    const reason = `Could not extract stat for participant`;
+    console.log(`[resolveThresholdBet] ❌ ${reason}`);
+    return {
+      resolved: false,
+      reason
+    };
+  }
+  
+  // Determine outcome based on operator
+  let outcome: 'win' | 'loss' | 'push';
+  
+  console.log(`[resolveThresholdBet] Comparing with operator: ${bet.operator}`);
+  console.log(`[resolveThresholdBet] Comparison: ${stat} ${bet.operator} ${bet.threshold}`);
+  
+  if (bet.operator === 'OVER') {
+    if (stat > bet.threshold) {
+      outcome = 'win';
+    } else if (stat < bet.threshold) {
+      outcome = 'loss';
+    } else {
+      outcome = 'push'; // Exactly equal to threshold
+    }
+  } else if (bet.operator === 'UNDER') {
+    if (stat < bet.threshold) {
+      outcome = 'win';
+    } else if (stat > bet.threshold) {
+      outcome = 'loss';
+    } else {
+      outcome = 'push'; // Exactly equal to threshold
+    }
+  } else {
+    const reason = `Unsupported operator: ${bet.operator}`;
+    console.log(`[resolveThresholdBet] ❌ ${reason}`);
+    return {
+      resolved: false,
+      reason
+    };
+  }
+  
+  console.log(`[resolveThresholdBet] ✅ Outcome determined: ${outcome}`);
+  
+  // Get resolution event time and completion time from game data
+  // Filter competition by matching id to header.id (same as we do for stat extraction)
+  const headerId = gameData?.header?.id;
+  const competition = gameData?.header?.competitions?.find((c: any) => String(c.id) === String(headerId));
+  
+  // resolutionEventTime: When the event (game/period) actually happened (start time for the period)
+  const resolutionEventTime = competition?.date ? new Date(competition.date) : new Date();
+  
+  console.log(`[resolveThresholdBet] resolutionEventTime: ${resolutionEventTime.toISOString()}`);
+  
+  // resolutionUTCTime: When the bet was actually resolved (end time of the period)
+  // Use the period-specific end time from the sport config
+  let resolutionUTCTime: Date | undefined;
+  
+  if (sportConfig.getResolutionUTCTime) {
+    resolutionUTCTime = sportConfig.getResolutionUTCTime(gameData, bet.participant.time_period);
+    if (resolutionUTCTime) {
+      console.log(`[resolveThresholdBet] Found resolutionUTCTime for period ${bet.participant.time_period}: ${resolutionUTCTime.toISOString()}`);
+    } else {
+      console.log(`[resolveThresholdBet] ⚠️  Could not determine period end time, using event date as fallback`);
+      resolutionUTCTime = resolutionEventTime;
+    }
+  } else {
+    console.log(`[resolveThresholdBet] ⚠️  Sport config does not have getResolutionUTCTime, using event date as fallback`);
+    resolutionUTCTime = resolutionEventTime;
+  }
+  
+  const result = {
+    resolved: true,
+    outcome,
+    resolutionEventTime,
+    resolutionUTCTime,
+    resolutionQuarter: bet.participant.time_period,
+    resolutionStatSnapshot: {
+      participant: {
+        stat: stat,
+        metric: bet.participant.metric,
+        time_period: bet.participant.time_period
+      },
+      operator: bet.operator,
+      threshold: bet.threshold
+    }
+  };
+  
+  console.log(`[resolveThresholdBet] ===== Resolution complete =====\n`);
+  return result;
+}
+
+/**
  * Main resolution function
  */
 export function resolveBet(
@@ -353,7 +506,11 @@ export function resolveBet(
     return resolveComparisonBet(betConfig, gameData, sportConfig);
   }
   
-  // TODO: Implement THRESHOLD and EVENT bet types
+  if (betConfig.type === 'THRESHOLD') {
+    return resolveThresholdBet(betConfig, gameData, sportConfig);
+  }
+  
+  // TODO: Implement EVENT bet type
   const reason = `Bet type ${betConfig.type} not yet implemented`;
   console.log(`[resolveBet] ❌ ${reason}`);
   return {

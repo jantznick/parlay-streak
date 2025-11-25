@@ -6,7 +6,7 @@
 import { readFileSync } from 'fs';
 import { resolveBet } from './shared/utils/betResolution';
 import { BASKETBALL_CONFIG } from './shared/config/sports/basketball';
-import { ComparisonConfig } from './shared/types/bets';
+import { ComparisonConfig, ThresholdConfig, BetConfig } from './shared/types/bets';
 
 // Load sample data
 const gameData = JSON.parse(readFileSync('./sample-basketball-end.json', 'utf-8'));
@@ -90,11 +90,57 @@ const bets: ComparisonConfig[] = [{
     operator: 'GREATER_THAN'
   } as ComparisonConfig];
 
+// Create threshold bet examples
+const thresholdBets: ThresholdConfig[] = [{
+  type: 'THRESHOLD',
+  participant: {
+    subject_type: 'TEAM',
+    subject_id: '28', // Toronto Raptors
+    subject_name: 'Toronto Raptors',
+    metric: 'points',
+    time_period: 'FULL_GAME'
+  },
+  operator: 'OVER',
+  threshold: 120
+}, {
+  type: 'THRESHOLD',
+  participant: {
+    subject_type: 'PLAYER',
+    subject_id: DEANDRE_HUNTER_ID,
+    subject_name: "De'Andre Hunter",
+    metric: 'points',
+    time_period: 'FULL_GAME'
+  },
+  operator: 'OVER',
+  threshold: 15
+}, {
+  type: 'THRESHOLD',
+  participant: {
+    subject_type: 'PLAYER',
+    subject_id: BRANDON_INGRAM_ID,
+    subject_name: 'Brandon Ingram',
+    metric: 'points',
+    time_period: 'Q1'
+  },
+  operator: 'UNDER',
+  threshold: 5
+}];
+
 console.log('Testing bet resolution...');
 console.log('\n');
 
+console.log('=== COMPARISON BETS ===\n');
 for (const bet of bets) {
   const result = resolveBet(bet, gameData, BASKETBALL_CONFIG);
   console.log('Resolution Result:');
   console.log(JSON.stringify(result, null, 2));
+  console.log('\n');
+}
+
+console.log('=== THRESHOLD BETS ===\n');
+for (const bet of thresholdBets) {
+  const result = resolveBet(bet, gameData, BASKETBALL_CONFIG);
+  console.log('Resolution Result:');
+  console.log(JSON.stringify(result, null, 2));
+  console.log('\n');
 }
