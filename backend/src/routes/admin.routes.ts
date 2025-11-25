@@ -981,19 +981,9 @@ router.post('/bets/:betId/resolve', requireAuth, requireAdmin, requireFeature('A
       });
     }
 
-    // Check game status - should be in_progress or completed
+    // Check game status - block postponed or canceled games
+    // Note: We allow 'scheduled' games if the start time has passed (for old games that weren't properly updated)
     const gameStatus = bet.game.status;
-    if (gameStatus === 'scheduled') {
-      return res.status(400).json({
-        success: false,
-        error: { 
-          message: 'Game is still scheduled and has not started yet',
-          code: 'GAME_NOT_STARTED',
-          gameStatus
-        }
-      });
-    }
-
     if (gameStatus === 'postponed' || gameStatus === 'canceled') {
       return res.status(400).json({
         success: false,
