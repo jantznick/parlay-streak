@@ -198,8 +198,11 @@ export class ApiSportsService {
     // ESPN API uses dates in YYYYMMDD format
     const dateStr = date.replace(/-/g, '');
     
+    // ESPN API expects lowercase sport names
+    const sportLower = sport.toLowerCase();
+    
     // Build URL: /sports/{sport}/{league}/scoreboard?dates={date}
-    const url = `${this.baseUrl}/${sport}/${league}/scoreboard?dates=${dateStr}`;
+    const url = `${this.baseUrl}/${sportLower}/${league}/scoreboard?dates=${dateStr}`;
     
     // Log URL prominently for debugging
     console.log('\n═══════════════════════════════════════════════════════════');
@@ -208,11 +211,11 @@ export class ApiSportsService {
     console.log(`URL: ${url}`);
     console.log(`Date (input): ${date}`);
     console.log(`Date (formatted): ${dateStr}`);
-    console.log(`Sport: ${sport}`);
+    console.log(`Sport: ${sport} (lowercase: ${sportLower})`);
     console.log(`League: ${league}`);
     console.log('═══════════════════════════════════════════════════════════\n');
     
-    logger.info('Fetching games from ESPN API', { url, sport, league, date, dateStr });
+    logger.info('Fetching games from ESPN API', { url, sport, sportLower, league, date, dateStr });
 
     // Retry logic
     let lastError: Error | null = null;
@@ -316,6 +319,82 @@ export class ApiSportsService {
 
     // If we get here, all retries failed
     throw lastError || new Error('Failed to fetch games after retries');
+  }
+
+  /**
+   * Fetch full game data (with boxscore and plays) for a specific game from ESPN
+   * @param sport - Sport name (e.g., 'basketball', 'football', 'hockey')
+   * @param league - League name (e.g., 'nba', 'nfl', 'nhl')
+   * @param gameId - ESPN game ID
+   * @returns Full game data with boxscore and plays
+   */
+  async getGameData(sport: string, league: string, gameId: string): Promise<any> {
+    // Build URL: /sports/{sport}/{league}/scoreboard/{gameId}
+    // ESPN API expects lowercase sport names
+    const sportLower = sport.toLowerCase();
+    const url = `${this.baseUrl}/${sportLower}/${league}/scoreboard/${gameId}`;
+    
+    logger.info('Fetching game data from ESPN API', { url, sport, sportLower, league, gameId });
+
+    // Retry logic
+    let lastError: Error | null = null;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'Unable to read error response');
+          logger.error(`ESPN API returned error status: ${response.status} ${response.statusText} - URL: ${url} - GameId: ${gameId} - Attempt: ${attempt}`);
+          if (errorText && errorText.length > 0) {
+            logger.error(`ESPN API Error Response (first 500 chars): ${errorText.substring(0, 500)}`);
+          }
+          throw new Error(`ESPN API returned ${response.status}: ${response.statusText} - URL: ${url}`);
+        }
+
+        const data = await response.json();
+        logger.info('Successfully fetched game data from ESPN API', { url, gameId, attempt });
+        return data;
+      } catch (error: any) {
+        lastError = error;
+
+        // Handle timeout
+        if (error.name === 'AbortError' && attempt < MAX_RETRIES) {
+          logger.warn(`ESPN API request timeout, retrying... - URL: ${url} - GameId: ${gameId} - Attempt: ${attempt} - Timeout: ${API_TIMEOUT_MS}ms`);
+          await this.sleep(1000 * attempt);
+          continue;
+        }
+
+        // Handle network errors
+        if (error.message?.includes('fetch failed') && attempt < MAX_RETRIES) {
+          logger.warn(`ESPN API network error, retrying... - URL: ${url} - GameId: ${gameId} - Attempt: ${attempt} - Error: ${error.message}`);
+          await this.sleep(1000 * attempt);
+          continue;
+        }
+
+        // Don't retry other errors - log full details
+        logger.error(`Error fetching game data from ESPN API: ${error.message || error.name || 'Unknown error'}`);
+        logger.error(`ESPN API URL: ${url}`);
+        logger.error(`Parameters: sport=${sport}, league=${league}, gameId=${gameId}, attempt=${attempt}`);
+        logger.error(`Error details: name=${error.name || 'N/A'}, message=${error.message || 'N/A'}`);
+        if (error.stack) {
+          logger.error(`Stack trace (first 1000 chars): ${error.stack.substring(0, 1000)}`);
+        }
+        throw error;
+      }
+    }
+
+    // If we get here, all retries failed
+    throw lastError || new Error('Failed to fetch game data after retries');
   }
 
   /**
@@ -559,7 +638,9 @@ export class ApiSportsService {
     }
 
     // Fallback to ESPN API
-    const url = `${this.baseUrl}/${sport}/${league}/teams/${teamId}/roster`;
+    // ESPN API expects lowercase sport names
+    const sportLower = sport.toLowerCase();
+    const url = `${this.baseUrl}/${sportLower}/${league}/teams/${teamId}/roster`;
     logger.info('Fetching team roster from ESPN API', { sport, league, teamId, url });
 
     try {

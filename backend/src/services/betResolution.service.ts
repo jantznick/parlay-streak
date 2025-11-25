@@ -3,11 +3,10 @@
  * Wraps the shared bet resolution logic for use in the backend
  */
 
-// Import from root shared folder (relative path from backend/dist/src/services after compilation)
+// Import from root shared folder (relative path from backend/src/services)
 // The shared folder is at the repo root level
-// From backend/dist/src/services/ we need to go up 4 levels: ../../../../shared/
-const { resolveBet } = require('../../../../shared/utils/betResolution');
-const { SPORT_CONFIGS } = require('../../../../shared/config/sports/basketball');
+const { resolveBet } = require('@shared/utils/betResolution');
+const { SPORT_CONFIGS } = require('@shared/config/sports/basketball');
 
 /**
  * Get sport config by sport key

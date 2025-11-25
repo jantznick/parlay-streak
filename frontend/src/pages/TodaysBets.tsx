@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { BetSelectionGroup } from '../components/bets/BetSelectionGroup';
+import { getSportEmoji, getTimezoneOffset, getTodayDateString } from '../utils/formatting';
 
 interface Bet {
   id: string;
@@ -41,14 +42,10 @@ export function TodaysBets() {
     setError(null);
     try {
       // Get local date string (YYYY-MM-DD) in user's timezone
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const localDate = `${year}-${month}-${day}`;
+      const localDate = getTodayDateString();
       
       // Get timezone offset in hours (e.g., -5 for EST)
-      const timezoneOffset = -new Date().getTimezoneOffset() / 60;
+      const timezoneOffset = getTimezoneOffset();
       const response = await fetch(`/api/bets/today?date=${localDate}&timezoneOffset=${timezoneOffset}`, {
         credentials: 'include'
       });
@@ -95,16 +92,6 @@ export function TodaysBets() {
     });
   };
 
-  const getSportEmoji = (sport: string) => {
-    switch (sport) {
-      case 'BASKETBALL': return '🏀';
-      case 'FOOTBALL': return '🏈';
-      case 'BASEBALL': return '⚾';
-      case 'HOCKEY': return '🏒';
-      case 'SOCCER': return '⚽';
-      default: return '🏆';
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-950">
