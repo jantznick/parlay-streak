@@ -80,6 +80,42 @@ function getNestedValue(obj: any, path: string, filter?: { arrayPath: string; fi
  * Check if a bet end point has been reached
  */
 function checkBetEndPoint(gameData: any, betEndPointKey: BetEndPointKey): boolean {
+  // If using play-by-play check (for quarter endings)
+  if (betEndPointKey.playByPlayCheck) {
+    const { eventTypeId, periodNumber } = betEndPointKey.playByPlayCheck;
+    console.log(`[checkBetEndPoint] Checking play-by-play for eventTypeId=${eventTypeId}, periodNumber=${periodNumber}`);
+    
+    const plays = gameData?.plays;
+    if (!plays || !Array.isArray(plays)) {
+      console.log(`[checkBetEndPoint] ❌ No plays array found in gameData`);
+      return false;
+    }
+    
+    // Find if there's an "End Period" event for this quarter
+    const endPeriodEvent = plays.find((play: any) => 
+      play.type?.id === eventTypeId && 
+      play.period?.number === periodNumber
+    );
+    
+    const result = !!endPeriodEvent;
+    console.log(`[checkBetEndPoint] Play-by-play check: ${result} (found end period event: ${!!endPeriodEvent})`);
+    if (endPeriodEvent) {
+      console.log(`[checkBetEndPoint] Found end period event:`, {
+        id: endPeriodEvent.id,
+        text: endPeriodEvent.text,
+        wallclock: endPeriodEvent.wallclock,
+        period: endPeriodEvent.period
+      });
+    }
+    return result;
+  }
+  
+  // Otherwise use path-based check
+  if (!betEndPointKey.path) {
+    console.log(`[checkBetEndPoint] ❌ No path or playByPlayCheck provided`);
+    return false;
+  }
+  
   console.log(`[checkBetEndPoint] Checking path: ${betEndPointKey.path}, expected: ${JSON.stringify(betEndPointKey.expectedValue)}`);
   const value = getNestedValue(gameData, betEndPointKey.path, betEndPointKey.filter);
   

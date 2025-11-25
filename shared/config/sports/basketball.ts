@@ -17,12 +17,17 @@ export interface SportMetric {
 }
 
 export interface BetEndPointKey {
-  path: string; // JSON path to check, supports filtering with [filter:key=value] syntax
-  expectedValue: any; // Expected value when period is complete (e.g., true, "post")
+  path?: string; // JSON path to check, supports filtering with [filter:key=value] syntax
+  expectedValue?: any; // Expected value when period is complete (e.g., true, "post")
   filter?: {
     arrayPath: string; // Path to the array to filter (e.g., "header.competitions")
     filterKey: string; // Key to filter by (e.g., "id")
     filterValuePath: string; // Path to get the filter value (e.g., "header.id")
+  };
+  // For play-by-play based checks (e.g., quarter endings)
+  playByPlayCheck?: {
+    eventTypeId: string; // e.g., "412" for "End Period"
+    periodNumber: number; // e.g., 1 for Q1, 2 for Q2, etc.
   };
 }
 
@@ -102,12 +107,9 @@ export const BASKETBALL_CONFIG: SportConfig = {
       label: '1st Quarter',
       api_key: 'quarter_1',
       betEndPointKey: {
-        path: 'competitors[0].linescores[0]',
-        expectedValue: 'exists', // Quarter is complete when linescore exists
-        filter: {
-          arrayPath: 'header.competitions',
-          filterKey: 'id',
-          filterValuePath: 'header.id'
+        playByPlayCheck: {
+          eventTypeId: '412', // "End Period" event type
+          periodNumber: 1 // 1st Quarter
         }
       }
     },
@@ -116,12 +118,9 @@ export const BASKETBALL_CONFIG: SportConfig = {
       label: '2nd Quarter',
       api_key: 'quarter_2',
       betEndPointKey: {
-        path: 'competitors[0].linescores[1]',
-        expectedValue: 'exists',
-        filter: {
-          arrayPath: 'header.competitions',
-          filterKey: 'id',
-          filterValuePath: 'header.id'
+        playByPlayCheck: {
+          eventTypeId: '412', // "End Period" event type
+          periodNumber: 2 // 2nd Quarter
         }
       }
     },
@@ -130,12 +129,9 @@ export const BASKETBALL_CONFIG: SportConfig = {
       label: '3rd Quarter',
       api_key: 'quarter_3',
       betEndPointKey: {
-        path: 'competitors[0].linescores[2]',
-        expectedValue: 'exists',
-        filter: {
-          arrayPath: 'header.competitions',
-          filterKey: 'id',
-          filterValuePath: 'header.id'
+        playByPlayCheck: {
+          eventTypeId: '412', // "End Period" event type
+          periodNumber: 3 // 3rd Quarter
         }
       }
     },
@@ -144,12 +140,9 @@ export const BASKETBALL_CONFIG: SportConfig = {
       label: '4th Quarter',
       api_key: 'quarter_4',
       betEndPointKey: {
-        path: 'competitors[0].linescores[3]',
-        expectedValue: 'exists',
-        filter: {
-          arrayPath: 'header.competitions',
-          filterKey: 'id',
-          filterValuePath: 'header.id'
+        playByPlayCheck: {
+          eventTypeId: '412', // "End Period" event type
+          periodNumber: 4 // 4th Quarter
         }
       }
     },
@@ -158,12 +151,9 @@ export const BASKETBALL_CONFIG: SportConfig = {
       label: '1st Half',
       api_key: 'half_1',
       betEndPointKey: {
-        path: 'competitors[0].linescores[1]',
-        expectedValue: 'exists',
-        filter: {
-          arrayPath: 'header.competitions',
-          filterKey: 'id',
-          filterValuePath: 'header.id'
+        playByPlayCheck: {
+          eventTypeId: '412', // "End Period" event type
+          periodNumber: 2 // H1 is complete when Q2 ends
         }
       }
     },
