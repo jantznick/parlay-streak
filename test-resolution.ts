@@ -7,9 +7,15 @@ import { readFileSync } from 'fs';
 import { resolveBet } from './shared/utils/betResolution';
 import { BASKETBALL_CONFIG } from './shared/config/sports/basketball';
 import { ComparisonConfig, ThresholdConfig, BetConfig } from './shared/types/bets';
+import { extractLiveGameInfo } from './backend/src/services/betResolution.service';
 
 // Load sample data
-const gameData = JSON.parse(readFileSync('./sample-basketball-end.json', 'utf-8'));
+const gameDataEnd = JSON.parse(readFileSync('./sample-basketball-end.json', 'utf-8'));
+const gameDataLive = JSON.parse(readFileSync('./sample-basketball-live.json', 'utf-8'));
+const gameDataPregame = JSON.parse(readFileSync('./sample-basketball-pregame.json', 'utf-8'));
+
+// Use end game data for bet resolution tests
+const gameData = gameDataEnd;
 
 // Player IDs from the sample data
 const BRANDON_INGRAM_ID = '3913176';  // 11 pts, 5 reb, 4 ast
@@ -144,3 +150,44 @@ for (const bet of thresholdBets) {
   console.log(JSON.stringify(result, null, 2));
   console.log('\n');
 }
+
+console.log('=== LIVE GAME INFO EXTRACTION ===\n');
+
+// Test with live game data
+console.log('--- Live Game (In Progress) ---');
+const liveInfo = extractLiveGameInfo(gameDataLive, BASKETBALL_CONFIG);
+console.log('Extracted Live Game Info:');
+console.log(JSON.stringify(liveInfo, null, 2));
+console.log('\n');
+console.log('Expected:');
+console.log('- status: "in_progress"');
+console.log('- period: 2');
+console.log('- displayClock: "8:28"');
+console.log('- periodDisplay: "8:28 2nd Quarter"');
+console.log('- homeScore: 35 (Orlando Magic)');
+console.log('- awayScore: 29 (LA Clippers)');
+console.log('\n');
+
+// Test with completed game data
+console.log('--- Completed Game ---');
+const endInfo = extractLiveGameInfo(gameDataEnd, BASKETBALL_CONFIG);
+console.log('Extracted Live Game Info:');
+console.log(JSON.stringify(endInfo, null, 2));
+console.log('\n');
+console.log('Expected:');
+console.log('- status: "completed"');
+console.log('- periodDisplay: "Final"');
+console.log('- homeScore and awayScore should be populated');
+console.log('\n');
+
+// Test with pregame data
+console.log('--- Pregame Game ---');
+const pregameInfo = extractLiveGameInfo(gameDataPregame, BASKETBALL_CONFIG);
+console.log('Extracted Live Game Info:');
+console.log(JSON.stringify(pregameInfo, null, 2));
+console.log('\n');
+console.log('Expected:');
+console.log('- status: "scheduled"');
+console.log('- periodDisplay: null');
+console.log('- homeScore and awayScore: null');
+console.log('\n');

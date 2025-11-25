@@ -84,15 +84,20 @@ export function GameCard({
               </div>
             </div>
 
-            {/* Score (if game started) */}
+            {/* Score and Live Info (if game started) */}
             {(game.homeScore !== null || game.awayScore !== null) && (
-              <div className="flex gap-4 text-sm mb-3 ml-8">
-                <span className="text-slate-300">
-                  {game.awayTeam}: <span className="font-bold text-white">{game.awayScore}</span>
-                </span>
-                <span className="text-slate-300">
-                  {game.homeTeam}: <span className="font-bold text-white">{game.homeScore}</span>
-                </span>
+              <div className="ml-8 mb-3">
+                {game.status === 'in_progress' && game.metadata?.liveInfo?.periodDisplay ? (
+                  // Live game format: "7:23 3rd Quarter: Pacers 97 - Pistons 83"
+                  <div className="text-sm text-yellow-400 font-medium">
+                    {game.metadata.liveInfo.periodDisplay}: {game.awayTeam} {game.awayScore ?? 0} - {game.homeScore ?? 0} {game.homeTeam}
+                  </div>
+                ) : (
+                  // Completed or scheduled game format: "Pacers: 97 - Pistons: 83"
+                  <div className="text-sm text-slate-300">
+                    {game.awayTeam}: <span className="font-bold text-white">{game.awayScore ?? 0}</span> - <span className="font-bold text-white">{game.homeScore ?? 0}</span> {game.homeTeam}
+                  </div>
+                )}
               </div>
             )}
 

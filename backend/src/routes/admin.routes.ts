@@ -5,7 +5,7 @@ import { requireFeature } from '../middleware/featureFlags';
 import { ApiSportsService } from '../services/apiSports.service';
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
-import { resolveBet, getSportConfig } from '../services/betResolution.service';
+import { resolveBet, getSportConfig, extractLiveGameInfo } from '../services/betResolution.service';
 import { getUTCDateRange } from '../utils/dateUtils';
 
 // Type for bet config (from shared types)
@@ -1101,6 +1101,42 @@ router.post('/bets/:betId/resolve', requireAuth, requireAdmin, requireFeature('A
       });
     }
 
+    // Update game status, scores, and live info from the fetched gameData
+    // This is called after bet resolution (even if it failed) to keep game data current
+    // Uses sport-specific config for extensibility across all sports
+    const liveGameInfo = extractLiveGameInfo(gameData, sportConfig);
+    const currentMetadata = (bet.game.metadata as any) || {};
+    
+    await prisma.game.update({
+      where: { id: bet.gameId },
+      data: {
+        status: liveGameInfo.status,
+        homeScore: liveGameInfo.homeScore,
+        awayScore: liveGameInfo.awayScore,
+        metadata: {
+          ...currentMetadata,
+          liveInfo: {
+            period: liveGameInfo.period,
+            displayClock: liveGameInfo.displayClock,
+            periodDisplay: liveGameInfo.periodDisplay,
+            lastUpdated: new Date().toISOString()
+          }
+        },
+        // Set endTime if game is completed
+        ...(liveGameInfo.status === 'completed' && !bet.game.endTime ? {
+          endTime: new Date()
+        } : {})
+      }
+    });
+
+    logger.info('Updated game with live info', {
+      gameId: bet.gameId,
+      status: liveGameInfo.status,
+      homeScore: liveGameInfo.homeScore,
+      awayScore: liveGameInfo.awayScore,
+      periodDisplay: liveGameInfo.periodDisplay
+    });
+
     // Resolve the bet
     const betConfig = bet.config as unknown as BetConfig;
     let resolutionResult;
@@ -1108,6 +1144,7 @@ router.post('/bets/:betId/resolve', requireAuth, requireAdmin, requireFeature('A
       resolutionResult = resolveBet(betConfig, gameData, sportConfig);
     } catch (error: any) {
       logger.error('Error during bet resolution', { error, betId, betType: bet.betType });
+      // Game was already updated above, so we can return the error
       return res.status(500).json({
         success: false,
         error: { 
@@ -1118,6 +1155,7 @@ router.post('/bets/:betId/resolve', requireAuth, requireAdmin, requireFeature('A
       });
     }
 
+    // Check if bet resolution failed - return error but game was still updated
     if (!resolutionResult.resolved) {
       logger.warn('Bet resolution failed', { betId, reason: resolutionResult.reason });
       return res.status(400).json({
