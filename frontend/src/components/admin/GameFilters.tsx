@@ -37,7 +37,7 @@ export function GameFilters({
     ?.leagues.find(l => l.id === selectedLeague)?.name || selectedLeague;
 
   return (
-    <div className="bg-slate-900 rounded-lg p-6 mb-6">
+    <div className="bg-slate-900 rounded-lg p-4 sm:p-6 mb-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="flex flex-col justify-end">
           <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -88,7 +88,7 @@ export function GameFilters({
           </select>
         </div>
 
-        <div className="flex items-end gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
           <button
             onClick={() => onFetchGames(false)}
             disabled={loading || !selectedSport || !selectedLeague}
@@ -99,23 +99,26 @@ export function GameFilters({
           <button
             onClick={() => onFetchGames(true)}
             disabled={loading || !selectedSport || !selectedLeague}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium h-[42px]"
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium h-[42px] sm:flex-shrink-0"
             title="Force refresh from ESPN API (bypasses database cache)"
           >
-            Force Refresh
+            <span className="hidden sm:inline">Force Refresh</span>
+            <span className="sm:hidden">Refresh</span>
           </button>
         </div>
       </div>
 
-      <div className="mt-4 text-sm text-slate-400">
-        Viewing games for <span className="text-white font-medium">{formatDate(selectedDate)}</span>
+      <div className="mt-4 text-xs sm:text-sm text-slate-400">
+        <span className="block sm:inline">Viewing games for <span className="text-white font-medium">{formatDate(selectedDate)}</span></span>
         {selectedSport && selectedLeague && (
-          <span className="ml-2">
-            • {selectedLeagueName}
+          <span className="block sm:inline sm:ml-2">
+            <span className="hidden sm:inline">• </span>{selectedLeagueName}
           </span>
         )}
         {gamesCount > 0 && (
-          <span className="ml-2">• {gamesCount} game{gamesCount !== 1 ? 's' : ''} loaded</span>
+          <span className="block sm:inline sm:ml-2">
+            <span className="hidden sm:inline">• </span>{gamesCount} game{gamesCount !== 1 ? 's' : ''} loaded
+          </span>
         )}
       </div>
     </div>

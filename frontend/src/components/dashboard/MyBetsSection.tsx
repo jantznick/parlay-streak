@@ -381,9 +381,9 @@ export function MyBetsSection() {
 
   if (loading && selections.length === 0 && parlays.length === 0) {
     return (
-      <div className="bg-slate-900 rounded-lg p-8 text-center animate-pulse">
-        <div className="text-4xl mb-4">⏳</div>
-        <p className="text-slate-400">Loading your bets...</p>
+      <div className="bg-slate-900 rounded-lg p-6 sm:p-8 text-center animate-pulse">
+        <div className="text-3xl sm:text-4xl mb-4">⏳</div>
+        <p className="text-sm sm:text-base text-slate-400">Loading your bets...</p>
       </div>
     );
   }
@@ -410,10 +410,10 @@ export function MyBetsSection() {
   return (
     <>
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h2 className="text-2xl font-bold text-white">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+          <div className="flex-1 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
                 My Bets
               </h2>
               <DateNavigation
@@ -421,21 +421,21 @@ export function MyBetsSection() {
                 onDateChange={setSelectedDate}
               />
             </div>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-slate-400 text-xs sm:text-sm mt-1">
               {selections.length} single bet{selections.length !== 1 ? 's' : ''} • {parlays.length} parlay{parlays.length !== 1 ? 's' : ''}
             </p>
           </div>
           <button
             onClick={fetchMyData}
-            className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition text-sm"
+            className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition text-sm w-full sm:w-auto"
           >
             Refresh
           </button>
         </div>
 
         {error && error.code === 'EMAIL_NOT_VERIFIED' && (
-          <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
-            <p className="text-red-400 mb-3">{error.message}</p>
+          <div className="bg-red-900/20 border border-red-800 rounded-lg p-3 sm:p-4">
+            <p className="text-sm sm:text-base text-red-400 mb-3">{error.message}</p>
             <div className="space-y-2">
               <button
                 onClick={handleResendVerificationEmail}
@@ -454,7 +454,7 @@ export function MyBetsSection() {
         {/* For past dates, always show "Bets You Made" section */}
         {isPastDate && (
           <div className="mt-6">
-            <h3 className="text-lg font-semibold text-slate-300 mb-4">
+            <h3 className="text-base sm:text-lg font-semibold text-slate-300 mb-4">
               Bets You Made for {formatDateDisplay(selectedDate)}
             </h3>
             {hasUserBets ? (
@@ -494,10 +494,10 @@ export function MyBetsSection() {
                 })}
               </div>
             ) : (
-              <div className="bg-slate-900 rounded-lg p-8 text-center border border-slate-800">
-                <div className="text-4xl mb-4">📝</div>
-                <p className="text-slate-300 mb-2">No bets made for {formatDateDisplay(selectedDate)}</p>
-                <p className="text-slate-500 text-sm">
+              <div className="bg-slate-900 rounded-lg p-6 sm:p-8 text-center border border-slate-800">
+                <div className="text-3xl sm:text-4xl mb-4">📝</div>
+                <p className="text-sm sm:text-base text-slate-300 mb-2">No bets made for {formatDateDisplay(selectedDate)}</p>
+                <p className="text-xs sm:text-sm text-slate-500">
                   You didn't make any bet selections on this date
                 </p>
               </div>
@@ -546,10 +546,10 @@ export function MyBetsSection() {
 
         {/* Empty state for today/future when no bets */}
         {isTodayOrFuture && emptyState && (
-          <div className="bg-slate-900 rounded-lg p-8 text-center mt-6 border border-slate-800">
-            <div className="text-4xl mb-4">📝</div>
-            <p className="text-slate-300 mb-2">No bets for {formatDateDisplay(selectedDate)}</p>
-            <p className="text-slate-500 text-sm">
+          <div className="bg-slate-900 rounded-lg p-6 sm:p-8 text-center mt-6 border border-slate-800">
+            <div className="text-3xl sm:text-4xl mb-4">📝</div>
+            <p className="text-sm sm:text-base text-slate-300 mb-2">No bets for {formatDateDisplay(selectedDate)}</p>
+            <p className="text-xs sm:text-sm text-slate-500">
               Browse available bets below and make your selections
             </p>
           </div>
@@ -559,7 +559,7 @@ export function MyBetsSection() {
         {/* Always show for past dates, show for future dates if games exist */}
         {(isPastDate || (selected > today && (historicalGames.length > 0 || loadingHistorical))) && (
           <div className="mt-8">
-            <h3 className="text-lg font-semibold text-slate-300 mb-4">
+            <h3 className="text-base sm:text-lg font-semibold text-slate-300 mb-4">
               Available Bets for {formatDateDisplay(selectedDate)}
             </h3>
             <AvailableBetsSection

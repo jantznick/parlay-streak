@@ -160,7 +160,7 @@ export function BetManagement() {
   useEffect(() => {
     // Only fetch if we have sports config loaded and both sport and league are selected
     if (sportsConfig.length > 0 && selectedSport && selectedLeague) {
-      fetchGames();
+      fetchGames(false);
     }
     
     // Cleanup: abort request on unmount or when dependencies change
@@ -170,7 +170,8 @@ export function BetManagement() {
         abortControllerRef.current = null;
       }
     };
-  }, [selectedDate, selectedSport, selectedLeague, sportsConfig, fetchGames]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, selectedSport, selectedLeague, sportsConfig.length]);
 
   // Handle create bets button click
   const handleCreateBets = async (game: Game) => {
@@ -420,7 +421,7 @@ export function BetManagement() {
       <Header title="Admin: Bet Management" />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Date Selector, Sport/League Selectors & Fetch Button */}
         <GameFilters
           selectedDate={selectedDate}
@@ -444,20 +445,20 @@ export function BetManagement() {
 
         {/* Games List */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-white">
+          <h2 className="text-lg sm:text-xl font-semibold text-white">
             Games ({games.length})
           </h2>
 
           {loading ? (
-            <div className="bg-slate-900 rounded-lg p-8 text-center">
-              <div className="text-4xl mb-4">⏳</div>
-              <p className="text-slate-400">Loading games...</p>
+            <div className="bg-slate-900 rounded-lg p-6 sm:p-8 text-center">
+              <div className="text-3xl sm:text-4xl mb-4">⏳</div>
+              <p className="text-sm sm:text-base text-slate-400">Loading games...</p>
             </div>
           ) : games.length === 0 ? (
-            <div className="bg-slate-900 rounded-lg p-8 text-center">
-              <div className="text-4xl mb-4">📅</div>
-              <p className="text-slate-300 mb-2">No games loaded</p>
-              <p className="text-slate-500 text-sm">
+            <div className="bg-slate-900 rounded-lg p-6 sm:p-8 text-center">
+              <div className="text-3xl sm:text-4xl mb-4">📅</div>
+              <p className="text-sm sm:text-base text-slate-300 mb-2">No games loaded</p>
+              <p className="text-xs sm:text-sm text-slate-500">
                 Click "Fetch Games" to load games from ESPN API for the selected date
               </p>
             </div>

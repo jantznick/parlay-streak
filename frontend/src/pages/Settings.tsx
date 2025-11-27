@@ -135,16 +135,16 @@ export function Settings() {
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
       
-      <main className="flex-1 w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-12 mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Settings</h1>
-          <p className="text-slate-400">Manage your account settings</p>
+      <main className="flex-1 w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-12 mx-auto">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Settings</h1>
+          <p className="text-sm sm:text-base text-slate-400">Manage your account settings</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Username Section */}
-          <div className="bg-slate-900 rounded-lg p-6 border border-slate-800">
-            <h2 className="text-xl font-semibold text-white mb-4">Username</h2>
+          <div className="bg-slate-900 rounded-lg p-4 sm:p-6 border border-slate-800">
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-4">Username</h2>
             <form onSubmit={handleUpdateUsername} className="space-y-4">
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-slate-300 mb-2">
@@ -183,8 +183,8 @@ export function Settings() {
           </div>
 
           {/* Email Section */}
-          <div className="bg-slate-900 rounded-lg p-6 border border-slate-800">
-            <h2 className="text-xl font-semibold text-white mb-4">Email</h2>
+          <div className="bg-slate-900 rounded-lg p-4 sm:p-6 border border-slate-800">
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-4">Email</h2>
             <form onSubmit={handleUpdateEmail} className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
@@ -226,8 +226,8 @@ export function Settings() {
 
           {/* Password Section */}
           {user && user.emailVerified && (
-            <div className="bg-slate-900 rounded-lg p-6 border border-slate-800">
-              <h2 className="text-xl font-semibold text-white mb-4">Password</h2>
+            <div className="bg-slate-900 rounded-lg p-4 sm:p-6 border border-slate-800">
+              <h2 className="text-lg sm:text-xl font-semibold text-white mb-4">Password</h2>
               <form onSubmit={handleUpdatePassword} className="space-y-4">
                 <div>
                   <label htmlFor="currentPassword" className="block text-sm font-medium text-slate-300 mb-2">
@@ -293,8 +293,8 @@ export function Settings() {
           )}
 
           {user && !user.emailVerified && (
-            <div className="bg-slate-900 rounded-lg p-6 border border-slate-800">
-              <h2 className="text-xl font-semibold text-white mb-4">Password</h2>
+            <div className="bg-slate-900 rounded-lg p-4 sm:p-6 border border-slate-800">
+              <h2 className="text-lg sm:text-xl font-semibold text-white mb-4">Password</h2>
               <div className="bg-orange-900/20 border border-orange-800 rounded-lg p-4">
                 <p className="text-orange-400 text-sm">
                   You must verify your email before you can change your password.

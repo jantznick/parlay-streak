@@ -18,9 +18,9 @@ export function Dashboard() {
       <ParlayBuilder />
 
       {/* Main Content */}
-      <main className={`flex-1 w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-12 mx-auto transition-[margin-right] duration-300 ease-in-out ${
+      <main className={`flex-1 w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-12 mx-auto transition-[margin-right] duration-300 ease-in-out ${
         isParlayBuilderOpen 
-          ? 'mr-[22rem]' // Increase right margin when builder opens
+          ? 'lg:mr-[22rem]' // Increase right margin when builder opens (desktop only)
           : ''
       }`}>
         {/* Streak Stats */}

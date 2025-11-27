@@ -61,24 +61,24 @@ export function GameCard({
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg hover:border-slate-700 transition">
       {/* Game Header */}
-      <div className="p-6">
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
+          <div className="flex-1 min-w-0">
             {/* Game Info */}
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-2 sm:gap-3 mb-3">
               <button
                 onClick={() => onToggle(game.id)}
-                className="text-slate-400 hover:text-white transition"
+                className="text-slate-400 hover:text-white transition flex-shrink-0"
                 aria-label={isExpanded ? 'Collapse game' : 'Expand game'}
               >
                 {isExpanded ? '▼' : '▶'}
               </button>
-              <span className="text-2xl">{getSportEmoji(game.sport)}</span>
-              <div>
-                <div className="text-lg font-semibold text-white">
+              <span className="text-xl sm:text-2xl flex-shrink-0">{getSportEmoji(game.sport)}</span>
+              <div className="min-w-0 flex-1">
+                <div className="text-base sm:text-lg font-semibold text-white truncate">
                   {game.awayTeam} @ {game.homeTeam}
                 </div>
-                <div className="text-sm text-slate-400">
+                <div className="text-xs sm:text-sm text-slate-400">
                   {formatTime(game.startTime)} • {formatDate(game.startTime)}
                 </div>
               </div>
@@ -86,15 +86,15 @@ export function GameCard({
 
             {/* Score and Live Info (if game started) */}
             {(game.homeScore !== null || game.awayScore !== null) && (
-              <div className="ml-8 mb-3">
+              <div className="ml-6 sm:ml-8 mb-3">
                 {game.status === 'in_progress' && game.metadata?.liveInfo?.periodDisplay ? (
                   // Live game format: "7:23 3rd Quarter: Pacers 97 - Pistons 83"
-                  <div className="text-sm text-yellow-400 font-medium">
+                  <div className="text-xs sm:text-sm text-yellow-400 font-medium break-words">
                     {game.metadata.liveInfo.periodDisplay}: {game.awayTeam} {game.awayScore ?? 0} - {game.homeScore ?? 0} {game.homeTeam}
                   </div>
                 ) : (
                   // Completed or scheduled game format: "Pacers: 97 - Pistons: 83"
-                  <div className="text-sm text-slate-300">
+                  <div className="text-xs sm:text-sm text-slate-300 break-words">
                     {game.awayTeam}: <span className="font-bold text-white">{game.awayScore ?? 0}</span> - <span className="font-bold text-white">{game.homeScore ?? 0}</span> {game.homeTeam}
                   </div>
                 )}
@@ -102,7 +102,7 @@ export function GameCard({
             )}
 
             {/* Status Badge */}
-            <div className="flex gap-2 items-center ml-8">
+            <div className="flex gap-2 items-center ml-6 sm:ml-8 flex-wrap">
               <span
                 className={`px-2 py-1 text-xs font-medium rounded ${
                   game.status === 'completed'
@@ -123,19 +123,19 @@ export function GameCard({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <button
               onClick={() => onQuickMoneyline(game)}
               disabled={creatingMoneyline === game.id}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition text-sm font-medium"
+              className="px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition text-xs sm:text-sm font-medium whitespace-nowrap"
               title="Quickly create a moneyline bet (home team vs away team)"
             >
-              {creatingMoneyline === game.id ? 'Creating...' : 'Quick Moneyline'}
+              {creatingMoneyline === game.id ? 'Creating...' : <><span className="hidden sm:inline">Quick </span>Moneyline</>}
             </button>
             <button
               onClick={() => onCreateBets(game)}
               disabled={loadingRoster}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition text-sm font-medium"
+              className="px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition text-xs sm:text-sm font-medium whitespace-nowrap"
             >
               {loadingRoster ? 'Loading...' : 'Create Bets'}
             </button>

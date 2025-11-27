@@ -116,17 +116,17 @@ export function TodaysBetsSection() {
 
   if (loading) {
     return (
-      <div className="bg-slate-900 rounded-lg p-8 text-center">
-        <div className="text-4xl mb-4">⏳</div>
-        <p className="text-slate-400">Loading today's bets...</p>
+      <div className="bg-slate-900 rounded-lg p-6 sm:p-8 text-center">
+        <div className="text-3xl sm:text-4xl mb-4">⏳</div>
+        <p className="text-sm sm:text-base text-slate-400">Loading today's bets...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
-        <p className="text-red-400">{error}</p>
+      <div className="bg-red-900/20 border border-red-800 rounded-lg p-3 sm:p-4">
+        <p className="text-sm sm:text-base text-red-400">{error}</p>
       </div>
     );
   }
@@ -142,10 +142,10 @@ export function TodaysBetsSection() {
   // Show empty state message when there are no games
   if (games.length === 0 && !loading) {
     return (
-      <div className="bg-slate-900 rounded-lg p-8 text-center">
-        <div className="text-4xl mb-4">📅</div>
-        <p className="text-slate-300 mb-2">No games with bets available for {dateLabel.toLowerCase()}</p>
-        <p className="text-slate-500 text-sm mb-4">
+      <div className="bg-slate-900 rounded-lg p-6 sm:p-8 text-center">
+        <div className="text-3xl sm:text-4xl mb-4">📅</div>
+        <p className="text-sm sm:text-base text-slate-300 mb-2">No games with bets available for {dateLabel.toLowerCase()}</p>
+        <p className="text-xs sm:text-sm text-slate-500 mb-4">
           {selectedDate === getTodayDateString() 
             ? "Check back later or browse upcoming games"
             : "No bets available for this date"}
@@ -162,18 +162,18 @@ export function TodaysBetsSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <div>
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-xl sm:text-2xl font-bold text-white">
             {dateLabel}'s Available Bets
           </h2>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-slate-400 text-xs sm:text-sm mt-1">
             {games.length} game{games.length !== 1 ? 's' : ''} with {games.reduce((sum, g) => sum + g.bets.length, 0)} available bet{games.reduce((sum, g) => sum + g.bets.length, 0) !== 1 ? 's' : ''}
           </p>
         </div>
         <button
           onClick={fetchTodaysBets}
-          className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition text-sm"
+          className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition text-sm w-full sm:w-auto"
         >
           Refresh
         </button>
