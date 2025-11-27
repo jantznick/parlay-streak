@@ -99,7 +99,7 @@ export function MyBetsSection() {
   const [selections, setSelections] = useState<BetSelection[]>([]);
   const [parlays, setParlays] = useState<Parlay[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{message: string, code: string} | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [startingParlayId, setStartingParlayId] = useState<string | null>(null);
@@ -109,6 +109,8 @@ export function MyBetsSection() {
   const [pendingParlayToOpen, setPendingParlayToOpen] = useState<Parlay | null>(null);
   const [historicalGames, setHistoricalGames] = useState<HistoricalGame[]>([]);
   const [loadingHistorical, setLoadingHistorical] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [resendEmailSuccess, setResendEmailSuccess] = useState(false);
   
   // Date navigation state - default to today
   const [selectedDate, setSelectedDateState] = useState<string>(getTodayDateString());
@@ -151,6 +153,17 @@ export function MyBetsSection() {
         );
         setSelections(singleBets);
       } else {
+        // Check if there's an error with code
+        if (selectionsResponse.error) {
+          setError({
+            message: selectionsResponse.error.message || 'Failed to load your bets',
+            code: selectionsResponse.error.code || ''
+          });
+          setSelections([]);
+          setParlays([]);
+          setLoading(false);
+          return;
+        }
         setSelections([]);
       }
 
@@ -163,13 +176,36 @@ export function MyBetsSection() {
         const validParlays = (data.parlays || []).filter(p => p.betCount >= 2);
         setParlays(validParlays);
       } else {
+        // Check if there's an error with code
+        if (parlaysResponse.error) {
+          setError({
+            message: parlaysResponse.error.message || 'Failed to load your bets',
+            code: parlaysResponse.error.code || ''
+          });
+          setSelections([]);
+          setParlays([]);
+          setLoading(false);
+          return;
+        }
         setParlays([]);
       }
 
       // Fetch historical bets available on the selected date
       await fetchHistoricalBets();
     } catch (error: any) {
-      setError(error.message || 'Failed to load your bets');
+      let errorCode = error?.code || '';
+      const errorMessage = error?.message || 'Failed to load your bets';
+      
+      // Fallback: check if message indicates email verification
+      const lowerMessage = errorMessage.toLowerCase();
+      if (!errorCode && (lowerMessage.includes('email verification') || lowerMessage.includes('verify your email'))) {
+        errorCode = 'EMAIL_NOT_VERIFIED';
+      }
+      
+      setError({
+        message: errorMessage,
+        code: errorCode
+      });
       setSelections([]);
       setParlays([]);
     } finally {
@@ -326,20 +362,28 @@ export function MyBetsSection() {
     );
   };
 
+  const handleResendVerificationEmail = async () => {
+    setResendingEmail(true);
+    // Don't clear the error - keep it visible with the confirmation
+
+    try {
+      const response = await api.resendVerificationEmail();
+      if (response.success) {
+        setResendEmailSuccess(true);
+      }
+    } catch (err: any) {
+      setError({ message: err.message || 'Failed to resend verification email', code: 'EMAIL_NOT_VERIFIED' });
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
 
   if (loading && selections.length === 0 && parlays.length === 0) {
     return (
       <div className="bg-slate-900 rounded-lg p-8 text-center animate-pulse">
         <div className="text-4xl mb-4">⏳</div>
         <p className="text-slate-400">Loading your bets...</p>
-      </div>
-    );
-  }
-
-  if (error && selections.length === 0 && parlays.length === 0) {
-    return (
-      <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
-        <p className="text-red-400">{error}</p>
       </div>
     );
   }
@@ -389,9 +433,21 @@ export function MyBetsSection() {
           </button>
         </div>
 
-        {error && (
-          <div className="bg-red-900/20 border border-red-800 rounded-lg p-3">
-            <p className="text-red-400 text-sm">{error}</p>
+        {error && error.code === 'EMAIL_NOT_VERIFIED' && (
+          <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
+            <p className="text-red-400 mb-3">{error.message}</p>
+            <div className="space-y-2">
+              <button
+                onClick={handleResendVerificationEmail}
+                disabled={resendingEmail}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {resendingEmail ? 'Sending...' : 'Resend Verification Email'}
+              </button>
+              {resendEmailSuccess && (
+                <p className="text-green-400 text-sm mt-2">Verification email sent! Please check your inbox.</p>
+              )}
+            </div>
           </div>
         )}
 
@@ -490,7 +546,7 @@ export function MyBetsSection() {
 
         {/* Empty state for today/future when no bets */}
         {isTodayOrFuture && emptyState && (
-          <div className="bg-slate-900 rounded-lg p-8 text-center mt-6">
+          <div className="bg-slate-900 rounded-lg p-8 text-center mt-6 border border-slate-800">
             <div className="text-4xl mb-4">📝</div>
             <p className="text-slate-300 mb-2">No bets for {formatDateDisplay(selectedDate)}</p>
             <p className="text-slate-500 text-sm">

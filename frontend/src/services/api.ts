@@ -30,12 +30,22 @@ class ApiService {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error?.message || 'Request failed');
+        const error: any = new Error(data.error?.message || 'Request failed');
+        error.code = data.error?.code;
+        throw error;
       }
       
       return data;
     } catch (error: any) {
-      throw new Error(error.message || 'Network error');
+      // Preserve error code if it exists, or if this is a network error, create a new one
+      if (error.code) {
+        const newError: any = new Error(error.message || 'Network error');
+        newError.code = error.code;
+        throw newError;
+      }
+      // If it's not our custom error, it might be a network error - create a generic one
+      const networkError: any = new Error(error.message || 'Network error');
+      throw networkError;
     }
   }
 

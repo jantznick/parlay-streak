@@ -64,7 +64,7 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      <div className="flex-1 flex items-center justify-center px-4">
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="max-w-md w-full">
         {/* Logo/Header */}
         <div className="text-center mb-8">

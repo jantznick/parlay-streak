@@ -6,7 +6,7 @@ export function NotFound() {
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Header />
-      <main className="flex-1 flex items-center justify-center px-4">
+      <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="max-w-md w-full text-center">
           <div className="mb-8">
             <h1 className="text-9xl font-bold text-slate-800 mb-4">404</h1>

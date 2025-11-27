@@ -380,28 +380,6 @@ export const verifyMagicLink = async (req: Request, res: Response, next: NextFun
   }
 };
 
-// Rate limiting helper (simple in-memory store - use Redis in production)
-const emailRequestCounts = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
-const MAX_REQUESTS_PER_HOUR = 3;
-
-function checkRateLimit(email: string): boolean {
-  const now = Date.now();
-  const record = emailRequestCounts.get(email);
-
-  if (!record || now > record.resetAt) {
-    emailRequestCounts.set(email, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
-    return true;
-  }
-
-  if (record.count >= MAX_REQUESTS_PER_HOUR) {
-    return false;
-  }
-
-  record.count++;
-  return true;
-}
-
 export const resendVerificationEmail = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.session.userId;
@@ -420,11 +398,6 @@ export const resendVerificationEmail = async (req: Request, res: Response, next:
 
     if (user.emailVerified) {
       throw new ValidationError('Email is already verified');
-    }
-
-    // Check rate limit
-    if (!checkRateLimit(user.email)) {
-      throw new ValidationError('Too many requests. Please try again later.');
     }
 
     // Generate new verification token
@@ -559,38 +532,35 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     // Always return success to prevent user enumeration
     // Send email if user exists (including magic-link-only users who want to set a password)
     if (user) {
-      // Check rate limit
-      if (checkRateLimit(email)) {
-        // Generate reset token
-        const resetToken = randomBytes(32).toString('hex');
-        const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      // Generate reset token
+      const resetToken = randomBytes(32).toString('hex');
+      const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-        // Invalidate old reset tokens
-        await prisma.authToken.updateMany({
-          where: {
-            userId: user.id,
-            tokenType: 'password_reset',
-            usedAt: null,
-          },
-          data: {
-            usedAt: new Date(),
-          },
-        });
+      // Invalidate old reset tokens
+      await prisma.authToken.updateMany({
+        where: {
+          userId: user.id,
+          tokenType: 'password_reset',
+          usedAt: null,
+        },
+        data: {
+          usedAt: new Date(),
+        },
+      });
 
-        // Create new reset token
-        await prisma.authToken.create({
-          data: {
-            userId: user.id,
-            token: resetToken,
-            tokenType: 'password_reset',
-            expiresAt: resetExpires,
-          },
-        });
+      // Create new reset token
+      await prisma.authToken.create({
+        data: {
+          userId: user.id,
+          token: resetToken,
+          tokenType: 'password_reset',
+          expiresAt: resetExpires,
+        },
+      });
 
-        // Send reset email
-        const resetLink = `${process.env.CORS_ORIGIN}/reset-password?token=${resetToken}`;
-        await sendPasswordResetEmail(email, resetLink);
-      }
+      // Send reset email
+      const resetLink = `${process.env.CORS_ORIGIN}/reset-password?token=${resetToken}`;
+      await sendPasswordResetEmail(email, resetLink);
     }
 
     // Always return success message
