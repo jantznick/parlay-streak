@@ -10,6 +10,7 @@ import { VerifyEmail } from './pages/VerifyEmail';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { BetManagement } from './pages/admin/BetManagement';
+import { Settings } from './pages/Settings';
 import { NotFound } from './pages/NotFound';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -69,6 +70,16 @@ function App() {
             element={
               <PrivateRoute>
                 <BetManagement />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Settings Route */}
+          <Route
+            path="/settings"
+            element={
+              <PrivateRoute>
+                <Settings />
               </PrivateRoute>
             }
           />

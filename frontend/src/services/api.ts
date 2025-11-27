@@ -30,12 +30,22 @@ class ApiService {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error?.message || 'Request failed');
+        const error: any = new Error(data.error?.message || 'Request failed');
+        error.code = data.error?.code;
+        throw error;
       }
       
       return data;
     } catch (error: any) {
-      throw new Error(error.message || 'Network error');
+      // Preserve error code if it exists, or if this is a network error, create a new one
+      if (error.code) {
+        const newError: any = new Error(error.message || 'Network error');
+        newError.code = error.code;
+        throw newError;
+      }
+      // If it's not our custom error, it might be a network error - create a generic one
+      const networkError: any = new Error(error.message || 'Network error');
+      throw networkError;
     }
   }
 
@@ -64,10 +74,10 @@ class ApiService {
     return this.request<{ user: any }>('/api/auth/me');
   }
 
-  async requestMagicLink(email: string) {
+  async requestMagicLink(email: string, username?: string) {
     return this.request('/api/auth/magic-link/request', {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, ...(username && { username }) }),
     });
   }
 
@@ -96,6 +106,27 @@ class ApiService {
     return this.request('/api/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify({ token, password, confirmPassword }),
+    });
+  }
+
+  async updateUsername(username: string) {
+    return this.request<{ user: any }>('/api/auth/profile/username', {
+      method: 'PATCH',
+      body: JSON.stringify({ username }),
+    });
+  }
+
+  async updateEmail(email: string) {
+    return this.request<{ user: any }>('/api/auth/profile/email', {
+      method: 'PATCH',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async updatePassword(currentPassword: string, newPassword: string, confirmPassword: string) {
+    return this.request('/api/auth/profile/password', {
+      method: 'PATCH',
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
     });
   }
 

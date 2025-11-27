@@ -35,12 +35,12 @@ export function ForgotPassword() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      <div className="flex-1 flex items-center justify-center px-4 py-12">
+      <div className="flex-1 flex items-center justify-center px-4 py-6 sm:py-12">
         <div className="max-w-md w-full">
-          <div className="bg-slate-900 rounded-lg shadow-xl p-8 border border-slate-800">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-white mb-2">Reset Password</h1>
-              <p className="text-slate-400">Enter your email address and we'll send you a link to reset your password.</p>
+          <div className="bg-slate-900 rounded-lg shadow-xl p-6 sm:p-8 border border-slate-800">
+            <div className="text-center mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Reset Password</h1>
+              <p className="text-sm sm:text-base text-slate-400">Enter your email address and we'll send you a link to reset your password.</p>
             </div>
 
             {success ? (

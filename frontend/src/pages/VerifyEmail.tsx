@@ -13,18 +13,24 @@ export function VerifyEmail() {
   const [error, setError] = useState('');
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [hasVerified, setHasVerified] = useState(false);
 
   useEffect(() => {
-    if (token) {
+    // Only verify once, and only if we haven't already verified
+    if (token && !hasVerified && status === 'verifying') {
       verifyEmail(token);
-    } else {
+    } else if (!token) {
       setStatus('error');
       setError('No verification token provided');
     }
-  }, [token]);
+  }, [token, hasVerified, status]);
 
   const verifyEmail = async (verificationToken: string) => {
+    // Prevent multiple verification attempts
+    if (hasVerified) return;
+    
     try {
+      setHasVerified(true);
       const response = await api.verifyEmail(verificationToken);
       if (response.success) {
         setStatus('success');
@@ -36,10 +42,16 @@ export function VerifyEmail() {
         setTimeout(() => {
           navigate('/');
         }, 2000);
+      } else {
+        // If response exists but success is false, show error from response
+        setStatus('error');
+        setError(response.error?.message || 'Failed to verify email');
+        setHasVerified(false); // Allow retry
       }
     } catch (err: any) {
       setStatus('error');
       setError(err.message || 'Failed to verify email');
+      setHasVerified(false); // Allow retry
     }
   };
 
@@ -67,31 +79,31 @@ export function VerifyEmail() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      <div className="flex-1 flex items-center justify-center px-4 py-12">
+      <div className="flex-1 flex items-center justify-center px-4 py-6 sm:py-12">
         <div className="max-w-md w-full">
-          <div className="bg-slate-900 rounded-lg shadow-xl p-8 border border-slate-800">
+          <div className="bg-slate-900 rounded-lg shadow-xl p-6 sm:p-8 border border-slate-800">
             {status === 'verifying' && (
               <div className="text-center">
-                <div className="text-6xl mb-4">📧</div>
-                <h1 className="text-2xl font-bold text-white mb-2">Verifying Email</h1>
-                <p className="text-slate-400">Please wait while we verify your email address...</p>
+                <div className="text-5xl sm:text-6xl mb-4">📧</div>
+                <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">Verifying Email</h1>
+                <p className="text-sm sm:text-base text-slate-400">Please wait while we verify your email address...</p>
               </div>
             )}
 
             {status === 'success' && (
               <div className="text-center">
-                <div className="text-6xl mb-4">✅</div>
-                <h1 className="text-2xl font-bold text-green-500 mb-2">Email Verified!</h1>
-                <p className="text-slate-400 mb-4">Your email has been successfully verified.</p>
-                <p className="text-slate-500 text-sm">Redirecting to dashboard...</p>
+                <div className="text-5xl sm:text-6xl mb-4">✅</div>
+                <h1 className="text-xl sm:text-2xl font-bold text-green-500 mb-2">Email Verified!</h1>
+                <p className="text-sm sm:text-base text-slate-400 mb-4">Your email has been successfully verified.</p>
+                <p className="text-xs sm:text-sm text-slate-500">Redirecting to dashboard...</p>
               </div>
             )}
 
             {status === 'error' && (
               <div className="text-center">
-                <div className="text-6xl mb-4">❌</div>
-                <h1 className="text-2xl font-bold text-red-500 mb-2">Verification Failed</h1>
-                <p className="text-slate-400 mb-6">{error}</p>
+                <div className="text-5xl sm:text-6xl mb-4">❌</div>
+                <h1 className="text-xl sm:text-2xl font-bold text-red-500 mb-2">Verification Failed</h1>
+                <p className="text-sm sm:text-base text-slate-400 mb-6">{error}</p>
                 
                 {user && !user.emailVerified && (
                   <div className="space-y-4">
