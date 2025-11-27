@@ -76,12 +76,21 @@ export function Register() {
       return;
     }
 
+    // Validate username if provided
+    if (username) {
+      const usernameError = validateUsername(username);
+      if (usernameError) {
+        setError(usernameError);
+        return;
+      }
+    }
+
     setError('');
     setSuccess('');
     setSendingMagicLink(true);
 
     try {
-      await api.requestMagicLink(email);
+      await api.requestMagicLink(email, username || undefined);
       setSuccess('✨ Check your email for a magic link!');
     } catch (err: any) {
       setError(err.message || 'Failed to send magic link');

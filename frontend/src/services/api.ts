@@ -74,10 +74,10 @@ class ApiService {
     return this.request<{ user: any }>('/api/auth/me');
   }
 
-  async requestMagicLink(email: string) {
+  async requestMagicLink(email: string, username?: string) {
     return this.request('/api/auth/magic-link/request', {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, ...(username && { username }) }),
     });
   }
 

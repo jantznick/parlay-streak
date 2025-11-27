@@ -13,18 +13,24 @@ export function VerifyEmail() {
   const [error, setError] = useState('');
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [hasVerified, setHasVerified] = useState(false);
 
   useEffect(() => {
-    if (token) {
+    // Only verify once, and only if we haven't already verified
+    if (token && !hasVerified && status === 'verifying') {
       verifyEmail(token);
-    } else {
+    } else if (!token) {
       setStatus('error');
       setError('No verification token provided');
     }
-  }, [token]);
+  }, [token, hasVerified, status]);
 
   const verifyEmail = async (verificationToken: string) => {
+    // Prevent multiple verification attempts
+    if (hasVerified) return;
+    
     try {
+      setHasVerified(true);
       const response = await api.verifyEmail(verificationToken);
       if (response.success) {
         setStatus('success');
@@ -36,10 +42,16 @@ export function VerifyEmail() {
         setTimeout(() => {
           navigate('/');
         }, 2000);
+      } else {
+        // If response exists but success is false, show error from response
+        setStatus('error');
+        setError(response.error?.message || 'Failed to verify email');
+        setHasVerified(false); // Allow retry
       }
     } catch (err: any) {
       setStatus('error');
       setError(err.message || 'Failed to verify email');
+      setHasVerified(false); // Allow retry
     }
   };
 

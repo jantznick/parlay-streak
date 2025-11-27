@@ -32,6 +32,14 @@ const loginSchema = Joi.object({
 
 const magicLinkSchema = Joi.object({
   email: Joi.string().email().required(),
+  username: Joi.string()
+    .alphanum()
+    .min(AUTH_VALIDATION.username.minLength)
+    .max(AUTH_VALIDATION.username.maxLength)
+    .optional()
+    .messages({
+      'string.alphanum': AUTH_VALIDATION.username.patternMessage,
+    }),
 });
 
 const forgotPasswordSchema = Joi.object({
@@ -271,7 +279,7 @@ export const requestMagicLink = async (req: Request, res: Response, next: NextFu
       throw new ValidationError(error.details[0].message);
     }
 
-    const { email } = value;
+    const { email, username } = value;
 
     // Find or create user
     let user = await prisma.user.findUnique({
@@ -280,10 +288,25 @@ export const requestMagicLink = async (req: Request, res: Response, next: NextFu
 
     if (!user) {
       // Auto-create user with magic link (no password)
-      const username = email.split('@')[0] + Math.random().toString(36).substring(7);
+      // Use provided username if available, otherwise generate one
+      let finalUsername: string;
+      if (username) {
+        // Check if username is already taken
+        const existingUser = await prisma.user.findUnique({
+          where: { username },
+        });
+        if (existingUser) {
+          throw new ValidationError('Username already exists');
+        }
+        finalUsername = username;
+      } else {
+        // Generate username from email if not provided
+        finalUsername = email.split('@')[0] + Math.random().toString(36).substring(7);
+      }
+      
       user = await prisma.user.create({
         data: {
-          username,
+          username: finalUsername,
           email,
           passwordHash: null, // No password for magic link users
         },
@@ -456,37 +479,44 @@ export const verifyEmail = async (req: Request, res: Response, next: NextFunctio
       throw new ValidationError('Invalid token');
     }
 
-    // Find user by verification token
-    const user = await prisma.user.findUnique({
-      where: { emailVerificationToken: token },
+    // Find auth token first
+    const authToken = await prisma.authToken.findUnique({
+      where: { token },
+      include: { user: true },
     });
 
-    if (!user) {
+    if (!authToken || authToken.tokenType !== 'email_verification') {
       throw new ValidationError('Invalid verification token');
     }
 
-    // Check if already verified
+    const user = authToken.user;
+
+    // If email is already verified, log them in and return success (user might be clicking link again)
     if (user.emailVerified) {
-      throw new ValidationError('Email is already verified');
+      // Set session to log them in
+      req.session.userId = user.id;
+      
+      req.session.save((err) => {
+        if (err) {
+          return next(err);
+        }
+        
+        return res.json({
+          success: true,
+          data: { message: 'Email is already verified' },
+        });
+      });
+      return;
+    }
+
+    // Check if token was already used - if so, but email isn't verified, that's an error
+    if (authToken.usedAt) {
+      throw new ValidationError('Verification token has already been used');
     }
 
     // Check if token is expired
-    if (!user.emailVerificationExpires || user.emailVerificationExpires < new Date()) {
+    if (authToken.expiresAt < new Date()) {
       throw new ValidationError('Verification token has expired');
-    }
-
-    // Find auth token
-    const authToken = await prisma.authToken.findUnique({
-      where: { token },
-    });
-
-    if (!authToken) {
-      throw new ValidationError('Invalid verification token');
-    }
-
-    // Check if token was already used
-    if (authToken.usedAt) {
-      throw new ValidationError('Verification token has already been used');
     }
 
     // Mark token as used
@@ -505,9 +535,19 @@ export const verifyEmail = async (req: Request, res: Response, next: NextFunctio
       },
     });
 
-    res.json({
-      success: true,
-      data: { message: 'Email verified successfully' },
+    // Set session to log them in
+    req.session.userId = user.id;
+    
+    // Explicitly save session to ensure cookie is set
+    req.session.save((err) => {
+      if (err) {
+        return next(err);
+      }
+      
+      res.json({
+        success: true,
+        data: { message: 'Email verified successfully' },
+      });
     });
   } catch (err) {
     next(err);
