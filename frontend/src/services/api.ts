@@ -109,6 +109,27 @@ class ApiService {
     });
   }
 
+  async updateUsername(username: string) {
+    return this.request<{ user: any }>('/api/auth/profile/username', {
+      method: 'PATCH',
+      body: JSON.stringify({ username }),
+    });
+  }
+
+  async updateEmail(email: string) {
+    return this.request<{ user: any }>('/api/auth/profile/email', {
+      method: 'PATCH',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async updatePassword(currentPassword: string, newPassword: string, confirmPassword: string) {
+    return this.request('/api/auth/profile/password', {
+      method: 'PATCH',
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+    });
+  }
+
   // Admin endpoints
   async fetchGamesFromApi(
     date: string, 

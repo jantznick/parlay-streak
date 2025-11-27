@@ -55,6 +55,30 @@ const resetPasswordSchema = Joi.object({
   confirmPassword: Joi.string().required().valid(Joi.ref('password')),
 });
 
+const updateUsernameSchema = Joi.object({
+  username: Joi.string()
+    .alphanum()
+    .min(AUTH_VALIDATION.username.minLength)
+    .max(AUTH_VALIDATION.username.maxLength)
+    .required()
+    .messages({
+      'string.alphanum': AUTH_VALIDATION.username.patternMessage,
+    }),
+});
+
+const updateEmailSchema = Joi.object({
+  email: Joi.string().email().required(),
+});
+
+const updatePasswordSchema = Joi.object({
+  currentPassword: Joi.string().required(),
+  newPassword: Joi.string()
+    .min(AUTH_VALIDATION.password.minLength)
+    .max(AUTH_VALIDATION.password.maxLength)
+    .required(),
+  confirmPassword: Joi.string().required().valid(Joi.ref('newPassword')),
+});
+
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Validate input
@@ -673,6 +697,204 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
     res.json({
       success: true,
       data: { message: 'Password reset successfully' },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateUsername = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.session.userId;
+
+    if (!userId) {
+      throw new AuthenticationError('Authentication required');
+    }
+
+    // Validate input
+    const { error, value } = updateUsernameSchema.validate(req.body);
+    if (error) {
+      throw new ValidationError(error.details[0].message);
+    }
+
+    const { username } = value;
+
+    // Check if username is already taken
+    const existingUser = await prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (existingUser && existingUser.id !== userId) {
+      throw new ValidationError('Username already exists');
+    }
+
+    // Update username
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { username },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        emailVerified: true,
+        currentStreak: true,
+        longestStreak: true,
+        totalPointsEarned: true,
+        createdAt: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: { user, message: 'Username updated successfully' },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateEmail = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.session.userId;
+
+    if (!userId) {
+      throw new AuthenticationError('Authentication required');
+    }
+
+    // Validate input
+    const { error, value } = updateEmailSchema.validate(req.body);
+    if (error) {
+      throw new ValidationError(error.details[0].message);
+    }
+
+    const { email } = value;
+
+    // Check if email is already taken
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser && existingUser.id !== userId) {
+      throw new ValidationError('Email already exists');
+    }
+
+    // Get current user
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!currentUser) {
+      throw new AuthenticationError('User not found');
+    }
+
+    // Generate new verification token
+    const verificationToken = randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Invalidate old verification tokens
+    await prisma.authToken.updateMany({
+      where: {
+        userId: userId,
+        tokenType: 'email_verification',
+        usedAt: null,
+      },
+      data: {
+        usedAt: new Date(),
+      },
+    });
+
+    // Update email and mark as unverified
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        email,
+        emailVerified: false,
+        emailVerificationToken: verificationToken,
+        emailVerificationExpires: verificationExpires,
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        emailVerified: true,
+        currentStreak: true,
+        longestStreak: true,
+        totalPointsEarned: true,
+        createdAt: true,
+      },
+    });
+
+    // Create new auth token
+    await prisma.authToken.create({
+      data: {
+        userId: user.id,
+        token: verificationToken,
+        tokenType: 'email_verification',
+        expiresAt: verificationExpires,
+      },
+    });
+
+    // Send verification email
+    const verificationLink = `${process.env.CORS_ORIGIN}/verify-email?token=${verificationToken}`;
+    await sendVerificationEmail(email, verificationLink);
+
+    res.json({
+      success: true,
+      data: { user, message: 'Email updated successfully. Please check your email to verify the new address.' },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updatePassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.session.userId;
+
+    if (!userId) {
+      throw new AuthenticationError('Authentication required');
+    }
+
+    // Validate input
+    const { error, value } = updatePasswordSchema.validate(req.body);
+    if (error) {
+      throw new ValidationError(error.details[0].message);
+    }
+
+    const { currentPassword, newPassword } = value;
+
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new AuthenticationError('User not found');
+    }
+
+    // Check if user has a password (magic link only users don't have passwords)
+    if (!user.passwordHash) {
+      throw new ValidationError('You cannot change your password. Please set a password first.');
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isPasswordValid) {
+      throw new ValidationError('Current password is incorrect');
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    res.json({
+      success: true,
+      data: { message: 'Password updated successfully' },
     });
   } catch (err) {
     next(err);

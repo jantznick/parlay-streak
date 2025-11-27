@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { HiCog6Tooth, HiArrowRightOnRectangle } from 'react-icons/hi2';
 
 interface HeaderProps {
   title?: string;
@@ -36,6 +37,9 @@ export function Header({ title }: HeaderProps) {
           </div>
           {user && (
             <div className="flex items-center gap-4">
+              <span className="text-slate-300">
+                Welcome, <span className="font-semibold text-white">{user.username}</span>
+              </span>
               {user.isAdmin && (
                 <Link
                   to="/admin/bets"
@@ -44,14 +48,19 @@ export function Header({ title }: HeaderProps) {
                   Admin
                 </Link>
               )}
-              <span className="text-slate-300">
-                Welcome, <span className="font-semibold text-white">{user.username}</span>
-              </span>
+              <Link
+                to="/settings"
+                className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition"
+                title="Settings"
+              >
+                <HiCog6Tooth className="w-5 h-5" />
+              </Link>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition"
+                className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition"
+                title="Logout"
               >
-                Logout
+                <HiArrowRightOnRectangle className="w-5 h-5" />
               </button>
             </div>
           )}

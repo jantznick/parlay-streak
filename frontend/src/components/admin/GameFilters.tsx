@@ -39,7 +39,7 @@ export function GameFilters({
   return (
     <div className="bg-slate-900 rounded-lg p-6 mb-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
+        <div className="flex flex-col justify-end">
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Select Date
           </label>
@@ -92,14 +92,14 @@ export function GameFilters({
           <button
             onClick={() => onFetchGames(false)}
             disabled={loading || !selectedSport || !selectedLeague}
-            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium"
+            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium h-[42px]"
           >
             {loading ? 'Fetching...' : 'Fetch Games'}
           </button>
           <button
             onClick={() => onFetchGames(true)}
             disabled={loading || !selectedSport || !selectedLeague}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium"
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition font-medium h-[42px]"
             title="Force refresh from ESPN API (bypasses database cache)"
           >
             Force Refresh
