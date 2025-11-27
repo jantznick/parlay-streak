@@ -1,0 +1,5 @@
+Fetching games and resolving games gets different scoring methods
+Space under login/reg form
+Play by play resolving is all messed up
+Add reverify token links on unverified users
+Verify user flow is not working
