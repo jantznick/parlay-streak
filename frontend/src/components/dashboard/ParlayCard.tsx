@@ -1,48 +1,5 @@
 import React from 'react';
-
-interface ParlaySelection {
-  id: string;
-  bet: {
-    id: string;
-    displayText: string;
-    betType: string;
-    config?: any;
-  };
-  selectedSide: string;
-  status: string;
-  outcome?: string;
-  game: {
-    id: string;
-    homeTeam: string;
-    awayTeam: string;
-    startTime: string;
-    status: string;
-    sport: string;
-    homeScore?: number | null;
-    awayScore?: number | null;
-    metadata?: any;
-  };
-}
-
-interface Parlay {
-  id: string;
-  betCount: number;
-  parlayValue: number;
-  insured: boolean;
-  insuranceCost: number;
-  status: string;
-  lockedAt?: string;
-  selections: ParlaySelection[];
-  createdAt: string;
-}
-
-interface ParlayCardProps {
-  parlay: Parlay;
-  formatSelectionText: (side: string, betType: string, config: any, game: any, outcome?: string) => string;
-  formatTime: (dateString: string) => string;
-  getSportEmoji: (sport: string) => string;
-  onOpenParlay: (parlay: Parlay) => void;
-}
+import type { Parlay, ParlayCardProps } from '../../interfaces';
 
 export function ParlayCard({
   parlay,

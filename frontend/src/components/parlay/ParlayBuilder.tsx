@@ -5,35 +5,7 @@ import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { ConfirmModal } from '../common/ConfirmModal';
 import type { BetConfig } from '@shared/types/bets';
-
-interface ParlaySelection {
-  id: string;
-  bet: {
-    id: string;
-    displayText: string;
-    betType: string;
-    config?: BetConfig;
-  };
-  selectedSide: string;
-  game: {
-    id: string;
-    homeTeam: string;
-    awayTeam: string;
-    startTime: string;
-  };
-}
-
-interface Parlay {
-  id: string;
-  betCount: number;
-  parlayValue: number;
-  insured: boolean;
-  insuranceCost: number;
-  status: string;
-  lockedAt?: string;
-  selections: ParlaySelection[];
-  createdAt: string;
-}
+import type { Parlay, ParlaySelection } from '../../interfaces';
 
 /**
  * Get display label for a selected side

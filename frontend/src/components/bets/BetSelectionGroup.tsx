@@ -7,28 +7,7 @@ import { useParlay } from '../../context/ParlayContext';
 import { useBets } from '../../context/BetsContext';
 import { ConfirmModal } from '../common/ConfirmModal';
 import type { BetConfig } from '@shared/types/bets';
-
-interface Bet {
-  id: string;
-  betType: string;
-  displayText: string;
-  config?: BetConfig;
-}
-
-interface Game {
-  id: string;
-  homeTeam: string;
-  awayTeam: string;
-  status: string;
-  startTime: string;
-  metadata?: any;
-}
-
-interface BetSelectionGroupProps {
-  bet: Bet;
-  game: Game;
-  onSelectionSaved?: () => void;
-}
+import type { BetSelectionGroupProps, Bet, Game } from '../../interfaces';
 
 /**
  * Get the labels for the two sides of a bet

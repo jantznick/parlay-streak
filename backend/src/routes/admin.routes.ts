@@ -7,12 +7,7 @@ import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
 import { resolveBet, getSportConfig, extractLiveGameInfo } from '../services/betResolution.service';
 import { getUTCDateRange } from '../utils/dateUtils';
-
-// Type for bet config (from shared types)
-type BetConfig = {
-  type: 'COMPARISON' | 'THRESHOLD' | 'EVENT';
-  [key: string]: any;
-};
+import type { BetConfig } from '../interfaces';
 
 const router = Router();
 const prisma = new PrismaClient();

@@ -1,10 +1,4 @@
-interface BetSelectionCardProps {
-  side: string; // 'participant_1', 'participant_2', 'over', 'under', 'yes', 'no'
-  label: string; // Display label for this side
-  isSelected: boolean;
-  disabled: boolean;
-  onClick: () => void;
-}
+import type { BetSelectionCardProps } from '../../interfaces';
 
 export function BetSelectionCard({ side, label, isSelected, disabled, onClick }: BetSelectionCardProps) {
   return (

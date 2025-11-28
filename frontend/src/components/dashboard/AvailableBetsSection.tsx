@@ -1,38 +1,6 @@
 import React from 'react';
 import { formatDateDisplay } from './DateNavigation';
-
-interface HistoricalGame {
-  id: string;
-  homeTeam: string;
-  awayTeam: string;
-  startTime: string;
-  status: string;
-  sport: string;
-  homeScore?: number | null;
-  awayScore?: number | null;
-  bets: Array<{
-    id: string;
-    displayText: string;
-    betType: string;
-    outcome: string;
-    priority: number;
-    config?: any;
-  }>;
-  metadata?: any;
-}
-
-interface BetSelection {
-  id: string;
-  betId: string;
-}
-
-interface AvailableBetsSectionProps {
-  games: HistoricalGame[];
-  selections: BetSelection[];
-  formatResolvedBetText: (bet: any, game: any) => string;
-  formatTime: (dateString: string) => string;
-  getSportEmoji: (sport: string) => string;
-  selectedDate: string;
+import type { AvailableBetsSectionProps } from '../../interfaces';
   loading: boolean;
   isPastDate: boolean;
 }

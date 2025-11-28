@@ -1,38 +1,7 @@
 import React from 'react';
 import { BetListItem } from './BetListItem';
 import { formatDate, formatTime, formatResolvedBetText, getSportEmoji } from '../../utils/formatting';
-
-interface Bet {
-  id: string;
-  betType: string;
-  displayText: string;
-  priority: number;
-  outcome?: string;
-  config?: any;
-  displayTextOverride?: string;
-}
-
-interface Game {
-  id: string;
-  externalId: string;
-  sport: string;
-  homeTeam: string;
-  awayTeam: string;
-  startTime: string;
-  status: string;
-  homeScore: number | null;
-  awayScore: number | null;
-  metadata?: any;
-  bets: Bet[];
-}
-
-interface GameCardProps {
-  game: Game;
-  isExpanded: boolean;
-  onToggle: (gameId: string) => void;
-  onCreateBets: (game: Game) => void;
-  onQuickMoneyline: (game: Game) => void;
-  onEditBet: (bet: Bet, game: Game) => void;
+import type { GameCardProps } from '../../interfaces';
   onDeleteBet: (bet: Bet, game: Game) => void;
   onResolveBet: (bet: Bet) => void;
   onMoveBetPriority: (gameId: string, betId: string, direction: 'up' | 'down') => void;

@@ -1,42 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { api } from '../services/api';
-
-interface ParlaySelection {
-  id: string;
-  bet: {
-    id: string;
-    displayText: string;
-    betType: string;
-    config?: any;
-  };
-  selectedSide: string;
-  game: {
-    id: string;
-    homeTeam: string;
-    awayTeam: string;
-    startTime: string;
-  };
-}
-
-interface Parlay {
-  id: string;
-  betCount: number;
-  parlayValue: number;
-  insured: boolean;
-  insuranceCost: number;
-  status: string;
-  lockedAt?: string;
-  selections: ParlaySelection[];
-  createdAt: string;
-}
-
-interface ParlayContextType {
-  activeParlay: Parlay | null;
-  setActiveParlay: (parlay: Parlay | null) => void;
-  refreshActiveParlay: () => Promise<void>;
-  isParlayBuilderOpen: boolean;
-  setIsParlayBuilderOpen: (open: boolean) => void;
-}
+import type { Parlay, ParlayContextType } from '../interfaces';
 
 const ParlayContext = createContext<ParlayContextType | undefined>(undefined);
 

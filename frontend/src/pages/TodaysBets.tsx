@@ -4,28 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { BetSelectionGroup } from '../components/bets/BetSelectionGroup';
 import { getSportEmoji, getTimezoneOffset, getTodayDateString } from '../utils/formatting';
-
-interface Bet {
-  id: string;
-  betType: string;
-  displayText: string;
-  priority: number;
-  outcome: string;
-  config?: any;
-  displayTextOverride?: string;
-}
-
-interface Game {
-  id: string;
-  sport: string;
-  homeTeam: string;
-  awayTeam: string;
-  startTime: string;
-  status: string;
-  homeScore: number | null;
-  awayScore: number | null;
-  bets: Bet[];
-}
+import type { Bet, Game } from '../interfaces';
 
 export function TodaysBets() {
   const { user, logout } = useAuth();

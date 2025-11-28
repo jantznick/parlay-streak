@@ -3,61 +3,7 @@ import { api } from '../../services/api';
 import { BASKETBALL_CONFIG } from '@shared/config/sports/basketball';
 import type { BetType, Participant, ComparisonConfig, ThresholdConfig, EventConfig, BetConfig, TimePeriod } from '@shared/types/bets';
 import { Modal } from '../common/Modal';
-
-interface Game {
-  id: string;
-  homeTeam: string;
-  awayTeam: string;
-  sport: string;
-  metadata?: any;
-}
-
-interface Player {
-  id: string;
-  displayName: string;
-  fullName?: string;
-  position?: {
-    displayName?: string;
-    name?: string;
-    abbreviation?: string;
-  };
-  jersey?: string;
-  jerseyNumber?: string;
-}
-
-interface RosterData {
-  home: {
-    team: string;
-    roster: {
-      athletes: Array<Player>;
-    } | null;
-  };
-  away: {
-    team: string;
-    roster: {
-      athletes: Array<Player>;
-    } | null;
-  };
-}
-
-interface Bet {
-  id: string;
-  betType: string;
-  displayText: string;
-  priority: number;
-  outcome: string;
-  config?: any;
-  displayTextOverride?: string;
-}
-
-interface BetModalProps {
-  game: Game;
-  rosterData: RosterData | null;
-  bet?: Bet; // If provided, we're in edit mode
-  onClose: () => void;
-  onBetCreated?: () => void;
-  onBetUpdated?: () => void;
-}
+import type { BetModalProps, Player } from '../../interfaces';
 
 // Extract ParticipantSelector as a separate component
 function ParticipantSelector({ 

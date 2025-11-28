@@ -9,18 +9,7 @@ const { resolveBet } = require('@shared/utils/betResolution');
 const { SPORT_CONFIGS } = require('@shared/config/sports/basketball');
 
 // Type import for TypeScript (using require for runtime)
-type SportConfig = {
-  sport_key: string;
-  display_name: string;
-  time_periods: Array<{
-    value: any;
-    label: string;
-    api_key: string;
-    betEndPointKey?: any;
-  }>;
-  metrics: any[];
-  getResolutionUTCTime?: (gameData: any, timePeriod: any) => Date | undefined;
-};
+import type { SportConfig } from '../interfaces';
 
 /**
  * Get sport config by sport key

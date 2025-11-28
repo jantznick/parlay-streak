@@ -1,18 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-
-interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title?: string;
-  subtitle?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
-  showCloseButton?: boolean;
-  closeOnOverlayClick?: boolean;
-  closeOnEscape?: boolean;
-  footer?: React.ReactNode;
-  children: React.ReactNode;
-  className?: string;
-}
+import type { ModalProps } from '../../interfaces';
 
 const sizeClasses = {
   sm: 'max-w-md',

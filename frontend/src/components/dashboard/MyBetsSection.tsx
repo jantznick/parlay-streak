@@ -9,94 +9,17 @@ import { SingleBetCard } from './SingleBetCard';
 import { ParlayCard } from './ParlayCard';
 import { AvailableBetsSection } from './AvailableBetsSection';
 import { getTeamName, formatResolvedBetText, formatTime, getSportEmoji, getTodayDateString, getTimezoneOffset, formatSelectionText } from '../../utils/formatting';
+import type { Parlay, ParlaySelection, HistoricalGame, BetSelection } from '../../interfaces';
 
-interface BetSelection {
-  id: string;
-  betId: string;
-  selectedSide: string;
-  status: string;
-  outcome?: string; // 'win', 'loss', 'push' - only set when resolved
+// Extended BetSelection for MyBetsSection with createdAt
+interface BetSelectionWithCreatedAt extends BetSelection {
   createdAt: string;
-  bet: {
-    id: string;
-    displayText: string;
-    betType: string;
-    outcome: string;
-    config?: any;
-    game: {
-      id: string;
-      homeTeam: string;
-      awayTeam: string;
-      startTime: string;
-      status: string;
-      sport: string;
-      homeScore?: number | null;
-      awayScore?: number | null;
-      metadata?: any;
-    };
-  };
-}
-
-interface ParlaySelection {
-  id: string;
-  bet: {
-    id: string;
-    displayText: string;
-    betType: string;
-    config?: any;
-  };
-  selectedSide: string;
-  status: string;
-  outcome?: string; // 'win', 'loss', 'push' - only set when resolved
-  game: {
-    id: string;
-    homeTeam: string;
-    awayTeam: string;
-    startTime: string;
-    status: string;
-    sport: string;
-    homeScore?: number | null;
-    awayScore?: number | null;
-    metadata?: any;
-  };
-}
-
-interface Parlay {
-  id: string;
-  betCount: number;
-  parlayValue: number;
-  insured: boolean;
-  insuranceCost: number;
-  status: string;
-  lockedAt?: string;
-  selections: ParlaySelection[];
-  createdAt: string;
-}
-
-interface HistoricalGame {
-  id: string;
-  homeTeam: string;
-  awayTeam: string;
-  startTime: string;
-  status: string;
-  sport: string;
-  homeScore?: number | null;
-  awayScore?: number | null;
-  bets: Array<{
-    id: string;
-    displayText: string;
-    betType: string;
-    outcome: string;
-    priority: number;
-    config?: any;
-  }>;
-  metadata?: any;
 }
 
 export function MyBetsSection() {
   const { activeParlay, setActiveParlay, isParlayBuilderOpen, setIsParlayBuilderOpen } = useParlay();
   const { refreshTrigger, setSelectedDate: setContextSelectedDate } = useBets();
-  const [selections, setSelections] = useState<BetSelection[]>([]);
+  const [selections, setSelections] = useState<BetSelectionWithCreatedAt[]>([]);
   const [parlays, setParlays] = useState<Parlay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<{message: string, code: string} | null>(null);
