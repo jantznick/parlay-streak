@@ -132,7 +132,7 @@ export function extractLiveGameInfo(
       return tp.label.toLowerCase().includes(`${period}`);
     });
     
-    const periodLabel = periodConfig?.label || getDefaultPeriodLabel(period, sportConfig.sport_key);
+    const periodLabel = periodConfig?.label;
     
     if (displayClock) {
       periodDisplay = `${displayClock} ${periodLabel}`;
@@ -149,26 +149,6 @@ export function extractLiveGameInfo(
     displayClock,
     periodDisplay,
   };
-}
-
-/**
- * Get default period label when not found in config
- */
-function getDefaultPeriodLabel(period: number, sportKey: string): string {
-  if (sportKey === 'basketball') {
-    if (period === 1) return '1st Quarter';
-    if (period === 2) return '2nd Quarter';
-    if (period === 3) return '3rd Quarter';
-    if (period === 4) return '4th Quarter';
-    if (period > 4) return `${period}th Quarter`; // Overtime
-  } else if (sportKey === 'american_football' || sportKey === 'football') {
-    if (period === 1) return '1st Quarter';
-    if (period === 2) return '2nd Quarter';
-    if (period === 3) return '3rd Quarter';
-    if (period === 4) return '4th Quarter';
-    if (period > 4) return `${period}th Quarter`; // Overtime
-  }
-  return `Period ${period}`;
 }
 
 export { resolveBet, getSportConfig };
