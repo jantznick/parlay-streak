@@ -9,7 +9,7 @@ const { resolveBet } = require('@shared/utils/betResolution');
 const { SPORT_CONFIGS } = require('@shared/config/sports/basketball');
 
 // Type import for TypeScript (using require for runtime)
-import type { SportConfig } from '../interfaces';
+import type { SportConfig } from '@shared/types/sports';
 
 /**
  * Get sport config by sport key

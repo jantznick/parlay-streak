@@ -4,17 +4,8 @@
  */
 
 import { BetConfig, ComparisonConfig, ThresholdConfig, Participant, TimePeriod } from '../types/bets';
-import { SportConfig, BetEndPointKey } from '../config/sports/basketball';
-
-export interface ResolutionResult {
-  resolved: boolean;
-  outcome?: 'win' | 'loss' | 'push' | 'void';
-  resolutionEventTime?: Date;
-  resolutionUTCTime?: Date;
-  resolutionQuarter?: string;
-  resolutionStatSnapshot?: object;
-  reason?: string;
-}
+import { SportConfig, BetEndPointKey } from '../types/sports';
+import type { ResolutionResult } from '../types/betResolution';
 
 /**
  * Get a value from a nested object using a dot-notation path
