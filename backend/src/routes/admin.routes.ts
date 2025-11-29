@@ -46,7 +46,6 @@ const apiSportsService = new ApiSportsService();
  *       200:
  *         description: Games fetched from ESPN, stored in DB, and returned
  */
-
 router.post('/games/fetch', requireAuth, requireAdmin, requireFeature('ADMIN_GAME_MANAGEMENT'), async (req: Request, res: Response) => {
   try {
     const { date, sport, league, force, timezoneOffset } = req.body;
