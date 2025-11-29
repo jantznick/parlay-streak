@@ -65,6 +65,14 @@ router.post('/register', requireFeature('AUTH_REGISTRATION'), authController.reg
 router.post('/login', requireFeature('AUTH_LOGIN'), authController.login);
 
 /**
+ * Dev-only admin login (no password)
+ * 
+ * WARNING: This route is automatically disabled in production (see controller).
+ * It is intended for local development to quickly assume an admin identity.
+ */
+router.post('/dev-login-admin', authController.devLoginAdmin);
+
+/**
  * @swagger
  * /api/auth/logout:
  *   post:

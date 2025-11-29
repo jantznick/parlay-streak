@@ -233,6 +233,91 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
+/**
+ * Development-only admin login helper
+ * 
+ * - Enabled only when NODE_ENV !== 'production'
+ * - Finds (or creates) a user whose email is in ADMIN_EMAILS
+ * - Logs the user in by setting the session, without requiring a password
+ *
+ * This is intended for local development and should NEVER be exposed in production.
+ */
+export const devLoginAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({
+        success: false,
+        error: { message: 'Dev admin login is disabled in production', code: 'FORBIDDEN' },
+      });
+    }
+
+    const adminEmails =
+      process.env.ADMIN_EMAILS?.split(',').map((email) => email.trim()).filter(Boolean) || [];
+
+    if (adminEmails.length === 0) {
+      throw new ValidationError('ADMIN_EMAILS env variable is not configured');
+    }
+
+    const targetEmail = adminEmails[0];
+
+    // Try to find existing admin user
+    let user = await prisma.user.findUnique({
+      where: { email: targetEmail },
+    });
+
+    // If no user exists, create a basic admin user without a password
+    if (!user) {
+      const usernameBase = targetEmail.split('@')[0];
+      const username =
+        usernameBase.length >= AUTH_VALIDATION.username.minLength
+          ? usernameBase
+          : `${usernameBase}${Math.random().toString(36).substring(2, 8)}`;
+
+      user = await prisma.user.create({
+        data: {
+          username,
+          email: targetEmail,
+          passwordHash: null,
+          emailVerified: true,
+        },
+      });
+    }
+
+    // Set session
+    req.session.userId = user.id;
+
+    logger.info('Dev admin login', {
+      userId: user.id,
+      email: user.email,
+      sessionId: req.sessionID,
+    });
+
+    req.session.save((err) => {
+      if (err) {
+        logger.error('Session save error (devLoginAdmin)', { error: err });
+        return next(err);
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          user: {
+            id: user!.id,
+            username: user!.username,
+            email: user!.email,
+            emailVerified: user!.emailVerified,
+            currentStreak: user!.currentStreak,
+            longestStreak: user!.longestStreak,
+            totalPointsEarned: user!.totalPointsEarned,
+          },
+        },
+      });
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const logout = async (req: Request, res: Response, next: NextFunction) => {
   try {
     req.session.destroy((err) => {

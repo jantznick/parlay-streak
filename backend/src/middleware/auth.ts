@@ -27,22 +27,35 @@ const requireAuthBase = (req: Request, res: Response, next: NextFunction) => {
   // Verify Origin header for CSRF protection
   const origin = req.headers.origin;
   
-  // Block requests without Origin header - required for CSRF protection
+  // Block requests without Origin header - required for CSRF protection in production.
+  // In development, allow missing Origin to support native mobile apps and tools like curl.
   if (!origin) {
-    logger.warn('Authenticated request blocked: no Origin header', {
-      method: req.method,
-      path: req.path,
-      userId: req.session.userId,
-      ip: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
-    return res.status(403).json({
-      success: false,
-      error: {
-        message: 'Forbidden: Origin header required',
-        code: 'FORBIDDEN_NO_ORIGIN',
-      },
-    });
+    if (process.env.NODE_ENV === 'production') {
+      logger.warn('Authenticated request blocked: no Origin header', {
+        method: req.method,
+        path: req.path,
+        userId: req.session.userId,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      return res.status(403).json({
+        success: false,
+        error: {
+          message: 'Forbidden: Origin header required',
+          code: 'FORBIDDEN_NO_ORIGIN',
+        },
+      });
+    } else {
+      // Dev mode: log but allow so native apps (which often have no Origin) can authenticate
+      logger.info('Dev mode: allowing authenticated request with no Origin header', {
+        method: req.method,
+        path: req.path,
+        userId: req.session.userId,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      return next();
+    }
   }
   
   // Verify Origin matches allowed CORS origins
