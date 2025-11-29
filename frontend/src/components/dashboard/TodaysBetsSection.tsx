@@ -3,29 +3,7 @@ import { BetSelectionGroup } from '../bets/BetSelectionGroup';
 import { useBets } from '../../context/BetsContext';
 import { api } from '../../services/api';
 import { getSportEmoji, getTodayDateString, getTimezoneOffset } from '../../utils/formatting';
-
-interface Bet {
-  id: string;
-  betType: string;
-  displayText: string;
-  priority: number;
-  outcome: string;
-  config?: any;
-  displayTextOverride?: string;
-}
-
-interface Game {
-  id: string;
-  sport: string;
-  homeTeam: string;
-  awayTeam: string;
-  startTime: string;
-  status: string;
-  homeScore: number | null;
-  awayScore: number | null;
-  bets: Bet[];
-  metadata?: any;
-}
+import type { Game } from '../../interfaces';
 
 export function TodaysBetsSection() {
   const { selectedDate } = useBets();

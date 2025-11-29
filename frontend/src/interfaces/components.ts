@@ -119,6 +119,10 @@ export interface BetListItemProps {
   totalBets: number;
   onEdit: (bet: Bet) => void;
   onDelete: (betId: string) => void;
+  onResolve: (bet: Bet) => void;
+  onMovePriority: (gameId: string, betId: string, direction: 'up' | 'down') => void;
+  resolvingBet: string | null;
+  formatResolvedBetText: (bet: Bet, game: Game) => string;
 }
 
 export interface GameCardProps {

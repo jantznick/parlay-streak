@@ -1,12 +1,5 @@
 import React from 'react';
 import type { BetListItemProps } from '../../interfaces';
-  onEdit: (bet: Bet, game: Game) => void;
-  onDelete: (bet: Bet, game: Game) => void;
-  onResolve: (bet: Bet) => void;
-  onMovePriority: (gameId: string, betId: string, direction: 'up' | 'down') => void;
-  resolvingBet: string | null;
-  formatResolvedBetText: (bet: Bet, game: Game) => string;
-}
 
 export function BetListItem({
   bet,
