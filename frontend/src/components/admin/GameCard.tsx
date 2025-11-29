@@ -2,14 +2,6 @@ import React from 'react';
 import { BetListItem } from './BetListItem';
 import { formatDate, formatTime, formatResolvedBetText, getSportEmoji } from '../../utils/formatting';
 import type { GameCardProps } from '../../interfaces';
-  onDeleteBet: (bet: Bet, game: Game) => void;
-  onResolveBet: (bet: Bet) => void;
-  onMoveBetPriority: (gameId: string, betId: string, direction: 'up' | 'down') => void;
-  creatingMoneyline: string | null;
-  loadingRoster: boolean;
-  resolvingBet: string | null;
-}
-
 
 export function GameCard({
   game,

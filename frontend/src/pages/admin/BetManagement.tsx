@@ -143,7 +143,7 @@ export function BetManagement() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, selectedSport, selectedLeague, sportsConfig.length]);
+  }, [selectedDate, selectedLeague, sportsConfig.length]);
 
   // Handle create bets button click
   const handleCreateBets = async (game: Game) => {

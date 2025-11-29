@@ -132,8 +132,14 @@ export interface GameCardProps {
   onCreateBets: (game: Game) => void;
   onQuickMoneyline: (game: Game) => void;
   onEditBet: (bet: Bet, game: Game) => void;
-  onDeleteBet: (betId: string) => void;
   onForceRefresh: (gameId: string) => void;
+  onDeleteBet: (bet: Bet, game: Game) => void;
+  onResolveBet: (bet: Bet) => void;
+  onMoveBetPriority: (gameId: string, betId: string, direction: 'up' | 'down') => void;
+  creatingMoneyline: string | null;
+  loadingRoster: boolean;
+  resolvingBet: string | null;
+}
 }
 
 export interface GameFiltersProps {
