@@ -1097,51 +1097,7 @@ router.post('/bets/:betId/resolve', requireAuth, requireAdmin, requireFeature('A
       });
     }
 
-    // Update game status, scores, and live info from the fetched gameData
-    // This is called after bet resolution (even if it failed) to keep game data current
-    // Uses sport-specific config for extensibility across all sports
-    const liveGameInfo = extractLiveGameInfo(gameData, sportConfig);
-    const currentMetadata = (bet.game.metadata as any) || {};
-    
-    // Build update data - only update scores if we got valid values (don't overwrite with null)
-    const updateData: any = {
-      status: liveGameInfo.status,
-      metadata: {
-        ...currentMetadata,
-        liveInfo: {
-          period: liveGameInfo.period,
-          displayClock: liveGameInfo.displayClock,
-          periodDisplay: liveGameInfo.periodDisplay,
-          lastUpdated: new Date().toISOString()
-        }
-      }
-    };
-
-    // Only update scores if we got valid values (preserve existing scores if extraction returns null)
-    if (liveGameInfo.homeScore !== null) {
-      updateData.homeScore = liveGameInfo.homeScore;
-    }
-    if (liveGameInfo.awayScore !== null) {
-      updateData.awayScore = liveGameInfo.awayScore;
-    }
-
-    // Set endTime if game is completed
-    if (liveGameInfo.status === 'completed' && !bet.game.endTime) {
-      updateData.endTime = new Date();
-    }
-    
-    await prisma.game.update({
-      where: { id: bet.gameId },
-      data: updateData
-    });
-
-    logger.info('Updated game with live info', {
-      gameId: bet.gameId,
-      status: liveGameInfo.status,
-      homeScore: liveGameInfo.homeScore,
-      awayScore: liveGameInfo.awayScore,
-      periodDisplay: liveGameInfo.periodDisplay
-    });
+    // TODO: This used to update the game status, I didn't like how it worked. We should do the same thing that fetching games does
 
     // Resolve the bet
     const betConfig = bet.config as unknown as BetConfig;

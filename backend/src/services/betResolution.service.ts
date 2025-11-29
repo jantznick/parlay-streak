@@ -7,6 +7,7 @@
 // The shared folder is at the repo root level
 const { resolveBet } = require('@shared/utils/betResolution');
 const { SPORT_CONFIGS } = require('@shared/config/sports/basketball');
+const { mapEspnStatusToOurStatus } = require('../services/apiSports.service');
 
 // Type import for TypeScript (using require for runtime)
 import type { SportConfig } from '@shared/types/sports';
@@ -46,8 +47,8 @@ export function extractLiveGameInfo(
 } {
   // Find the competition using the same logic as bet resolution
   // Try header.competitions first (sample file structure), then top-level competitions (API structure)
-  const gameId = gameData?.id || gameData?.header?.id;
-  const competitions = gameData?.header?.competitions || gameData?.competitions;
+  const gameId = gameData?.header?.id;
+  const competitions = gameData?.header?.competitions;
   
   if (!competitions || !Array.isArray(competitions)) {
     return {
@@ -79,13 +80,7 @@ export function extractLiveGameInfo(
   
   // Map ESPN status to our status
   let status = 'scheduled';
-  if (statusState === 'in') {
-    status = 'in_progress';
-  } else if (statusState === 'post' || statusState === 'final') {
-    status = 'completed';
-  } else if (statusState === 'pre') {
-    status = 'scheduled';
-  }
+  status = mapEspnStatusToOurStatus(statusState);
 
   // Get scores from competitors (same structure as bet resolution)
   const competitors = competition?.competitors || [];
