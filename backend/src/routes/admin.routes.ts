@@ -951,7 +951,7 @@ router.post('/bets/:betId/resolve', requireAuth, requireAdmin, requireFeature('A
     if (bet.outcome && bet.outcome !== 'pending') {
       return res.status(400).json({
         success: false,
-        error: { 
+        error: {
           message: `Bet is already resolved with outcome: ${bet.outcome}`,
           code: 'ALREADY_RESOLVED',
           currentOutcome: bet.outcome
@@ -960,6 +960,7 @@ router.post('/bets/:betId/resolve', requireAuth, requireAdmin, requireFeature('A
     }
 
     // Check if game has started
+    // TODO: This might not be right depending on timezones
     const now = new Date();
     const gameStartTime = new Date(bet.game.startTime);
     
@@ -1045,7 +1046,7 @@ router.post('/bets/:betId/resolve', requireAuth, requireAdmin, requireFeature('A
       }
 
       // Check if game has scores/status indicating it has started
-      const gameStatusFromApi = gameData?.header?.competitions?.[0]?.status?.type?.state;
+      const gameStatusFromApi = gameData?.header?.competitions?.filter((competition: any) => competition.id === externalGameId)?.status?.type?.state;
       logger.info('Game data fetched successfully', { 
         gameId: externalGameId,
         apiGameStatus: gameStatusFromApi,

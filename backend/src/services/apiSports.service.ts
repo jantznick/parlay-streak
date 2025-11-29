@@ -7,6 +7,19 @@ export type { EspnEvent, EspnLeague, EspnApiResponse, ApiSportsGame } from '../i
 const API_TIMEOUT_MS = 10000; // 10 seconds
 const MAX_RETRIES = 2;
 
+const espnLogger = (url: string, date: string, dateStr: string, sport: string, sportLower: string, league: string) => {
+      // Log URL prominently for debugging
+      console.log('\n═══════════════════════════════════════════════════════════');
+      console.log('📡 ESPN API REQUEST');
+      console.log('═══════════════════════════════════════════════════════════');
+      console.log(`URL: ${url}`);
+      console.log(`Date (input): ${date}`);
+      console.log(`Date (formatted): ${dateStr}`);
+      console.log(`Sport: ${sport} (lowercase: ${sportLower})`);
+      console.log(`League: ${league}`);
+      console.log('═══════════════════════════════════════════════════════════\n');
+}
+
 /**
  * Service for interacting with ESPN API
  * Fetches games from ESPN's scoreboard API
@@ -35,16 +48,7 @@ export class ApiSportsService {
     // Build URL: /sports/{sport}/{league}/scoreboard?dates={date}
     const url = `${this.baseUrl}/${sportLower}/${league}/scoreboard?dates=${dateStr}`;
     
-    // Log URL prominently for debugging
-    console.log('\n═══════════════════════════════════════════════════════════');
-    console.log('📡 ESPN API REQUEST');
-    console.log('═══════════════════════════════════════════════════════════');
-    console.log(`URL: ${url}`);
-    console.log(`Date (input): ${date}`);
-    console.log(`Date (formatted): ${dateStr}`);
-    console.log(`Sport: ${sport} (lowercase: ${sportLower})`);
-    console.log(`League: ${league}`);
-    console.log('═══════════════════════════════════════════════════════════\n');
+    espnLogger(url, date, dateStr, sport, sportLower, league);
     
     logger.info('Fetching games from ESPN API', { url, sport, sportLower, league, date, dateStr });
 
