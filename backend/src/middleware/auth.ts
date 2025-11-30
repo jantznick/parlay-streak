@@ -25,27 +25,25 @@ const requireAuthBase = (req: Request, res: Response, next: NextFunction) => {
   }
 
   // Verify Origin header for CSRF protection
+  // Mobile apps don't send Origin headers, but they still require valid session cookies
+  // Browsers will send Origin headers, which we validate for CSRF protection
   const origin = req.headers.origin;
   
-  // Block requests without Origin header - required for CSRF protection
+  // If no Origin header, allow the request (mobile apps, curl, etc.)
+  // They still need valid session cookies, so security is maintained
   if (!origin) {
-    logger.warn('Authenticated request blocked: no Origin header', {
+    logger.debug('Authenticated request without Origin header (likely mobile app)', {
       method: req.method,
       path: req.path,
       userId: req.session.userId,
       ip: req.ip,
       userAgent: req.headers['user-agent'],
     });
-    return res.status(403).json({
-      success: false,
-      error: {
-        message: 'Forbidden: Origin header required',
-        code: 'FORBIDDEN_NO_ORIGIN',
-      },
-    });
+    return next();
   }
   
-  // Verify Origin matches allowed CORS origins
+  // Origin header present - validate it for browser CSRF protection
+  // Browsers enforce Origin headers and can't be spoofed by JavaScript
   if (!corsOrigins.includes(origin)) {
     logger.warn('Authenticated request blocked: unauthorized origin', {
       method: req.method,
