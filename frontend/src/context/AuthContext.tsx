@@ -1,26 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { api } from '../services/api';
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  emailVerified: boolean;
-  currentStreak: number;
-  longestStreak: number;
-  totalPointsEarned: number;
-  insuranceLocked: boolean;
-  isAdmin?: boolean;
-}
-
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  checkAuth: () => Promise<void>;
-}
+import type { User, AuthContextType } from '../interfaces';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

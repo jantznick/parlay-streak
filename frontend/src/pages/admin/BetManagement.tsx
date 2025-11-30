@@ -9,35 +9,7 @@ import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { BetListItem } from '../../components/admin/BetListItem';
 import { GameCard } from '../../components/admin/GameCard';
 import { GameFilters } from '../../components/admin/GameFilters';
-
-interface Bet {
-  id: string;
-  betType: string;
-  displayText: string;
-  priority: number;
-  outcome: string;
-  config?: any;
-  displayTextOverride?: string;
-}
-
-interface Game {
-  id: string;
-  externalId: string;
-  sport: string;
-  homeTeam: string;
-  awayTeam: string;
-  startTime: string;
-  status: string;
-  homeScore: number | null;
-  awayScore: number | null;
-  metadata: any;
-  bets: Bet[];
-}
-
-interface SportConfig {
-  sport: string;
-  leagues: Array<{ id: string; name: string }>;
-}
+import type { Bet, Game, SportConfig } from '../../interfaces';
 
 
 
@@ -171,7 +143,7 @@ export function BetManagement() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, selectedSport, selectedLeague, sportsConfig.length]);
+  }, [selectedDate, selectedLeague, sportsConfig.length]);
 
   // Handle create bets button click
   const handleCreateBets = async (game: Game) => {

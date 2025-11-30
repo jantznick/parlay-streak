@@ -1,16 +1,5 @@
 import React from 'react';
-
-interface ConfirmModalProps {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  variant?: 'danger' | 'default';
-  children?: React.ReactNode; // For custom content (e.g., bet details, item preview)
-}
+import type { ConfirmModalProps } from '../../interfaces';
 
 export function ConfirmModal({
   isOpen,

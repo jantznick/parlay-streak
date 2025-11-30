@@ -1,10 +1,5 @@
 import { useState, ChangeEvent } from 'react';
-
-interface DateNavigationProps {
-  selectedDate: string;
-  onDateChange: (date: string) => void;
-  formatDateDisplay?: (date: string) => string;
-}
+import type { DateNavigationProps } from '../../interfaces';
 
 // Export the default date formatting function so it can be used elsewhere
 export function formatDateDisplay(dateString: string): string {

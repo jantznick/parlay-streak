@@ -1,40 +1,5 @@
 import React from 'react';
-
-interface Bet {
-  id: string;
-  betType: string;
-  displayText: string;
-  priority: number;
-  outcome?: string;
-  config?: any;
-  displayTextOverride?: string;
-}
-
-interface Game {
-  id: string;
-  externalId: string;
-  sport: string;
-  homeTeam: string;
-  awayTeam: string;
-  startTime: string;
-  status: string;
-  homeScore: number | null;
-  awayScore: number | null;
-  metadata?: any;
-}
-
-interface BetListItemProps {
-  bet: Bet;
-  game: Game;
-  index: number;
-  totalBets: number;
-  onEdit: (bet: Bet, game: Game) => void;
-  onDelete: (bet: Bet, game: Game) => void;
-  onResolve: (bet: Bet) => void;
-  onMovePriority: (gameId: string, betId: string, direction: 'up' | 'down') => void;
-  resolvingBet: string | null;
-  formatResolvedBetText: (bet: Bet, game: Game) => string;
-}
+import type { BetListItemProps } from '../../interfaces';
 
 export function BetListItem({
   bet,

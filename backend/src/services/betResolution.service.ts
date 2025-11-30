@@ -7,20 +7,10 @@
 // The shared folder is at the repo root level
 const { resolveBet } = require('@shared/utils/betResolution');
 const { SPORT_CONFIGS } = require('@shared/config/sports/basketball');
+const { mapEspnStatusToOurStatus } = require('../services/apiSports.service');
 
 // Type import for TypeScript (using require for runtime)
-type SportConfig = {
-  sport_key: string;
-  display_name: string;
-  time_periods: Array<{
-    value: any;
-    label: string;
-    api_key: string;
-    betEndPointKey?: any;
-  }>;
-  metrics: any[];
-  getResolutionUTCTime?: (gameData: any, timePeriod: any) => Date | undefined;
-};
+import type { SportConfig } from '@shared/types/sports';
 
 /**
  * Get sport config by sport key
@@ -57,8 +47,8 @@ export function extractLiveGameInfo(
 } {
   // Find the competition using the same logic as bet resolution
   // Try header.competitions first (sample file structure), then top-level competitions (API structure)
-  const gameId = gameData?.id || gameData?.header?.id;
-  const competitions = gameData?.header?.competitions || gameData?.competitions;
+  const gameId = gameData?.header?.id;
+  const competitions = gameData?.header?.competitions;
   
   if (!competitions || !Array.isArray(competitions)) {
     return {
@@ -90,13 +80,7 @@ export function extractLiveGameInfo(
   
   // Map ESPN status to our status
   let status = 'scheduled';
-  if (statusState === 'in') {
-    status = 'in_progress';
-  } else if (statusState === 'post' || statusState === 'final') {
-    status = 'completed';
-  } else if (statusState === 'pre') {
-    status = 'scheduled';
-  }
+  status = mapEspnStatusToOurStatus(statusState);
 
   // Get scores from competitors (same structure as bet resolution)
   const competitors = competition?.competitors || [];
@@ -143,7 +127,7 @@ export function extractLiveGameInfo(
       return tp.label.toLowerCase().includes(`${period}`);
     });
     
-    const periodLabel = periodConfig?.label || getDefaultPeriodLabel(period, sportConfig.sport_key);
+    const periodLabel = periodConfig?.label;
     
     if (displayClock) {
       periodDisplay = `${displayClock} ${periodLabel}`;
@@ -160,26 +144,6 @@ export function extractLiveGameInfo(
     displayClock,
     periodDisplay,
   };
-}
-
-/**
- * Get default period label when not found in config
- */
-function getDefaultPeriodLabel(period: number, sportKey: string): string {
-  if (sportKey === 'basketball') {
-    if (period === 1) return '1st Quarter';
-    if (period === 2) return '2nd Quarter';
-    if (period === 3) return '3rd Quarter';
-    if (period === 4) return '4th Quarter';
-    if (period > 4) return `${period}th Quarter`; // Overtime
-  } else if (sportKey === 'american_football' || sportKey === 'football') {
-    if (period === 1) return '1st Quarter';
-    if (period === 2) return '2nd Quarter';
-    if (period === 3) return '3rd Quarter';
-    if (period === 4) return '4th Quarter';
-    if (period > 4) return `${period}th Quarter`; // Overtime
-  }
-  return `Period ${period}`;
 }
 
 export { resolveBet, getSportConfig };

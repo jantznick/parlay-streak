@@ -4,21 +4,13 @@
  */
 
 import { BetConfig, ComparisonConfig, ThresholdConfig, Participant, TimePeriod } from '../types/bets';
-import { SportConfig, BetEndPointKey } from '../config/sports/basketball';
-
-export interface ResolutionResult {
-  resolved: boolean;
-  outcome?: 'win' | 'loss' | 'push' | 'void';
-  resolutionEventTime?: Date;
-  resolutionUTCTime?: Date;
-  resolutionQuarter?: string;
-  resolutionStatSnapshot?: object;
-  reason?: string;
-}
+import { SportConfig, BetEndPointKey } from '../types/sports';
+import type { ResolutionResult } from '../types/betResolution';
 
 /**
  * Get a value from a nested object using a dot-notation path
  * Supports filtering arrays with filter parameter
+ * sample usage: getNestedValue(gameData, "header.competitions[0].status.type.completed", { arrayPath: "header.competitions", filterKey: "id", filterValuePath: "header.id" })
  */
 function getNestedValue(obj: any, path: string, filter?: { arrayPath: string; filterKey: string; filterValuePath: string }): any {
   console.log(`[getNestedValue] Looking up path: ${path}`, filter ? `with filter: ${JSON.stringify(filter)}` : '');
@@ -81,6 +73,7 @@ function getNestedValue(obj: any, path: string, filter?: { arrayPath: string; fi
  */
 function checkBetEndPoint(gameData: any, betEndPointKey: BetEndPointKey): boolean {
   // If using play-by-play check (for quarter endings)
+  // This play by play check has been manually tested and seems to work correctly
   if (betEndPointKey.playByPlayCheck) {
     const { eventTypeId, periodNumber } = betEndPointKey.playByPlayCheck;
     console.log(`[checkBetEndPoint] Checking play-by-play for eventTypeId=${eventTypeId}, periodNumber=${periodNumber}`);
@@ -120,12 +113,12 @@ function checkBetEndPoint(gameData: any, betEndPointKey: BetEndPointKey): boolea
   
   // Log game data structure for debugging
   console.log(`[checkBetEndPoint] Game data structure:`, {
-    topLevelKeys: gameData ? Object.keys(gameData).slice(0, 10) : 'null',
+    topLevelKeys: gameData ? Object.keys(gameData) : 'null',
     hasHeader: !!gameData?.header,
     hasBoxscore: !!gameData?.boxscore,
     hasPlays: !!gameData?.plays,
     hasMeta: !!gameData?.meta,
-    headerKeys: gameData?.header ? Object.keys(gameData.header).slice(0, 10) : 'no header',
+    headerKeys: gameData?.header ? Object.keys(gameData.header) : 'no header',
     hasHeaderId: !!gameData?.header?.id,
     hasCompetitions: !!gameData?.header?.competitions,
     competitionsLength: gameData?.header?.competitions?.length,
@@ -208,6 +201,7 @@ function resolveComparisonBet(
   console.log('\n[resolveComparisonBet] ===== Starting comparison bet resolution =====');
   console.log('[resolveComparisonBet] Bet config:', JSON.stringify(bet, null, 2));
   
+  // Manually added: this getting endpoints and verifying if they have happened, seems to be right
   // Get bet end points for both participants
   const period1 = sportConfig.time_periods.find(tp => tp.value === bet.participant_1.time_period);
   const period2 = sportConfig.time_periods.find(tp => tp.value === bet.participant_2.time_period);
@@ -241,6 +235,7 @@ function resolveComparisonBet(
     };
   }
   
+  // Manually added: get participant stat for teams seems to be right, checking players still
   // Get stat values for both participants
   console.log(`[resolveComparisonBet] Extracting stat for participant 1...`);
   const stat1 = getParticipantStat(gameData, bet.participant_1, sportConfig);
@@ -309,7 +304,8 @@ function resolveComparisonBet(
   const competition = gameData?.header?.competitions?.find((c: any) => String(c.id) === String(headerId));
   
   // resolutionEventTime: When the event (game/period) actually happened (start time for the period)
-  const resolutionEventTime = competition?.date ? new Date(competition.date) : new Date();
+  // Manually added: This is wrong, it's getting the start time not the end time
+  const resolutionEventTime = new Date(competition.date);
   
   console.log(`[resolveComparisonBet] resolutionEventTime: ${resolutionEventTime.toISOString()}`);
   

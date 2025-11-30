@@ -1,43 +1,5 @@
 import React from 'react';
-
-interface BetSelection {
-  id: string;
-  betId: string;
-  selectedSide: string;
-  status: string;
-  outcome?: string;
-  bet: {
-    id: string;
-    displayText: string;
-    betType: string;
-    outcome: string;
-    config?: any;
-    game: {
-      id: string;
-      homeTeam: string;
-      awayTeam: string;
-      startTime: string;
-      status: string;
-      sport: string;
-      homeScore?: number | null;
-      awayScore?: number | null;
-      metadata?: any;
-    };
-  };
-}
-
-interface SingleBetCardProps {
-  selection: BetSelection;
-  formatSelectionText: (side: string, betType: string, config: any, game: any, outcome?: string) => string;
-  formatTime: (dateString: string) => string;
-  getSportEmoji: (sport: string) => string;
-  isBetInActiveParlay: (selectionId: string, betId: string) => boolean;
-  canModify: boolean;
-  startingParlayId: string | null;
-  deletingId: string | null;
-  onStartParlay: (selectionId: string, betId: string, selectedSide: string) => void;
-  onDelete: (selectionId: string) => void;
-}
+import type { SingleBetCardProps } from '../../interfaces';
 
 export function SingleBetCard({
   selection,

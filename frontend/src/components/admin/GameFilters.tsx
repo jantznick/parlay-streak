@@ -1,18 +1,7 @@
 import React from 'react';
 import { DateNavigation } from '../dashboard/DateNavigation';
 import { formatDate } from '../../utils/formatting';
-
-interface SportConfig {
-  sport: string;
-  leagues: Array<{ id: string; name: string }>;
-}
-
-interface GameFiltersProps {
-  selectedDate: string;
-  sportsConfig: SportConfig[];
-  selectedSport: string;
-  selectedLeague: string;
-  onDateChange: (date: string) => void;
+import type { GameFiltersProps } from '../../interfaces';
   onSportChange: (sport: string) => void;
   onLeagueChange: (league: string) => void;
   onFetchGames: (force: boolean) => void;

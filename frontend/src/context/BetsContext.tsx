@@ -1,11 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-
-interface BetsContextType {
-  refreshTrigger: number;
-  triggerRefresh: () => void;
-  selectedDate: string | null;
-  setSelectedDate: (date: string | null) => void;
-}
+import type { BetsContextType } from '../interfaces';
 
 const BetsContext = createContext<BetsContextType | undefined>(undefined);
 

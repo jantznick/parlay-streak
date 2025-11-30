@@ -1,179 +1,23 @@
 import { logger } from '../utils/logger';
+import type { EspnEvent, EspnLeague, EspnApiResponse, ApiSportsGame } from '../interfaces';
+
+// Re-export interfaces for backward compatibility
+export type { EspnEvent, EspnLeague, EspnApiResponse, ApiSportsGame } from '../interfaces';
 
 const API_TIMEOUT_MS = 10000; // 10 seconds
 const MAX_RETRIES = 2;
 
-// ESPN API Response Types (new endpoint structure)
-export interface EspnEvent {
-  id: string;
-  uid: string;
-  date: string;
-  name: string;
-  shortName: string;
-  status: {
-    type: {
-      id: string;
-      name: string;
-      state: string;
-      completed: boolean;
-      description: string;
-      detail: string;
-      shortDetail: string;
-    };
-    period: number;
-    displayClock: string;
-    clock: number;
-  };
-  competitions: Array<{
-    id: string;
-    date: string;
-    attendance: number;
-    type: {
-      id: string;
-      abbreviation: string;
-    };
-    timeValid: boolean;
-    neutralSite: boolean;
-    conferenceCompetition: boolean;
-    playByPlayAvailable: boolean;
-    recent: boolean;
-    venue: {
-      id: string;
-      fullName: string;
-      address: {
-        city: string;
-        state: string;
-      };
-    };
-    competitors: Array<{
-      id: string;
-      uid: string;
-      type: string;
-      order: number;
-      homeAway: 'home' | 'away';
-      team: {
-        id: string;
-        uid: string;
-        location: string;
-        name: string;
-        abbreviation: string;
-        displayName: string;
-        shortDisplayName: string;
-        color: string;
-        alternateColor: string;
-        isActive: boolean;
-        venue: {
-          id: string;
-        };
-        links: Array<{
-          rel: string[];
-          href: string;
-          text: string;
-        }>;
-      };
-      score: string;
-      linescores?: Array<{
-        value: number;
-      }>;
-      statistics: any[];
-      records: Array<{
-        name: string;
-        abbreviation?: string;
-        type: string;
-        summary: string;
-      }>;
-    }>;
-    notes: any[];
-    status: {
-      type: {
-        id: string;
-        name: string;
-        state: string;
-        completed: boolean;
-        description: string;
-        detail: string;
-        shortDetail: string;
-      };
-    };
-    broadcasts: Array<{
-      market: {
-        id: string;
-        type: string;
-      };
-      media: {
-        shortName: string;
-      };
-      names: string[];
-    }>;
-    leaders?: any[];
-    format: {
-      regulation: {
-        periods: number;
-      };
-    };
-    startDate: string;
-    geoBroadcasts: any[];
-    headlines?: any[];
-  }>;
-  links: Array<{
-    language: string;
-    rel: string[];
-    href: string;
-    text: string;
-    shortText?: string;
-    isExternal: boolean;
-    isPremium: boolean;
-  }>;
-  weather?: any;
-}
-
-export interface EspnLeague {
-  id: string;
-  uid: string;
-  name: string;
-  abbreviation: string;
-  shortName: string;
-  slug: string;
-  events: EspnEvent[];
-}
-
-// New endpoint returns leagues directly (not nested under sports)
-export interface EspnApiResponse {
-  leagues: EspnLeague[];
-}
-
-// Transformed game format for our system
-export interface ApiSportsGame {
-  id: string;
-  externalId: string;
-  date: string;
-  timestamp: number;
-  status: string;
-  sport: string;
-  league: {
-    id: string;
-    name: string;
-    abbreviation: string;
-  };
-  teams: {
-    home: {
-      id: string;
-      name: string;
-      abbreviation: string;
-      displayName: string;
-    };
-    away: {
-      id: string;
-      name: string;
-      abbreviation: string;
-      displayName: string;
-    };
-  };
-  scores: {
-    home: number | null;
-    away: number | null;
-  };
-  metadata: any;
+const espnLogger = (url: string, date: string, dateStr: string, sport: string, sportLower: string, league: string) => {
+      // Log URL prominently for debugging
+      console.log('\n═══════════════════════════════════════════════════════════');
+      console.log('📡 ESPN API REQUEST');
+      console.log('═══════════════════════════════════════════════════════════');
+      console.log(`URL: ${url}`);
+      console.log(`Date (input): ${date}`);
+      console.log(`Date (formatted): ${dateStr}`);
+      console.log(`Sport: ${sport} (lowercase: ${sportLower})`);
+      console.log(`League: ${league}`);
+      console.log('═══════════════════════════════════════════════════════════\n');
 }
 
 /**
@@ -204,16 +48,7 @@ export class ApiSportsService {
     // Build URL: /sports/{sport}/{league}/scoreboard?dates={date}
     const url = `${this.baseUrl}/${sportLower}/${league}/scoreboard?dates=${dateStr}`;
     
-    // Log URL prominently for debugging
-    console.log('\n═══════════════════════════════════════════════════════════');
-    console.log('📡 ESPN API REQUEST');
-    console.log('═══════════════════════════════════════════════════════════');
-    console.log(`URL: ${url}`);
-    console.log(`Date (input): ${date}`);
-    console.log(`Date (formatted): ${dateStr}`);
-    console.log(`Sport: ${sport} (lowercase: ${sportLower})`);
-    console.log(`League: ${league}`);
-    console.log('═══════════════════════════════════════════════════════════\n');
+    espnLogger(url, date, dateStr, sport, sportLower, league);
     
     logger.info('Fetching games from ESPN API', { url, sport, sportLower, league, date, dateStr });
 

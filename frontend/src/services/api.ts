@@ -1,13 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import type { ApiResponse } from '../interfaces';
 
-interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: {
-    message: string;
-    code?: string;
-  };
-}
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 class ApiService {
   private async request<T>(

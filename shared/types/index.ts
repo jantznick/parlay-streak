@@ -1,8 +1,20 @@
 /**
  * Shared TypeScript types for Parlay Streak
  * These types should match the Prisma schema
+ * 
+ * Re-export all types from sub-modules for convenience
  */
 
+// Re-export bet configuration types
+export * from './bets';
+
+// Re-export bet resolution types
+export * from './betResolution';
+
+// Re-export sport configuration types
+export * from './sports';
+
+// Domain/Database types
 export type GameStatus = 'scheduled' | 'in_progress' | 'completed' | 'postponed' | 'canceled';
 export type BetOutcome = 'pending' | 'win' | 'loss' | 'push' | 'void';
 export type ParlayStatus = 'building' | 'locked' | 'pending' | 'won' | 'lost' | 'resolution_failed';

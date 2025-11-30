@@ -2,28 +2,7 @@
  * Utility functions for formatting dates, times, and bet-related text
  */
 
-interface Game {
-  id: string;
-  externalId: string;
-  sport: string;
-  homeTeam: string;
-  awayTeam: string;
-  startTime: string;
-  status: string;
-  homeScore: number | null;
-  awayScore: number | null;
-  metadata?: any;
-  bets?: any[];
-}
-
-interface Bet {
-  id: string;
-  betType: string;
-  displayText: string;
-  outcome?: string;
-  config?: any;
-  displayTextOverride?: string;
-}
+import type { Game, Bet } from '../interfaces';
 
 /**
  * Formats a date string for display
