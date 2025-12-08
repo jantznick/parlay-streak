@@ -7,9 +7,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { api } from '../services/api';
 import { BetSelectionGroup } from '../components/bets/BetSelectionGroup';
 import { ParlayCard } from '../components/bets/ParlayCard';
+import { SingleBetCard } from '../components/bets/SingleBetCard';
 import { CalendarModal } from '../components/common/CalendarModal';
 import { ConfirmationModal } from '../components/common/ConfirmationModal';
-import { LockTimer } from '../components/common/LockTimer';
 import { streakMessages } from '../utils/streakMessages';
 import { useToast } from '../context/ToastContext';
 import { useParlay } from '../context/ParlayContext';
@@ -464,159 +464,15 @@ export function Dashboard() {
               ))}
 
               {/* Single bets */}
-              {mySelections.map((selection) => {
-                  const game = selection.bet.game;
-                  const getBetSideLabels = (bet: any, game: any) => {
-                    const config = bet.config;
-                    if (!config) {
-                      return { side1: { label: 'Side 1' }, side2: { label: 'Side 2' } };
-                    }
-                    if (bet.betType === 'COMPARISON') {
-                      const compConfig = config;
-                      const participant1 = compConfig.participant_1;
-                      const participant2 = compConfig.participant_2;
-                      let name1 = participant1?.subject_name || 'Participant 1';
-                      let name2 = participant2?.subject_name || 'Participant 2';
-                      if (participant1?.subject_type === 'TEAM') {
-                        const metadata = game.metadata;
-                        const apiData = metadata?.apiData;
-                        if (apiData?.teams?.home?.id === participant1.subject_id) {
-                          name1 = game.homeTeam;
-                        } else if (apiData?.teams?.away?.id === participant1.subject_id) {
-                          name1 = game.awayTeam;
-                        }
-                      }
-                      if (participant2?.subject_type === 'TEAM') {
-                        const metadata = game.metadata;
-                        const apiData = metadata?.apiData;
-                        if (apiData?.teams?.home?.id === participant2.subject_id) {
-                          name2 = game.homeTeam;
-                        } else if (apiData?.teams?.away?.id === participant2.subject_id) {
-                          name2 = game.awayTeam;
-                        }
-                      }
-                      if (compConfig.spread) {
-                        const spreadValue = compConfig.spread.value;
-                        const spreadDir = compConfig.spread.direction;
-                        if (spreadDir === '+') {
-                          name1 = `${name1} +${spreadValue}`;
-                        } else {
-                          name1 = `${name1} -${spreadValue}`;
-                        }
-                      }
-                      return {
-                        side1: { label: name1 },
-                        side2: { label: name2 },
-                      };
-                    } else if (bet.betType === 'THRESHOLD') {
-                      const threshConfig = config;
-                      const threshold = threshConfig.threshold || 0;
-                      return {
-                        side1: { label: `OVER ${threshold}` },
-                        side2: { label: `UNDER ${threshold}` },
-                      };
-                    } else if (bet.betType === 'EVENT') {
-                      return {
-                        side1: { label: 'YES' },
-                        side2: { label: 'NO' },
-                      };
-                    }
-                    return { side1: { label: 'Side 1' }, side2: { label: 'Side 2' } };
-                  };
-                  const sideLabels = getBetSideLabels(selection.bet, game);
-                  const selectedLabel =
-                    selection.selectedSide === 'participant_1' || selection.selectedSide === 'over' || selection.selectedSide === 'yes'
-                      ? sideLabels.side1.label
-                      : sideLabels.side2.label;
-
-                  const canModify = selection.status !== 'locked' && game.status === 'scheduled';
-
-                  return (
-                    <View
-                      key={selection.id}
-                      className="bg-slate-900 rounded-2xl border border-slate-800 p-4"
-                    >
-                      <View className="flex-row items-center justify-between mb-3">
-                        <View className="flex-row items-center gap-2">
-                          <Text className="text-xl">{getSportEmoji(game.sport)}</Text>
-                          <View>
-                            <Text className="text-xs text-slate-400 font-medium">
-                                {game.awayTeam} @ {game.homeTeam}
-                            </Text>
-                            <View className="flex-row items-center gap-2 mt-0.5">
-                              <Text className="text-[10px] text-slate-500">
-                                  {formatTime(game.startTime)}
-                              </Text>
-                              {canModify && <LockTimer startTime={game.startTime} status={game.status} />}
-                            </View>
-                          </View>
-                        </View>
-                        {selection.outcome && selection.outcome !== 'pending' && (
-                          <View
-                            className={`px-2 py-1 rounded-md ${
-                              selection.outcome === 'win'
-                                ? 'bg-emerald-500/10'
-                                : selection.outcome === 'loss'
-                                ? 'bg-red-500/10'
-                                : 'bg-yellow-500/10'
-                            }`}
-                          >
-                            <Text
-                              className={`text-[10px] font-bold ${
-                                selection.outcome === 'win'
-                                  ? 'text-emerald-400'
-                                  : selection.outcome === 'loss'
-                                  ? 'text-red-400'
-                                  : 'text-yellow-400'
-                              }`}
-                            >
-                              {selection.outcome.toUpperCase()}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                      
-                      <View className="flex-row items-center justify-between">
-                         <Text className="text-base text-white font-bold">
-                            {selectedLabel}
-                          </Text>
-                          
-                        {canModify && (
-                          <View className="flex-row items-center gap-2">
-                            <TouchableOpacity
-                              onPress={() => handleMakeParlay(selection)}
-                              className="px-3 py-1.5 rounded-lg bg-blue-600"
-                            >
-                              <Text className="text-white text-xs font-semibold">Make Parlay</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => handleDeleteBet(selection.id)}
-                              disabled={deletingId === selection.id}
-                              className="h-8 w-8 items-center justify-center rounded-full bg-slate-800"
-                            >
-                              {deletingId === selection.id ? (
-                                <ActivityIndicator size="small" color="#ef4444" />
-                              ) : (
-                                <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                              )}
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </View>
-
-                      {game.status === 'completed' &&
-                        game.homeScore !== null &&
-                        game.awayScore !== null && (
-                          <View className="mt-3 pt-3 border-t border-slate-800 flex-row justify-between">
-                             <Text className="text-xs text-slate-500">Final Score</Text>
-                             <Text className="text-xs text-slate-400 font-medium">
-                               {game.awayTeam} {game.awayScore} - {game.homeScore} {game.homeTeam}
-                             </Text>
-                          </View>
-                        )}
-                    </View>
-                  );
-                })}
+              {mySelections.map((selection) => (
+                <SingleBetCard
+                  key={selection.id}
+                  selection={selection}
+                  onDelete={handleDeleteBet}
+                  onMakeParlay={handleMakeParlay}
+                  deletingId={deletingId}
+                />
+              ))}
             </View>
           )}
         </View>

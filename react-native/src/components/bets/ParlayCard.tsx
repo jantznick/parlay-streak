@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Parlay, ParlaySelection } from '../../interfaces/parlay';
@@ -60,6 +60,8 @@ function formatTime(dateString: string): string {
 }
 
 export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
   const isLocked = parlay.lockedAt !== null && parlay.lockedAt !== undefined;
   const canModify = !isLocked && parlay.status === 'building';
   
@@ -83,6 +85,11 @@ export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardP
   const earliestStartTime = earliestGame?.game.startTime;
   const earliestGameStatus = earliestGame?.game.status || 'scheduled';
 
+  // Get team abbreviations for collapsed view
+  const teamSummary = parlay.selections
+    .map(s => s.game.homeTeam.slice(0, 3).toUpperCase())
+    .join(', ');
+
   return (
     <View 
       style={{ 
@@ -90,61 +97,101 @@ export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardP
         borderWidth: 1,
         borderColor: '#1e293b',
         borderRadius: 16,
-        padding: 16,
+        overflow: 'hidden',
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <View style={{ backgroundColor: '#2563eb', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 11 }}>
-              {parlay.betCount} LEG PARLAY
+      {/* Header - always visible, tap to expand */}
+      <TouchableOpacity 
+        onPress={() => setIsExpanded(!isExpanded)}
+        activeOpacity={0.8}
+        style={{ padding: 16 }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+            <View style={{ backgroundColor: '#2563eb', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}>
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 13 }}>
+                {parlay.betCount} Leg
+              </Text>
+            </View>
+            <Text style={{ color: '#94a3b8', fontSize: 13, flex: 1 }} numberOfLines={1}>
+              {teamSummary}
             </Text>
           </View>
-          {!isLocked && earliestStartTime && (
-            <LockTimer startTime={earliestStartTime} status={earliestGameStatus} />
-          )}
-          {parlay.insured && (
-            <View style={{ backgroundColor: 'rgba(251, 146, 60, 0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(251, 146, 60, 0.3)' }}>
-              <Text style={{ color: '#fb923c', fontSize: 10, fontWeight: '600' }}>INSURED</Text>
-            </View>
-          )}
-          {isLocked && <Text style={{ fontSize: 12 }}>🔒</Text>}
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={{ color: '#fb923c', fontWeight: 'bold', fontSize: 16 }}>+{parlay.parlayValue}</Text>
-          {parlayOutcome && (
-            <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: parlayOutcome === 'win' ? 'rgba(16, 185, 129, 0.2)' : parlayOutcome === 'loss' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(250, 204, 21, 0.2)' }}>
-              <Text style={{ fontSize: 10, fontWeight: 'bold', color: parlayOutcome === 'win' ? '#34d399' : parlayOutcome === 'loss' ? '#f87171' : '#fbbf24' }}>{parlayOutcome.toUpperCase()}</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      <View style={{ gap: 8, marginBottom: 12 }}>
-        {parlay.selections.map((selection, index) => (
-          <View key={selection.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4, borderTopWidth: index > 0 ? 1 : 0, borderTopColor: '#1e293b' }}>
-            <Text style={{ fontSize: 14 }}>{getSportEmoji(selection.game.sport)}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#94a3b8', fontSize: 10 }}>{selection.game.awayTeam} @ {selection.game.homeTeam} • {formatTime(selection.game.startTime)}</Text>
-              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '500' }} numberOfLines={1}>{getSideDisplayLabel(selection)}</Text>
-            </View>
-            {selection.outcome && selection.outcome !== 'pending' && (
-              <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: selection.outcome === 'win' ? 'rgba(16, 185, 129, 0.2)' : selection.outcome === 'loss' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(250, 204, 21, 0.2)' }}>
-                <Text style={{ fontSize: 9, fontWeight: 'bold', color: selection.outcome === 'win' ? '#34d399' : selection.outcome === 'loss' ? '#f87171' : '#fbbf24' }}>{selection.outcome.toUpperCase()}</Text>
+          
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {!isLocked && earliestStartTime && (
+              <LockTimer startTime={earliestStartTime} status={earliestGameStatus} />
+            )}
+            {isLocked && <Text style={{ fontSize: 14 }}>🔒</Text>}
+            {parlay.insured && (
+              <View style={{ backgroundColor: 'rgba(251, 146, 60, 0.2)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
+                <Text style={{ color: '#fb923c', fontSize: 10, fontWeight: '600' }}>INS</Text>
               </View>
             )}
+            <Text style={{ color: '#fb923c', fontWeight: 'bold', fontSize: 18 }}>+{parlay.parlayValue}</Text>
+            {parlayOutcome && (
+              <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: parlayOutcome === 'win' ? 'rgba(16, 185, 129, 0.2)' : parlayOutcome === 'loss' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(250, 204, 21, 0.2)' }}>
+                <Text style={{ fontSize: 11, fontWeight: 'bold', color: parlayOutcome === 'win' ? '#34d399' : parlayOutcome === 'loss' ? '#f87171' : '#fbbf24' }}>{parlayOutcome.toUpperCase()}</Text>
+              </View>
+            )}
+            <Ionicons 
+              name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+              size={20} 
+              color="#64748b" 
+            />
           </View>
-        ))}
-      </View>
+        </View>
+      </TouchableOpacity>
 
-      {canModify && (
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity onPress={() => onOpen(parlay)} style={{ flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: '#2563eb' }}>
-            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>Edit Parlay</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => onDelete(parlay.id)} disabled={deletingId === parlay.id} style={{ width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(127, 29, 29, 0.3)', borderWidth: 1, borderColor: 'rgba(127, 29, 29, 0.5)' }}>
-            {deletingId === parlay.id ? <ActivityIndicator size="small" color="#f87171" /> : <Ionicons name="trash-outline" size={18} color="#f87171" />}
-          </TouchableOpacity>
+      {/* Expanded content */}
+      {isExpanded && (
+        <View style={{ paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
+          {/* Selections */}
+          <View style={{ gap: 8, marginTop: 12 }}>
+            {parlay.selections.map((selection, index) => (
+              <View key={selection.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Text style={{ fontSize: 16 }}>{getSportEmoji(selection.game.sport)}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: '#94a3b8', fontSize: 12 }}>
+                    {selection.game.awayTeam} @ {selection.game.homeTeam} • {formatTime(selection.game.startTime)}
+                  </Text>
+                  <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }} numberOfLines={1}>
+                    {getSideDisplayLabel(selection)}
+                  </Text>
+                </View>
+                {selection.outcome && selection.outcome !== 'pending' && (
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: selection.outcome === 'win' ? 'rgba(16, 185, 129, 0.2)' : selection.outcome === 'loss' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(250, 204, 21, 0.2)' }}>
+                    <Text style={{ fontSize: 11, fontWeight: 'bold', color: selection.outcome === 'win' ? '#34d399' : selection.outcome === 'loss' ? '#f87171' : '#fbbf24' }}>
+                      {selection.outcome.toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+
+          {/* Actions */}
+          {canModify && (
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+              <TouchableOpacity 
+                onPress={() => onOpen(parlay)} 
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center', backgroundColor: '#2563eb' }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => onDelete(parlay.id)} 
+                disabled={deletingId === parlay.id} 
+                style={{ width: 48, height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(127, 29, 29, 0.3)', borderWidth: 1, borderColor: 'rgba(127, 29, 29, 0.5)' }}
+              >
+                {deletingId === parlay.id ? (
+                  <ActivityIndicator size="small" color="#f87171" />
+                ) : (
+                  <Ionicons name="trash-outline" size={20} color="#f87171" />
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
     </View>

@@ -390,57 +390,50 @@ export function ParlayBuilder() {
 
         {/* Minimized View */}
         {isMinimized ? (
-          <View style={{ flex: 1, paddingHorizontal: 16 }}>
+          <TouchableOpacity 
+            onPress={expandSheet}
+            activeOpacity={0.9}
+            style={{ flex: 1, paddingHorizontal: 16 }}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              {/* Tappable area to expand */}
-              <TouchableOpacity 
-                onPress={expandSheet}
-                activeOpacity={0.9}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}
-              >
+              {/* Left: Parlay badge + bet count + value */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <View style={{ backgroundColor: '#2563eb', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}>
-                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 13 }}>PARLAY</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
-                    {activeParlay.betCount}/5 Bets
-                  </Text>
-                  <Text style={{ color: '#94a3b8', fontSize: 11 }}>
-                    Tap to expand
+                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>
+                    {activeParlay.betCount} {activeParlay.betCount === 1 ? 'Bet' : 'Bets'}
                   </Text>
                 </View>
-              </TouchableOpacity>
-              
-              {/* Right side: Value + Save button */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <Text style={{ color: '#fb923c', fontWeight: 'bold', fontSize: 18 }}>
                   +{activeParlay.parlayValue}
                 </Text>
-                {activeParlay.betCount >= 2 && !isLocked ? (
-                  <TouchableOpacity
-                    onPress={handleSaveParlay}
-                    disabled={loading}
-                    style={{
-                      backgroundColor: '#ea580c',
-                      paddingHorizontal: 16,
-                      paddingVertical: 8,
-                      borderRadius: 8,
-                    }}
-                  >
-                    {loading ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 13 }}>Save</Text>
-                    )}
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity onPress={expandSheet}>
-                    <Ionicons name="chevron-up" size={20} color="#64748b" />
-                  </TouchableOpacity>
-                )}
               </View>
+              
+              {/* Right: Save button or chevron */}
+              {activeParlay.betCount >= 2 && !isLocked ? (
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleSaveParlay();
+                  }}
+                  disabled={loading}
+                  style={{
+                    backgroundColor: '#ea580c',
+                    paddingHorizontal: 20,
+                    paddingVertical: 10,
+                    borderRadius: 10,
+                  }}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Save</Text>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <Ionicons name="chevron-up" size={24} color="#64748b" />
+              )}
             </View>
-          </View>
+          </TouchableOpacity>
         ) : (
           /* Expanded View */
           <ScrollView 
@@ -450,12 +443,14 @@ export function ParlayBuilder() {
           >
             {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{ backgroundColor: '#2563eb', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 11 }}>PARLAY</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={{ backgroundColor: '#2563eb', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}>
+                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>
+                    {activeParlay.betCount} {activeParlay.betCount === 1 ? 'Bet' : 'Bets'}
+                  </Text>
                 </View>
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18 }}>
-                  {activeParlay.betCount}/5 Bets
+                <Text style={{ color: '#fb923c', fontWeight: 'bold', fontSize: 18 }}>
+                  +{activeParlay.parlayValue}
                 </Text>
               </View>
               <TouchableOpacity onPress={handleCloseButton} style={{ padding: 8 }}>
@@ -472,67 +467,44 @@ export function ParlayBuilder() {
               </View>
             )}
 
-            {/* Parlay Value */}
-            <View style={{ backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: 12, padding: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ color: '#94a3b8', fontSize: 14 }}>Parlay Value</Text>
-              <Text style={{ color: '#fb923c', fontWeight: 'bold', fontSize: 20 }}>
-                {activeParlay.parlayValue > 0 ? `+${activeParlay.parlayValue}` : '0'}
-              </Text>
-            </View>
-
-            {/* Bet Slots */}
+            {/* Bet Selections - only show actual bets, no empty slots */}
             <View style={{ gap: 8, marginBottom: 16 }}>
-              {[0, 1, 2, 3, 4].map((slotIndex) => {
-                const selection = activeParlay.selections[slotIndex];
-                
-                if (selection) {
-                  return (
-                    <View
-                      key={selection.id}
-                      style={{ backgroundColor: '#1e293b', borderWidth: 1, borderColor: '#334155', borderRadius: 12, padding: 12 }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                        <View style={{ flex: 1, marginRight: 8 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            <Text style={{ fontSize: 16 }}>{getSportEmoji(selection.game.sport)}</Text>
-                            <Text style={{ color: '#94a3b8', fontSize: 11 }}>
-                              {selection.game.awayTeam} @ {selection.game.homeTeam}
-                            </Text>
-                          </View>
-                          <Text style={{ color: '#fff', fontWeight: '500', fontSize: 13 }} numberOfLines={1}>
-                            {selection.bet.displayText}
-                          </Text>
-                          <Text style={{ color: '#fb923c', fontSize: 11, marginTop: 2 }}>
-                            {getSideDisplayLabel(selection)}
-                          </Text>
-                        </View>
-                        {!isLocked && (
-                          <TouchableOpacity
-                            onPress={() => handleRemoveSelection(selection.id)}
-                            disabled={removingId === selection.id}
-                            style={{ height: 32, width: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: '#334155' }}
-                          >
-                            {removingId === selection.id ? (
-                              <ActivityIndicator size="small" color="#ef4444" />
-                            ) : (
-                              <Ionicons name="close" size={16} color="#ef4444" />
-                            )}
-                          </TouchableOpacity>
-                        )}
+              {activeParlay.selections.map((selection) => (
+                <View
+                  key={selection.id}
+                  style={{ backgroundColor: '#1e293b', borderWidth: 1, borderColor: '#334155', borderRadius: 12, padding: 12 }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <Text style={{ fontSize: 16 }}>{getSportEmoji(selection.game.sport)}</Text>
+                        <Text style={{ color: '#94a3b8', fontSize: 11 }}>
+                          {selection.game.awayTeam} @ {selection.game.homeTeam}
+                        </Text>
                       </View>
+                      <Text style={{ color: '#fff', fontWeight: '500', fontSize: 13 }} numberOfLines={1}>
+                        {selection.bet.displayText}
+                      </Text>
+                      <Text style={{ color: '#fb923c', fontSize: 11, marginTop: 2 }}>
+                        {getSideDisplayLabel(selection)}
+                      </Text>
                     </View>
-                  );
-                } else {
-                  return (
-                    <View
-                      key={`empty-${slotIndex}`}
-                      style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: '#334155', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                    >
-                      <Text style={{ color: '#475569', fontSize: 11 }}>Slot {slotIndex + 1}</Text>
-                    </View>
-                  );
-                }
-              })}
+                    {!isLocked && (
+                      <TouchableOpacity
+                        onPress={() => handleRemoveSelection(selection.id)}
+                        disabled={removingId === selection.id}
+                        style={{ height: 32, width: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: '#334155' }}
+                      >
+                        {removingId === selection.id ? (
+                          <ActivityIndicator size="small" color="#ef4444" />
+                        ) : (
+                          <Ionicons name="close" size={16} color="#ef4444" />
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              ))}
             </View>
 
             {/* Insurance Toggle */}
@@ -656,21 +628,21 @@ export function ParlayBuilder() {
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Save Parlay</Text>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Save</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
                 onPress={handleDiscardParlay}
                 style={{
-                  backgroundColor: 'rgba(127, 29, 29, 0.3)',
+                  backgroundColor: 'rgba(100, 116, 139, 0.2)',
                   borderWidth: 1,
-                  borderColor: 'rgba(127, 29, 29, 0.5)',
+                  borderColor: 'rgba(100, 116, 139, 0.3)',
                   paddingVertical: 14,
                   borderRadius: 12,
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ color: '#f87171', fontWeight: '600', fontSize: 16 }}>Delete Parlay</Text>
+                <Text style={{ color: '#94a3b8', fontWeight: '600', fontSize: 16 }}>Discard Changes</Text>
               </TouchableOpacity>
               
               <TouchableOpacity

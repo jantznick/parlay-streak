@@ -273,7 +273,7 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
 
       {selectedSide && !saved && (
         <View className="flex-row gap-2">
-          {/* Save Bet Button */}
+          {/* Save Button */}
           <TouchableOpacity
             onPress={handleSave}
             disabled={loading || parlayLoading || gameStarted}
@@ -282,12 +282,12 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
             } flex-row items-center justify-center`}
           >
             {loading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />}
-            <Text className="text-white text-xs font-semibold">
-              {loading ? 'Saving…' : 'Save Bet'}
+            <Text className="text-white text-sm font-semibold">
+              {loading ? 'Saving…' : 'Save'}
             </Text>
           </TouchableOpacity>
 
-          {/* Start Parlay / Add to Parlay Button */}
+          {/* Parlay Button */}
           {isParlayBuilderOpen && activeParlay ? (
             <TouchableOpacity
               onPress={handleAddToParlay}
@@ -297,10 +297,10 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
               } flex-row items-center justify-center`}
             >
               {parlayLoading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />}
-              <Text className={`text-xs font-semibold ${
+              <Text className={`text-sm font-semibold ${
                 parlayFull ? 'text-slate-500' : 'text-white'
               }`}>
-                {parlayLoading ? 'Adding…' : parlayFull ? 'Parlay Full' : 'Add to Parlay'}
+                {parlayLoading ? 'Adding…' : parlayFull ? 'Full' : '+ Parlay'}
               </Text>
             </TouchableOpacity>
           ) : (
@@ -312,8 +312,8 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
               } flex-row items-center justify-center`}
             >
               {parlayLoading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />}
-              <Text className="text-white text-xs font-semibold">
-                {parlayLoading ? 'Starting…' : 'Start Parlay'}
+              <Text className="text-white text-sm font-semibold">
+                {parlayLoading ? 'Starting…' : 'Parlay'}
               </Text>
             </TouchableOpacity>
           )}
