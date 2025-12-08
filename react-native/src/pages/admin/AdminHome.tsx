@@ -34,10 +34,18 @@ interface SportConfig {
   leagues: Array<{ id: string; name: string }>;
 }
 
+// Helper to get local date string in YYYY-MM-DD format
+const getLocalDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export function AdminHome() {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString(new Date()));
   const [sportsConfig, setSportsConfig] = useState<SportConfig[]>([]);
   const [selectedSport, setSelectedSport] = useState<string>('basketball');
   const [selectedLeague, setSelectedLeague] = useState<string>('nba');
@@ -89,9 +97,11 @@ export function AdminHome() {
   }, [sportsConfig, selectedSport, selectedLeague]);
 
   const shiftDate = (days: number) => {
-    const current = new Date(selectedDate);
+    // Parse the YYYY-MM-DD string as local date (not UTC)
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    const current = new Date(year, month - 1, day);
     current.setDate(current.getDate() + days);
-    setSelectedDate(current.toISOString().slice(0, 10));
+    setSelectedDate(getLocalDateString(current));
   };
 
   const fetchGames = useCallback(
@@ -148,8 +158,12 @@ export function AdminHome() {
     });
   };
 
-  const formatDateLabel = (iso: string) =>
-    new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  const formatDateLabel = (dateStr: string) => {
+    // Parse YYYY-MM-DD as local date to avoid timezone issues
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
   const handleResolveBet = async (betId: string) => {
     if (resolvingBet) return;
