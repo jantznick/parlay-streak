@@ -6,11 +6,15 @@ import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../services/api';
 import { BetSelectionGroup } from '../components/bets/BetSelectionGroup';
+import { ParlayCard } from '../components/bets/ParlayCard';
 import { CalendarModal } from '../components/common/CalendarModal';
 import { ConfirmationModal } from '../components/common/ConfirmationModal';
 import { LockTimer } from '../components/common/LockTimer';
 import { streakMessages } from '../utils/streakMessages';
 import { useToast } from '../context/ToastContext';
+import { useParlay } from '../context/ParlayContext';
+import { useBets } from '../context/BetsContext';
+import type { Parlay } from '../interfaces/parlay';
 
 interface Bet {
   id: string;
@@ -64,23 +68,28 @@ interface BetSelection {
 export function Dashboard() {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { setActiveParlay, setIsParlayBuilderOpen } = useParlay();
+  const { refreshTrigger, triggerRefresh } = useBets();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mySelections, setMySelections] = useState<BetSelection[]>([]);
+  const [myParlays, setMyParlays] = useState<Parlay[]>([]);
   const [loadingMyBets, setLoadingMyBets] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingParlayId, setDeletingParlayId] = useState<string | null>(null);
   const [streakTitle, setStreakTitle] = useState<string>('');
   const [streakSubtitle, setStreakSubtitle] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteParlayId, setConfirmDeleteParlayId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchTodaysBets(), fetchMyBets()]);
+    await Promise.all([fetchTodaysBets(), fetchMyBets(), fetchMyParlays()]);
     setRefreshing(false);
   }, [selectedDate]);
 
@@ -157,6 +166,24 @@ export function Dashboard() {
     }
   };
 
+  const fetchMyParlays = async () => {
+    try {
+      const dateString = formatDateString(selectedDate);
+      const timezoneOffset = getTimezoneOffset();
+      // getParlays(status, includeSelections, date, timezoneOffset)
+      const response = await api.getParlays(undefined, true, dateString, timezoneOffset);
+      if (response.success && response.data) {
+        const data = response.data as { parlays?: Parlay[] };
+        setMyParlays(data.parlays || []);
+      } else {
+        setMyParlays([]);
+      }
+    } catch (error: any) {
+      console.error('Failed to load parlays:', error);
+      setMyParlays([]);
+    }
+  };
+
   const handleDeleteBet = (selectionId: string) => {
     setConfirmDeleteId(selectionId);
   };
@@ -183,6 +210,61 @@ export function Dashboard() {
     }
   };
 
+  const handleOpenParlay = (parlay: Parlay) => {
+    setActiveParlay(parlay);
+    setIsParlayBuilderOpen(true);
+  };
+
+  const handleDeleteParlay = (parlayId: string) => {
+    setConfirmDeleteParlayId(parlayId);
+  };
+
+  const performDeleteParlay = async () => {
+    if (!confirmDeleteParlayId) return;
+    
+    const idToDelete = confirmDeleteParlayId;
+    setConfirmDeleteParlayId(null);
+    setDeletingParlayId(idToDelete);
+
+    try {
+      const response = await api.deleteParlay(idToDelete);
+      if (response.success) {
+        showToast('Parlay deleted', 'info');
+        await fetchMyParlays();
+        await fetchMyBets();
+      } else {
+        showToast(response.error?.message || 'Failed to delete parlay', 'error');
+      }
+    } catch (error: any) {
+      showToast(error.message || 'Failed to delete parlay', 'error');
+    } finally {
+      setDeletingParlayId(null);
+    }
+  };
+
+  const handleMakeParlay = async (selection: BetSelection) => {
+    // Convert existing single bet to a parlay
+    try {
+      const response = await api.startParlay(selection.betId, selection.selectedSide);
+      if (response.success && response.data) {
+        const data = response.data as { parlay?: Parlay };
+        if (data.parlay) {
+          // Delete the old single bet selection
+          await api.deleteSelection(selection.id);
+          setActiveParlay(data.parlay);
+          setIsParlayBuilderOpen(true);
+          // showToast('Parlay started from existing bet!', 'success');
+          await fetchMyBets();
+          await fetchMyParlays();
+        }
+      } else {
+        showToast(response.error?.message || 'Failed to start parlay', 'error');
+      }
+    } catch (error: any) {
+      showToast(error.message || 'Failed to start parlay', 'error');
+    }
+  };
+
   useEffect(() => {
     // Set random streak messages on mount
     const randomTitle = streakMessages.titles[Math.floor(Math.random() * streakMessages.titles.length)];
@@ -194,7 +276,16 @@ export function Dashboard() {
   useEffect(() => {
     fetchTodaysBets();
     fetchMyBets();
+    fetchMyParlays();
   }, [selectedDate]);
+
+  // Refresh when parlay builder triggers a refresh
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      fetchMyBets();
+      fetchMyParlays();
+    }
+  }, [refreshTrigger]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -325,6 +416,17 @@ export function Dashboard() {
             onConfirm={performDeleteBet}
             onCancel={() => setConfirmDeleteId(null)}
           />
+
+          <ConfirmationModal
+            visible={!!confirmDeleteParlayId}
+            title="Delete Parlay"
+            message="Are you sure you want to delete this parlay? All selections will be removed."
+            confirmText="Delete"
+            cancelText="Cancel"
+            isDestructive
+            onConfirm={performDeleteParlay}
+            onCancel={() => setConfirmDeleteParlayId(null)}
+          />
         </View>
 
         {/* My Bets section */}
@@ -339,7 +441,7 @@ export function Dashboard() {
             <View className="py-4 items-center">
               <ActivityIndicator size="small" color="#e5e7eb" />
             </View>
-          ) : mySelections.length === 0 ? (
+          ) : mySelections.length === 0 && myParlays.length === 0 ? (
             <View className="bg-slate-900/50 rounded-2xl p-6 items-center border border-slate-800 border-dashed">
               <Ionicons name="clipboard-outline" size={32} color="#475569" />
               <Text className="text-slate-500 text-sm mt-2 text-center">
@@ -348,6 +450,20 @@ export function Dashboard() {
             </View>
           ) : (
             <View className="gap-3">
+              {/* Parlays first (only show valid parlays with 2+ bets) */}
+              {myParlays
+                .filter((parlay) => parlay.betCount >= 2)
+                .map((parlay) => (
+                <ParlayCard
+                  key={parlay.id}
+                  parlay={parlay}
+                  onOpen={handleOpenParlay}
+                  onDelete={handleDeleteParlay}
+                  deletingId={deletingParlayId}
+                />
+              ))}
+
+              {/* Single bets */}
               {mySelections.map((selection) => {
                   const game = selection.bet.game;
                   const getBetSideLabels = (bet: any, game: any) => {
@@ -466,17 +582,25 @@ export function Dashboard() {
                           </Text>
                           
                         {canModify && (
-                          <TouchableOpacity
-                            onPress={() => handleDeleteBet(selection.id)}
-                            disabled={deletingId === selection.id}
-                            className="h-8 w-8 items-center justify-center rounded-full bg-slate-800"
-                          >
-                            {deletingId === selection.id ? (
-                              <ActivityIndicator size="small" color="#ef4444" />
-                            ) : (
-                              <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                            )}
-                          </TouchableOpacity>
+                          <View className="flex-row items-center gap-2">
+                            <TouchableOpacity
+                              onPress={() => handleMakeParlay(selection)}
+                              className="px-3 py-1.5 rounded-lg bg-blue-600"
+                            >
+                              <Text className="text-white text-xs font-semibold">Make Parlay</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => handleDeleteBet(selection.id)}
+                              disabled={deletingId === selection.id}
+                              className="h-8 w-8 items-center justify-center rounded-full bg-slate-800"
+                            >
+                              {deletingId === selection.id ? (
+                                <ActivityIndicator size="small" color="#ef4444" />
+                              ) : (
+                                <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                              )}
+                            </TouchableOpacity>
+                          </View>
                         )}
                       </View>
 
