@@ -71,9 +71,10 @@ export function MyBetsSection() {
       if (selectionsResponse.success && selectionsResponse.data) {
         const data = selectionsResponse.data as { selections?: BetSelection[] };
         // Filter to only single bets (parlayId is null in the response, but we check status)
-        const singleBets = (data.selections || []).filter(
-          (s: any) => !s.parlayId || s.parlayId === null
-        );
+        // Ensure status is always provided (default to 'pending' if missing)
+        const singleBets = (data.selections || [])
+          .filter((s: any) => !s.parlayId || s.parlayId === null)
+          .map((s: any) => ({ ...s, status: s.status || 'pending' }));
         setSelections(singleBets);
       } else {
         // Check if there's an error with code

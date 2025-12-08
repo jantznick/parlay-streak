@@ -17,7 +17,7 @@ export function GameCard({
   loadingRoster,
   resolvingBet
 }: GameCardProps) {
-  const sortedBets = [...game.bets].sort((a, b) => a.priority - b.priority);
+  const sortedBets = [...(game.bets || [])].sort((a, b) => a.priority - b.priority);
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg hover:border-slate-700 transition">

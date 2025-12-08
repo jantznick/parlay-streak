@@ -15,9 +15,21 @@ export interface Bet {
 export interface BetSelection {
   id: string;
   betId: string;
-  bet: Bet;
+  bet: Bet & {
+    game: {
+      id: string;
+      homeTeam: string;
+      awayTeam: string;
+      startTime: string;
+      status?: string;
+      sport?: string;
+      homeScore?: number | null;
+      awayScore?: number | null;
+      metadata?: any;
+    };
+  };
   selectedSide: string;
-  status?: string;
+  status: string;
   outcome?: string;
   game: {
     id: string;

@@ -3,7 +3,7 @@ import { api } from '../../services/api';
 import { BASKETBALL_CONFIG } from '@shared/config/sports/basketball';
 import type { BetType, Participant, ComparisonConfig, ThresholdConfig, EventConfig, BetConfig, TimePeriod } from '@shared/types/bets';
 import { Modal } from '../common/Modal';
-import type { BetModalProps, Player } from '../../interfaces';
+import type { BetModalProps, Player, Game } from '../../interfaces';
 
 // Extract ParticipantSelector as a separate component
 function ParticipantSelector({ 

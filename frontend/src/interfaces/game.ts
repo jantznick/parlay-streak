@@ -2,6 +2,8 @@
  * Game-related interfaces for the frontend
  */
 
+import type { Bet } from './bet';
+
 export interface Game {
   id: string;
   externalId?: string;
@@ -13,6 +15,7 @@ export interface Game {
   homeScore?: number | null;
   awayScore?: number | null;
   metadata?: any;
+  bets?: Bet[];
 }
 
 export interface HistoricalGame extends Game {
@@ -41,5 +44,6 @@ export interface HistoricalGame extends Game {
     home: number | null;
     away: number | null;
   };
+  bets?: Bet[];
 }
 

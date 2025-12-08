@@ -326,9 +326,15 @@ export function BetManagement() {
     }
   };
 
+  const handleForceRefresh = async (gameId: string) => {
+    // Force refresh a single game by re-fetching all games with force=true
+    // This will bypass the cache and get fresh data from the API
+    await fetchGames(true);
+  };
+
   const handleMoveBetPriority = async (gameId: string, betId: string, direction: 'up' | 'down') => {
     const game = games.find(g => g.id === gameId);
-    if (!game) return;
+    if (!game || !game.bets) return;
 
     const sortedBets = [...game.bets].sort((a, b) => a.priority - b.priority);
     const currentIndex = sortedBets.findIndex(b => b.id === betId);
@@ -439,7 +445,7 @@ export function BetManagement() {
               {games.map((game) => (
                 <GameCard
                   key={game.id}
-                  game={game}
+                  game={{ ...game, bets: game.bets || [] }}
                   isExpanded={expandedGames.has(game.id)}
                   onToggle={toggleGameExpanded}
                   onCreateBets={handleCreateBets}
@@ -448,6 +454,7 @@ export function BetManagement() {
                   onDeleteBet={handleDeleteBet}
                   onResolveBet={handleResolveBet}
                   onMoveBetPriority={handleMoveBetPriority}
+                  onForceRefresh={handleForceRefresh}
                   creatingMoneyline={creatingMoneyline}
                   loadingRoster={loadingRoster}
                   resolvingBet={resolvingBet}

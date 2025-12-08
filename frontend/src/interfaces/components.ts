@@ -61,15 +61,15 @@ export interface SingleBetCardProps {
       id: string;
       displayText: string;
       betType: string;
-      outcome: string;
+      outcome?: string;
       config?: any;
       game: {
         id: string;
         homeTeam: string;
         awayTeam: string;
         startTime: string;
-        status: string;
-        sport: string;
+        status?: string;
+        sport?: string;
         homeScore?: number | null;
         awayScore?: number | null;
         metadata?: any;
@@ -117,8 +117,8 @@ export interface BetListItemProps {
   game: Game;
   index: number;
   totalBets: number;
-  onEdit: (bet: Bet) => void;
-  onDelete: (betId: string) => void;
+  onEdit: (bet: Bet, game: Game) => void;
+  onDelete: (bet: Bet, game: Game) => void;
   onResolve: (bet: Bet) => void;
   onMovePriority: (gameId: string, betId: string, direction: 'up' | 'down') => void;
   resolvingBet: string | null;

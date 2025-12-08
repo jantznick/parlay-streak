@@ -143,7 +143,7 @@ export function TodaysBets() {
                   Today's Available Bets
                 </h2>
                 <p className="text-slate-400 text-sm mt-1">
-                  {games.length} game{games.length !== 1 ? 's' : ''} with {games.reduce((sum, g) => sum + g.bets.length, 0)} available bet{games.reduce((sum, g) => sum + g.bets.length, 0) !== 1 ? 's' : ''}
+                  {games.length} game{games.length !== 1 ? 's' : ''} with {games.reduce((sum, g) => sum + (g.bets?.length || 0), 0)} available bet{games.reduce((sum, g) => sum + (g.bets?.length || 0), 0) !== 1 ? 's' : ''}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -167,7 +167,7 @@ export function TodaysBets() {
             <div className="grid gap-6">
               {games.map((game) => {
                 // All bets returned are already available (pending), but sort by priority
-                const sortedBets = [...game.bets].sort((a, b) => a.priority - b.priority);
+                const sortedBets = [...(game.bets || [])].sort((a, b) => a.priority - b.priority);
                 
                 return (
                   <div

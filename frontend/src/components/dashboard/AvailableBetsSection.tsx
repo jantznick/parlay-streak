@@ -39,7 +39,7 @@ export function AvailableBetsSection({
   return (
     <div className="space-y-4">
       {games.map((game) => {
-        const sortedBets = [...game.bets].sort((a, b) => a.priority - b.priority);
+        const sortedBets = [...(game.bets || [])].sort((a, b) => a.priority - b.priority);
         
         return (
           <div key={game.id} className="rounded-lg border p-4 bg-slate-800/50 border-slate-700">
