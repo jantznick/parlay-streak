@@ -35,29 +35,7 @@
 </head>
 <body class="bg-slate-950">
     <!-- Header -->
-    <header class="fixed top-0 w-full bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 z-50">
-        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <span class="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-700 bg-clip-text text-transparent">
-                        Parlay Streak
-                    </span>
-                </div>
-                <div class="hidden md:flex space-x-8">
-                    <a href="#how-it-works" class="text-gray-300 hover:text-orange-600 transition">How It Works</a>
-                    <a href="#mechanics" class="text-gray-300 hover:text-orange-600 transition">Game Mechanics</a>
-                    <a href="#leaderboards" class="text-gray-300 hover:text-orange-600 transition">Leaderboards</a>
-                    <a href="#examples" class="text-gray-300 hover:text-orange-600 transition">Examples</a>
-                    <a href="#todays-bets" class="text-gray-300 hover:text-orange-600 transition">Today's Bets</a>
-                </div>
-                <div>
-                    <a href="#waitlist" class="bg-gradient-to-r from-orange-600 to-red-700 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition">
-                        Get Notified
-                    </a>
-                </div>
-            </div>
-        </nav>
-    </header>
+    <parlay-streak-header home="true"></parlay-streak-header>
 
     <!-- Hero Section -->
     <section class="pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950">
@@ -739,60 +717,7 @@
     </section>
 
     <!-- Footer -->
-    <footer class="bg-slate-900 border-t border-slate-800 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <!-- Company Info -->
-                <div class="col-span-1 md:col-span-2">
-                    <h3 class="text-lg font-bold text-white mb-4">Parlay Streak</h3>
-                    <p class="text-sm text-slate-400 mb-4">
-                        Build your streak with strategic parlay betting. Compete with friends and climb the leaderboards.
-                    </p>
-                    <p class="text-xs text-slate-500">
-                        © 2025 Parlay Streak. All rights reserved.
-                    </p>
-                </div>
-
-                <!-- Legal -->
-                <div>
-                    <h4 class="text-sm font-semibold text-white mb-4">Legal</h4>
-                    <ul class="space-y-2">
-                        <li>
-                            <a href="/legal/terms" class="text-sm text-slate-400 hover:text-white transition">Terms of Use</a>
-                        </li>
-                        <li>
-                            <a href="/legal/privacy" class="text-sm text-slate-400 hover:text-white transition">Privacy Policy</a>
-                        </li>
-                        <li>
-                            <a href="/legal/responsible-gaming" class="text-sm text-slate-400 hover:text-white transition">Responsible Gaming</a>
-                        </li>
-                    </ul>
-                </div>
-
-                <!-- Company -->
-                <div>
-                    <h4 class="text-sm font-semibold text-white mb-4">Company</h4>
-                    <ul class="space-y-2">
-                        <li>
-                            <a href="/company/about" class="text-sm text-slate-400 hover:text-white transition">About Us</a>
-                        </li>
-                        <li>
-                            <a href="/company/careers" class="text-sm text-slate-400 hover:text-white transition">Careers</a>
-                        </li>
-                        <li>
-                            <a href="/company/contact" class="text-sm text-slate-400 hover:text-white transition">Contact</a>
-                        </li>
-                        <li>
-                            <a href="/company/help" class="text-sm text-slate-400 hover:text-white transition">Help Center</a>
-                        </li>
-                        <li>
-                            <a href="/company/gameplay" class="text-sm text-slate-400 hover:text-white transition">Official Rules</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </footer>
+    <parlay-streak-footer></parlay-streak-footer>
 
     <!-- Smooth Scroll Script -->
     <script>
@@ -999,6 +924,12 @@
             }
         });
     </script>
+    <!-- Components -->
+    <script src="/components/header.js"></script>
+    <script src="/components/footer.js"></script>
+    <script src="/components/analytics.js"></script>
+    <!-- Analytics -->
+    <parlay-streak-analytics></parlay-streak-analytics>
 </body>
 </html>
 
