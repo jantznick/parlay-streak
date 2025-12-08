@@ -3,10 +3,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import './global.css';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ParlayProvider } from './src/context/ParlayContext';
 import { BetsProvider } from './src/context/BetsContext';
+import { ToastProvider } from './src/context/ToastContext';
 import { Login } from './src/pages/Login';
 import { Register } from './src/pages/Register';
 import { Dashboard } from './src/pages/Dashboard';
@@ -34,11 +36,12 @@ function AuthStack() {
   );
 }
 
+import { TabNavigator } from './src/navigation/TabNavigator';
+
 function AppStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Dashboard" component={Dashboard} />
-      <Stack.Screen name="Settings" component={Settings} />
+      <Stack.Screen name="MainTabs" component={TabNavigator} />
       <Stack.Screen name="AdminHome" component={AdminHome} />
       <Stack.Screen name="AdminBetBuilder" component={AdminBetBuilder} />
     </Stack.Navigator>
@@ -79,14 +82,18 @@ function RootNavigator() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ParlayProvider>
-        <BetsProvider>
-          <StatusBar style="light" />
-          <RootNavigator />
-        </BetsProvider>
-      </ParlayProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <ParlayProvider>
+            <BetsProvider>
+              <StatusBar style="light" />
+              <RootNavigator />
+            </BetsProvider>
+          </ParlayProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </SafeAreaProvider>
   );
 }
 

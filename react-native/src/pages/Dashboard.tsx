@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../services/api';
 import { BetSelectionGroup } from '../components/bets/BetSelectionGroup';
+import { CalendarModal } from '../components/common/CalendarModal';
+import { ConfirmationModal } from '../components/common/ConfirmationModal';
+import { LockTimer } from '../components/common/LockTimer';
 import { streakMessages } from '../utils/streakMessages';
+import { useToast } from '../context/ToastContext';
 
 interface Bet {
   id: string;
@@ -69,6 +73,16 @@ export function Dashboard() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [streakTitle, setStreakTitle] = useState<string>('');
   const [streakSubtitle, setStreakSubtitle] = useState<string>('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [calendarVisible, setCalendarVisible] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const { showToast } = useToast();
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([fetchTodaysBets(), fetchMyBets()]);
+    setRefreshing(false);
+  }, [selectedDate]);
 
   const formatDate = (date: Date) =>
     date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -144,35 +158,29 @@ export function Dashboard() {
   };
 
   const handleDeleteBet = (selectionId: string) => {
-    Alert.alert(
-      'Delete Bet',
-      'Are you sure you want to remove this bet?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setDeletingId(selectionId);
-            try {
-              const response = await api.deleteSelection(selectionId);
-              if (response.success) {
-                await fetchMyBets();
-              } else {
-                Alert.alert('Error', response.error?.message || 'Failed to delete bet');
-              }
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to delete bet');
-            } finally {
-              setDeletingId(null);
-            }
-          },
-        },
-      ]
-    );
+    setConfirmDeleteId(selectionId);
+  };
+
+  const performDeleteBet = async () => {
+    if (!confirmDeleteId) return;
+    
+    const idToDelete = confirmDeleteId;
+    setConfirmDeleteId(null);
+    setDeletingId(idToDelete);
+
+    try {
+      const response = await api.deleteSelection(idToDelete);
+      if (response.success) {
+        showToast('Bet removed successfully', 'info');
+        await fetchMyBets();
+      } else {
+        Alert.alert('Error', response.error?.message || 'Failed to delete bet');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to delete bet');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   useEffect(() => {
@@ -209,65 +217,45 @@ export function Dashboard() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
-      {/* Top header */}
-      <View className="px-6 pt-4 pb-5 bg-slate-950">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center">
-            <View className="h-9 w-9 rounded-full bg-slate-800 items-center justify-center mr-3">
-              <Text className="text-sm font-semibold text-white">
-                {(user?.username || 'P').charAt(0).toUpperCase()}
-              </Text>
-            </View>
-            <View>
-              <Text className="text-xs text-slate-400">Welcome back</Text>
-              <Text className="text-2xl font-semibold text-white mt-1">
-                {user?.username || 'Player'}
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Settings' as never)}
-            className="h-9 w-9 rounded-full bg-slate-800 items-center justify-center"
-          >
-            <Ionicons name="settings-outline" size={18} color="#e5e7eb" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
+    <SafeAreaView className="flex-1 bg-slate-950" edges={['top', 'left', 'right']}>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 32 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#e5e7eb" />
+        }
       >
-        {/* Hero section with streak and banner (dark sheet) */}
-        <View className="px-6 pt-2 pb-6 bg-slate-900">
+        {/* Header Section */}
+        <View className="px-6 pt-6 pb-2">
+          <Text className="text-3xl font-bold text-white">Dashboard</Text>
+          <Text className="text-slate-400 text-sm mt-1">
+            Welcome back, {user?.username}
+          </Text>
+        </View>
+
+        {/* Hero section with streak and banner */}
+        <View className="px-6 pt-4 pb-6">
           {user && (
             <View>
               {/* Primary streak card */}
-              <View className="bg-gradient-to-br from-orange-500 to-red-600 rounded-3xl px-5 py-5 mb-4">
-                <Text className="text-xs text-orange-100/90 mb-2">
-                  Today&apos;s streak
+              <View className="bg-orange-600 rounded-[24px] px-6 py-6 mb-5 shadow-lg shadow-orange-900/20">
+                <Text className="text-sm font-medium text-orange-100 mb-1 opacity-90">
+                  Current Streak
                 </Text>
                 <View className="flex-row items-end justify-between">
                   <View>
-                    <Text className="text-5xl font-extrabold text-white">
+                    <Text className="text-6xl font-black text-white leading-tight">
                       {user.currentStreak}
                     </Text>
-                    <Text className="text-sm text-orange-100 mt-1">
-                      active streak
+                    <Text className="text-sm text-orange-200 font-medium">
+                      Personal Best: {user.longestStreak}
                     </Text>
                   </View>
                   <View className="items-end">
-                    <Text className="text-[11px] text-orange-100/90">
-                      Best streak
+                    <Text className="text-xs text-orange-200 mb-1">
+                      Total Points
                     </Text>
-                    <Text className="text-lg font-semibold text-white">
-                      {user.longestStreak}
-                    </Text>
-                    <Text className="text-[11px] text-orange-100/90 mt-2">
-                      Total points
-                    </Text>
-                    <Text className="text-lg font-semibold text-white">
+                    <Text className="text-2xl font-bold text-white">
                       {user.totalPointsEarned}
                     </Text>
                   </View>
@@ -276,72 +264,91 @@ export function Dashboard() {
 
               {/* Status banner */}
               {streakTitle && streakSubtitle && (
-                <View className="bg-slate-800 rounded-2xl border border-slate-700 px-4 py-3 mb-4">
-                  <Text className="text-slate-100 text-sm font-medium">
-                    {streakTitle}
-                  </Text>
-                  <Text className="text-slate-400 text-xs mt-1">
-                    {streakSubtitle}
-                  </Text>
+                <View className="bg-slate-900 rounded-xl border border-slate-800 px-4 py-3 mb-6 flex-row items-start gap-3">
+                  <View className="bg-slate-800 p-2 rounded-full">
+                    <Ionicons name="trending-up" size={16} color="#fb923c" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-white text-sm font-semibold">
+                      {streakTitle}
+                    </Text>
+                    <Text className="text-slate-400 text-xs mt-1 leading-relaxed">
+                      {streakSubtitle}
+                    </Text>
+                  </View>
                 </View>
               )}
             </View>
           )}
 
           {/* Date picker row */}
-          <View className="flex-row items-center justify-between mt-2">
+          <View className="flex-row items-center justify-between bg-slate-900 rounded-2xl p-1.5 border border-slate-800 mb-2">
             <TouchableOpacity
               onPress={() => shiftDate(-1)}
-              className="h-8 w-8 rounded-full bg-slate-900 items-center justify-center"
+              className="h-10 w-10 rounded-xl bg-slate-800 items-center justify-center"
             >
-              <Text className="text-slate-300 text-lg">{'‹'}</Text>
+              <Ionicons name="chevron-back" size={20} color="#94a3b8" />
             </TouchableOpacity>
-            <Text className="text-slate-100 text-sm font-medium">
-              {formatDate(selectedDate)}
-            </Text>
+            
+            <TouchableOpacity 
+              onPress={() => setCalendarVisible(true)}
+              className="flex-row items-center bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-700/50"
+            >
+              <Ionicons name="calendar-outline" size={16} color="#e2e8f0" style={{ marginRight: 8 }} />
+              <Text className="text-white text-base font-semibold">
+                {formatDate(selectedDate)}
+              </Text>
+            </TouchableOpacity>
+
             <TouchableOpacity
               onPress={() => shiftDate(1)}
-              className="h-8 w-8 rounded-full bg-slate-900 items-center justify-center"
+              className="h-10 w-10 rounded-xl bg-slate-800 items-center justify-center"
             >
-              <Text className="text-slate-300 text-lg">{'›'}</Text>
+              <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
             </TouchableOpacity>
           </View>
+          
+          <CalendarModal
+            visible={calendarVisible}
+            onClose={() => setCalendarVisible(false)}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+          />
+
+          <ConfirmationModal
+            visible={!!confirmDeleteId}
+            title="Delete Bet"
+            message="Are you sure you want to remove this bet selection?"
+            confirmText="Remove"
+            cancelText="Cancel"
+            isDestructive
+            onConfirm={performDeleteBet}
+            onCancel={() => setConfirmDeleteId(null)}
+          />
         </View>
 
         {/* My Bets section */}
-        <View className="flex-1 bg-slate-900">
-          <View className="mt-4 rounded-t-3xl bg-slate-900 px-6 pt-5 pb-6 border-t border-slate-800">
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-base font-semibold text-white">
-                My Bets
-              </Text>
-              <TouchableOpacity onPress={fetchMyBets} disabled={loadingMyBets}>
-                <Ionicons
-                  name="refresh"
-                  size={18}
-                  color={loadingMyBets ? '#6b7280' : '#e5e7eb'}
-                />
-              </TouchableOpacity>
-            </View>
+        <View className="px-6 mb-6">
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-lg font-bold text-white">
+              My Picks
+            </Text>
+          </View>
 
-            {loadingMyBets ? (
-              <View className="py-4 items-center">
-                <ActivityIndicator size="small" color="#e5e7eb" />
-                <Text className="text-slate-400 text-xs mt-2">Loading your bets...</Text>
-              </View>
-            ) : mySelections.length === 0 ? (
-              <View className="py-6 items-center">
-                <Text className="text-2xl mb-2">📝</Text>
-                <Text className="text-slate-300 text-sm mb-1">
-                  No bets selected yet
-                </Text>
-                <Text className="text-slate-500 text-xs text-center">
-                  Select bets from the available bets below
-                </Text>
-              </View>
-            ) : (
-              <View className="space-y-2">
-                {mySelections.map((selection) => {
+          {loadingMyBets && !refreshing ? (
+            <View className="py-4 items-center">
+              <ActivityIndicator size="small" color="#e5e7eb" />
+            </View>
+          ) : mySelections.length === 0 ? (
+            <View className="bg-slate-900/50 rounded-2xl p-6 items-center border border-slate-800 border-dashed">
+              <Ionicons name="clipboard-outline" size={32} color="#475569" />
+              <Text className="text-slate-500 text-sm mt-2 text-center">
+                No active picks for this date
+              </Text>
+            </View>
+          ) : (
+            <View className="gap-3">
+              {mySelections.map((selection) => {
                   const game = selection.bet.game;
                   const getBetSideLabels = (bet: any, game: any) => {
                     const config = bet.config;
@@ -411,29 +418,35 @@ export function Dashboard() {
                   return (
                     <View
                       key={selection.id}
-                      className="bg-slate-800 rounded-2xl border border-slate-700 px-4 py-3"
+                      className="bg-slate-900 rounded-2xl border border-slate-800 p-4"
                     >
-                      <View className="flex-row items-center gap-2 mb-2">
-                        <Text className="text-lg">{getSportEmoji(game.sport)}</Text>
-                        <Text className="text-[11px] text-slate-400">
-                          {formatTime(game.startTime)}
-                        </Text>
-                        <View className="flex-1" />
-                        {selection.status === 'locked' && (
-                          <Text className="text-xs text-yellow-400">🔒</Text>
-                        )}
+                      <View className="flex-row items-center justify-between mb-3">
+                        <View className="flex-row items-center gap-2">
+                          <Text className="text-xl">{getSportEmoji(game.sport)}</Text>
+                          <View>
+                            <Text className="text-xs text-slate-400 font-medium">
+                                {game.awayTeam} @ {game.homeTeam}
+                            </Text>
+                            <View className="flex-row items-center gap-2 mt-0.5">
+                              <Text className="text-[10px] text-slate-500">
+                                  {formatTime(game.startTime)}
+                              </Text>
+                              {canModify && <LockTimer startTime={game.startTime} status={game.status} />}
+                            </View>
+                          </View>
+                        </View>
                         {selection.outcome && selection.outcome !== 'pending' && (
                           <View
-                            className={`px-2 py-0.5 rounded ${
+                            className={`px-2 py-1 rounded-md ${
                               selection.outcome === 'win'
-                                ? 'bg-emerald-900/50'
+                                ? 'bg-emerald-500/10'
                                 : selection.outcome === 'loss'
-                                ? 'bg-red-900/50'
-                                : 'bg-yellow-900/50'
+                                ? 'bg-red-500/10'
+                                : 'bg-yellow-500/10'
                             }`}
                           >
                             <Text
-                              className={`text-[10px] font-medium ${
+                              className={`text-[10px] font-bold ${
                                 selection.outcome === 'win'
                                   ? 'text-emerald-400'
                                   : selection.outcome === 'loss'
@@ -445,15 +458,18 @@ export function Dashboard() {
                             </Text>
                           </View>
                         )}
+                      </View>
+                      
+                      <View className="flex-row items-center justify-between">
+                         <Text className="text-base text-white font-bold">
+                            {selectedLabel}
+                          </Text>
+                          
                         {canModify && (
                           <TouchableOpacity
                             onPress={() => handleDeleteBet(selection.id)}
                             disabled={deletingId === selection.id}
-                            className={`ml-2 px-2 py-1 rounded ${
-                              deletingId === selection.id
-                                ? 'bg-slate-700 opacity-50'
-                                : 'bg-red-900/30 border border-red-800/50'
-                            }`}
+                            className="h-8 w-8 items-center justify-center rounded-full bg-slate-800"
                           >
                             {deletingId === selection.id ? (
                               <ActivityIndicator size="small" color="#ef4444" />
@@ -463,131 +479,116 @@ export function Dashboard() {
                           </TouchableOpacity>
                         )}
                       </View>
-                      <Text className="text-sm text-white font-medium mb-1">
-                        {game.awayTeam} @ {game.homeTeam}
-                      </Text>
-                      <Text className="text-xs text-slate-300">
-                        {selectedLabel}
-                      </Text>
+
                       {game.status === 'completed' &&
                         game.homeScore !== null &&
                         game.awayScore !== null && (
-                          <Text className="text-[11px] text-slate-400 mt-1">
-                            Final: {game.awayScore} - {game.homeScore}
-                          </Text>
+                          <View className="mt-3 pt-3 border-t border-slate-800 flex-row justify-between">
+                             <Text className="text-xs text-slate-500">Final Score</Text>
+                             <Text className="text-xs text-slate-400 font-medium">
+                               {game.awayTeam} {game.awayScore} - {game.homeScore} {game.homeTeam}
+                             </Text>
+                          </View>
                         )}
                     </View>
                   );
                 })}
-              </View>
-            )}
-          </View>
+            </View>
+          )}
         </View>
 
         {/* Available Bets list */}
-        <View className="flex-1 bg-slate-900">
-          <View className="mt-4 rounded-t-3xl bg-slate-900 px-6 pt-5 pb-6 border-t border-slate-800">
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-base font-semibold text-white">
-                {formatDate(selectedDate)}&apos;s Available Bets
-              </Text>
-              <TouchableOpacity onPress={fetchTodaysBets} disabled={loading}>
-                <Ionicons
-                  name="refresh"
-                  size={18}
-                  color={loading ? '#6b7280' : '#e5e7eb'}
-                />
+        <View className="px-6 pb-6">
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-lg font-bold text-white">
+              Available Bets
+            </Text>
+          </View>
+
+          {loading && !refreshing ? (
+            <View className="py-8 items-center">
+              <ActivityIndicator size="large" color="#ea580c" />
+              <Text className="text-slate-400 text-xs mt-3">Loading available bets...</Text>
+            </View>
+          ) : error ? (
+            <View className="bg-red-900/20 border border-red-500/30 rounded-2xl p-4">
+              <Text className="text-red-200 text-sm text-center mb-2">{error}</Text>
+              <TouchableOpacity
+                onPress={fetchTodaysBets}
+                className="self-center px-4 py-2 bg-red-600 rounded-lg"
+              >
+                <Text className="text-white text-xs font-semibold">Retry</Text>
               </TouchableOpacity>
             </View>
-
-            {loading ? (
-              <View className="py-8 items-center">
-                <ActivityIndicator size="large" color="#e5e7eb" />
-                <Text className="text-slate-400 text-xs mt-3">Loading bets...</Text>
-              </View>
-            ) : error ? (
-              <View className="bg-red-900/40 border border-red-500/70 rounded-xl px-4 py-3 mb-4">
-                <Text className="text-red-200 text-xs text-center">{error}</Text>
-                <TouchableOpacity
-                  onPress={fetchTodaysBets}
-                  className="mt-2 px-3 py-2 bg-red-600 rounded-lg"
-                >
-                  <Text className="text-white text-xs text-center">Retry</Text>
-                </TouchableOpacity>
-              </View>
-            ) : games.length === 0 ? (
-              <View className="py-8 items-center">
-                <Text className="text-3xl mb-2">📅</Text>
-                <Text className="text-slate-300 text-sm mb-1">
-                  No games with bets available
-                </Text>
-                <Text className="text-slate-500 text-xs text-center">
-                  Check back later or browse upcoming games
-                </Text>
-              </View>
-            ) : (
-              <View className="space-y-4">
-                {games.map((game) => {
-                  const sortedBets = [...game.bets].sort((a, b) => a.priority - b.priority);
-                  
-                  return (
-                    <View
-                      key={game.id}
-                      className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden"
-                    >
-                      {/* Game Header */}
-                      <View className="px-4 py-3 border-b border-slate-700">
-                        <View className="flex-row items-center gap-2 mb-1">
-                          <Text className="text-lg">{getSportEmoji(game.sport)}</Text>
-                          <View className="flex-1">
-                            <Text className="text-sm font-semibold text-white">
-                              {game.awayTeam} @ {game.homeTeam}
+          ) : games.length === 0 ? (
+            <View className="bg-slate-900/50 rounded-2xl p-8 items-center border border-slate-800 border-dashed">
+              <Text className="text-4xl mb-3">📅</Text>
+              <Text className="text-slate-300 font-medium mb-1">
+                No games available
+              </Text>
+              <Text className="text-slate-500 text-xs text-center">
+                Check back later or change the date
+              </Text>
+            </View>
+          ) : (
+            <View className="gap-4">
+              {games.map((game) => {
+                const sortedBets = [...game.bets].sort((a, b) => a.priority - b.priority);
+                
+                return (
+                  <View
+                    key={game.id}
+                    className="bg-slate-900 rounded-[20px] border border-slate-800 overflow-hidden"
+                  >
+                    {/* Game Header */}
+                    <View className="px-4 py-3 border-b border-slate-800 bg-slate-900/50">
+                      <View className="flex-row items-center gap-3">
+                        <Text className="text-xl">{getSportEmoji(game.sport)}</Text>
+                        <View className="flex-1">
+                          <Text className="text-sm font-bold text-white">
+                            {game.awayTeam} @ {game.homeTeam}
+                          </Text>
+                          <View className="flex-row items-center gap-2 mt-0.5">
+                            <Text className="text-[11px] text-slate-400 font-medium">
+                              {formatTime(game.startTime)}
                             </Text>
-                            <View className="flex-row items-center gap-2 mt-1">
-                              <Text className="text-[11px] text-slate-400">
-                                {formatTime(game.startTime)}
-                              </Text>
-                              {game.status !== 'scheduled' && (
-                                <Text className="text-[11px] text-slate-500">
-                                  • {game.status}
+                            {game.status !== 'scheduled' && (
+                              <View className="bg-slate-800 px-1.5 py-0.5 rounded">
+                                <Text className="text-[10px] text-slate-300 capitalize">
+                                  {game.status}
                                 </Text>
-                              )}
-                              {game.homeScore !== null && game.awayScore !== null && (
-                                <Text className="text-[11px] text-slate-300">
-                                  • {game.awayScore} - {game.homeScore}
-                                </Text>
-                              )}
-                            </View>
+                              </View>
+                            )}
                           </View>
                         </View>
                       </View>
-
-                      {/* Bets */}
-                      <View className="px-4 py-3">
-                        {sortedBets.length === 0 ? (
-                          <Text className="text-slate-500 text-[11px] text-center">
-                            No bets available for this game
-                          </Text>
-                        ) : (
-                          sortedBets.map((bet) => (
-                            <BetSelectionGroup
-                              key={bet.id}
-                              bet={bet}
-                              game={game}
-                              onSelectionSaved={() => {
-                                fetchTodaysBets();
-                                fetchMyBets();
-                              }}
-                            />
-                          ))
-                        )}
-                      </View>
                     </View>
-                  );
-                })}
-              </View>
-            )}
-          </View>
+
+                    {/* Bets */}
+                    <View className="px-4 py-4 gap-3">
+                      {sortedBets.length === 0 ? (
+                        <Text className="text-slate-500 text-[11px] text-center italic">
+                          No bets available
+                        </Text>
+                      ) : (
+                        sortedBets.map((bet) => (
+                          <BetSelectionGroup
+                            key={bet.id}
+                            bet={bet}
+                            game={game}
+                            onSelectionSaved={() => {
+                              fetchTodaysBets();
+                              fetchMyBets();
+                            }}
+                          />
+                        ))
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

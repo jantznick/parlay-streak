@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-na
 import { api } from '../../services/api';
 import { BetSelectionCard } from './BetSelectionCard';
 import type { BetConfig } from '@shared/types/bets';
+import { useToast } from '../../context/ToastContext';
 
 interface Bet {
   id: string;
@@ -107,6 +108,7 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const { showToast } = useToast();
 
   const sideLabels = getBetSideLabels(bet, game);
   const gameStarted = game.status !== 'scheduled';
@@ -128,7 +130,7 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
       const response = await api.selectBet(bet.id, selectedSide);
       if (response.success) {
         setSaved(true);
-        Alert.alert('Success', 'Bet selection saved!');
+        showToast('Bet selection saved successfully!');
         if (onSelectionSaved) {
           onSelectionSaved();
         }
