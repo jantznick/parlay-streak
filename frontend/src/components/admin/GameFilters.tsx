@@ -2,12 +2,6 @@ import React from 'react';
 import { DateNavigation } from '../dashboard/DateNavigation';
 import { formatDate } from '../../utils/formatting';
 import type { GameFiltersProps } from '../../interfaces';
-  onSportChange: (sport: string) => void;
-  onLeagueChange: (league: string) => void;
-  onFetchGames: (force: boolean) => void;
-  loading: boolean;
-  gamesCount: number;
-}
 
 export function GameFilters({
   selectedDate,

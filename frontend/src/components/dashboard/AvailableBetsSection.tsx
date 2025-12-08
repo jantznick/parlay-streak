@@ -1,9 +1,6 @@
 import React from 'react';
 import { formatDateDisplay } from './DateNavigation';
 import type { AvailableBetsSectionProps } from '../../interfaces';
-  loading: boolean;
-  isPastDate: boolean;
-}
 
 export function AvailableBetsSection({
   games,

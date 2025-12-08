@@ -108,8 +108,8 @@ export interface AvailableBetsSectionProps {
   formatTime: (dateString: string) => string;
   getSportEmoji: (sport: string) => string;
   selectedDate: string;
-  timezoneOffset: number;
-  onBetSelect: (betId: string, side: string) => void;
+  loading: boolean;
+  isPastDate: boolean;
 }
 
 export interface BetListItemProps {
@@ -140,7 +140,6 @@ export interface GameCardProps {
   loadingRoster: boolean;
   resolvingBet: string | null;
 }
-}
 
 export interface GameFiltersProps {
   selectedDate: string;
@@ -151,12 +150,11 @@ export interface GameFiltersProps {
   selectedSport: string;
   selectedLeague: string;
   onDateChange: (date: string) => void;
-  onPreviousDay: () => void;
-  onNextDay: () => void;
-  onToday: () => void;
   onSportChange: (sport: string) => void;
   onLeagueChange: (league: string) => void;
-  onRefresh: () => void;
+  onFetchGames: (force: boolean) => void;
+  loading: boolean;
+  gamesCount: number;
 }
 
 export interface Player {
