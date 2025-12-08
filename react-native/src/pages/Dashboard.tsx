@@ -344,17 +344,17 @@ export function Dashboard() {
                   </View>
                   <View className="items-end">
                     <Text className="text-xs text-orange-200 mb-1">
-                      Total Points
+                      Rank
                     </Text>
                     <Text className="text-2xl font-bold text-white">
-                      {user.totalPointsEarned}
+                      #{user.leaderboardRank || '-'}
                     </Text>
                   </View>
                 </View>
               </View>
 
-              {/* Status banner */}
-              {streakTitle && streakSubtitle && (
+              {/* Status banner - only show when no bets/parlays placed */}
+              {streakTitle && streakSubtitle && mySelections.length === 0 && myParlays.length === 0 && (
                 <View className="bg-slate-900 rounded-xl border border-slate-800 px-4 py-3 mb-6 flex-row items-start gap-3">
                   <View className="bg-slate-800 p-2 rounded-full">
                     <Ionicons name="trending-up" size={16} color="#fb923c" />

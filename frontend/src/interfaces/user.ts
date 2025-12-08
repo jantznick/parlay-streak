@@ -11,6 +11,7 @@ export interface User {
   longestStreak: number;
   totalPointsEarned: number;
   insuranceLocked: boolean;
+  leaderboardRank?: number;
   isAdmin?: boolean;
 }
 
