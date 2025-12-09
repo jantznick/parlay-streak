@@ -68,7 +68,7 @@ interface BetSelection {
 export function Dashboard() {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { setActiveParlay, setIsParlayBuilderOpen } = useParlay();
+  const { activeParlay, setActiveParlay, isParlayBuilderOpen, setIsParlayBuilderOpen } = useParlay();
   const { refreshTrigger, triggerRefresh } = useBets();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [games, setGames] = useState<Game[]>([]);
@@ -243,25 +243,42 @@ export function Dashboard() {
   };
 
   const handleMakeParlay = async (selection: BetSelection) => {
-    // Convert existing single bet to a parlay
     try {
-      const response = await api.startParlay(selection.betId, selection.selectedSide);
-      if (response.success && response.data) {
-        const data = response.data as { parlay?: Parlay };
-        if (data.parlay) {
-          // Delete the old single bet selection
-          await api.deleteSelection(selection.id);
-          setActiveParlay(data.parlay);
-          setIsParlayBuilderOpen(true);
-          // showToast('Parlay started from existing bet!', 'success');
-          await fetchMyBets();
-          await fetchMyParlays();
+      // If parlay builder is open with an active parlay, add to it
+      if (isParlayBuilderOpen && activeParlay) {
+        const response = await api.addSelectionToParlay(activeParlay.id, selection.betId, selection.selectedSide);
+        if (response.success && response.data) {
+          const data = response.data as { parlay?: Parlay };
+          if (data.parlay) {
+            // Delete the old single bet selection
+            await api.deleteSelection(selection.id);
+            setActiveParlay(data.parlay);
+            showToast('Added to parlay!', 'success');
+            await fetchMyBets();
+            await fetchMyParlays();
+          }
+        } else {
+          showToast(response.error?.message || 'Failed to add to parlay', 'error');
         }
       } else {
-        showToast(response.error?.message || 'Failed to start parlay', 'error');
+        // Start a new parlay
+        const response = await api.startParlay(selection.betId, selection.selectedSide);
+        if (response.success && response.data) {
+          const data = response.data as { parlay?: Parlay };
+          if (data.parlay) {
+            // Delete the old single bet selection
+            await api.deleteSelection(selection.id);
+            setActiveParlay(data.parlay);
+            setIsParlayBuilderOpen(true);
+            await fetchMyBets();
+            await fetchMyParlays();
+          }
+        } else {
+          showToast(response.error?.message || 'Failed to start parlay', 'error');
+        }
       }
     } catch (error: any) {
-      showToast(error.message || 'Failed to start parlay', 'error');
+      showToast(error.message || 'Failed to convert to parlay', 'error');
     }
   };
 

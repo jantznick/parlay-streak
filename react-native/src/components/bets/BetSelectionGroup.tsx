@@ -32,6 +32,7 @@ interface BetSelectionGroupProps {
 function getBetSideLabels(bet: Bet, game: Game): {
   side1: { value: string; label: string };
   side2: { value: string; label: string };
+  context?: string; // Optional context to display above buttons
 } {
   const config = bet.config;
 
@@ -70,6 +71,21 @@ function getBetSideLabels(bet: Bet, game: Game): {
       }
     }
 
+    // Add metric and time period for non-team-vs-team bets
+    const isTeamVsTeam = participant1?.subject_type === 'TEAM' && participant2?.subject_type === 'TEAM';
+    
+    if (!isTeamVsTeam) {
+      // Add metric info to each participant
+      if (participant1?.metric) {
+        const timePeriod = participant1.time_period ? ` ${participant1.time_period}` : '';
+        name1 = `${name1} - ${participant1.metric}${timePeriod}`;
+      }
+      if (participant2?.metric) {
+        const timePeriod = participant2.time_period ? ` ${participant2.time_period}` : '';
+        name2 = `${name2} - ${participant2.metric}${timePeriod}`;
+      }
+    }
+
     if (compConfig.spread) {
       const spreadValue = compConfig.spread.value;
       const spreadDir = compConfig.spread.direction;
@@ -87,15 +103,30 @@ function getBetSideLabels(bet: Bet, game: Game): {
   } else if (bet.betType === 'THRESHOLD') {
     const threshConfig = config as any;
     const threshold = threshConfig.threshold || 0;
+    const participant = threshConfig.participant;
+    
+    // Build context: "{Subject} {Metric} {TimePeriod}"
+    let context = '';
+    if (participant) {
+      const subjectName = participant.subject_name || '';
+      const metric = participant.metric || '';
+      const timePeriod = participant.time_period && participant.time_period !== 'FULL_GAME' 
+        ? ` (${participant.time_period})` 
+        : '';
+      context = `${subjectName} ${metric}${timePeriod}`.trim();
+    }
 
     return {
       side1: { value: 'over', label: `OVER ${threshold}` },
       side2: { value: 'under', label: `UNDER ${threshold}` },
+      context: context || undefined,
     };
   } else if (bet.betType === 'EVENT') {
+    // Use displayText for context shown above buttons
     return {
       side1: { value: 'yes', label: 'YES' },
       side2: { value: 'no', label: 'NO' },
+      context: bet.displayText || undefined,
     };
   }
 
@@ -182,7 +213,6 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
           setActiveParlay(data.parlay);
           setIsParlayBuilderOpen(true);
           setSaved(true);
-          // showToast('Parlay started!', 'success');
           if (onSelectionSaved) {
             onSelectionSaved();
           }
@@ -221,7 +251,6 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
           setActiveParlay(data.parlay);
           await refreshActiveParlay();
           setSaved(true);
-          showToast('Added to parlay!', 'success');
           if (onSelectionSaved) {
             onSelectionSaved();
           }
@@ -244,10 +273,11 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
 
   return (
     <View className="bg-slate-800 rounded-2xl px-3 py-3 mb-2">
-      <Text className="text-xs font-medium text-slate-200 mb-2" numberOfLines={2}>
-        {bet.displayText}
-      </Text>
-
+      {sideLabels.context && (
+        <Text className="text-xs font-medium text-slate-300 mb-2" numberOfLines={2}>
+          {sideLabels.context}
+        </Text>
+      )}
       <View className="flex-row gap-2 mb-2">
         <BetSelectionCard
           side={sideLabels.side1.value}

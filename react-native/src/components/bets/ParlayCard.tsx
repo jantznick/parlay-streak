@@ -11,31 +11,113 @@ interface ParlayCardProps {
   deletingId: string | null;
 }
 
-function getSideDisplayLabel(selection: ParlaySelection): string {
-  const { bet, selectedSide } = selection;
+// Returns labels for both sides of a bet + optional context
+function getBetSideLabels(selection: ParlaySelection): {
+  side1: { value: string; label: string };
+  side2: { value: string; label: string };
+  context?: string;
+} {
+  const { bet, game } = selection;
   const config = bet.config;
+
+  if (!config) {
+    return {
+      side1: { value: 'participant_1', label: 'Side 1' },
+      side2: { value: 'participant_2', label: 'Side 2' },
+    };
+  }
 
   if (bet.betType === 'COMPARISON') {
     const compConfig = config as any;
-    const participant = selectedSide === 'participant_1' ? compConfig.participant_1 : compConfig.participant_2;
-    let name = participant?.subject_name || 'Participant';
-    
-    if (compConfig.spread && selectedSide === 'participant_1') {
+    const participant1 = compConfig.participant_1;
+    const participant2 = compConfig.participant_2;
+    const isTeamVsTeam = participant1?.subject_type === 'TEAM' && participant2?.subject_type === 'TEAM';
+
+    let name1 = participant1?.subject_name || 'Participant 1';
+    let name2 = participant2?.subject_name || 'Participant 2';
+
+    // For teams, try to get actual team name from game data
+    if (participant1?.subject_type === 'TEAM' && game) {
+      const metadata = game.metadata;
+      const apiData = metadata?.apiData;
+      if (apiData?.teams?.home?.id === participant1.subject_id) {
+        name1 = game.homeTeam;
+      } else if (apiData?.teams?.away?.id === participant1.subject_id) {
+        name1 = game.awayTeam;
+      }
+    }
+
+    if (participant2?.subject_type === 'TEAM' && game) {
+      const metadata = game.metadata;
+      const apiData = metadata?.apiData;
+      if (apiData?.teams?.home?.id === participant2.subject_id) {
+        name2 = game.homeTeam;
+      } else if (apiData?.teams?.away?.id === participant2.subject_id) {
+        name2 = game.awayTeam;
+      }
+    }
+
+    // For non-team-vs-team, add metric and time period to labels
+    if (!isTeamVsTeam) {
+      if (participant1?.metric) {
+        const timePeriod = participant1.time_period && participant1.time_period !== 'FULL_GAME'
+          ? ` (${participant1.time_period})`
+          : '';
+        name1 = `${name1} - ${participant1.metric}${timePeriod}`;
+      }
+      if (participant2?.metric) {
+        const timePeriod = participant2.time_period && participant2.time_period !== 'FULL_GAME'
+          ? ` (${participant2.time_period})`
+          : '';
+        name2 = `${name2} - ${participant2.metric}${timePeriod}`;
+      }
+    }
+
+    // Add spread if applicable (only for participant_1)
+    if (compConfig.spread) {
       const spreadValue = compConfig.spread.value;
       const spreadDir = compConfig.spread.direction;
-      name = spreadDir === '+' ? name + ' +' + spreadValue : name + ' -' + spreadValue;
+      name1 = spreadDir === '+' ? `${name1} +${spreadValue}` : `${name1} -${spreadValue}`;
     }
-    
-    return name;
+
+    return {
+      side1: { value: 'participant_1', label: name1 },
+      side2: { value: 'participant_2', label: name2 },
+    };
+
   } else if (bet.betType === 'THRESHOLD') {
     const threshConfig = config as any;
     const threshold = threshConfig.threshold || 0;
-    return selectedSide === 'over' ? 'OVER ' + threshold : 'UNDER ' + threshold;
+    const participant = threshConfig.participant;
+
+    let context = '';
+    if (participant) {
+      const subjectName = participant.subject_name || '';
+      const metric = participant.metric || '';
+      const timePeriod = participant.time_period && participant.time_period !== 'FULL_GAME'
+        ? ` (${participant.time_period})`
+        : '';
+      context = `${subjectName} ${metric}${timePeriod}`.trim();
+    }
+
+    return {
+      side1: { value: 'over', label: `OVER ${threshold}` },
+      side2: { value: 'under', label: `UNDER ${threshold}` },
+      context: context || undefined,
+    };
+
   } else if (bet.betType === 'EVENT') {
-    return selectedSide === 'yes' ? 'YES' : 'NO';
+    return {
+      side1: { value: 'yes', label: 'YES' },
+      side2: { value: 'no', label: 'NO' },
+      context: bet.displayText || undefined,
+    };
   }
-  
-  return selectedSide;
+
+  return {
+    side1: { value: 'participant_1', label: 'Side 1' },
+    side2: { value: 'participant_2', label: 'Side 2' },
+  };
 }
 
 function getSportEmoji(sport?: string): string {
@@ -85,10 +167,19 @@ export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardP
   const earliestStartTime = earliestGame?.game.startTime;
   const earliestGameStatus = earliestGame?.game.status || 'scheduled';
 
-  // Get team abbreviations for collapsed view
-  const teamSummary = parlay.selections
-    .map(s => s.game.homeTeam.slice(0, 3).toUpperCase())
-    .join(', ');
+  // Get sport emojis for display
+  const sportEmojis = parlay.selections
+    .map(s => getSportEmoji(s.game.sport))
+    .join('');
+
+  // Get first pick preview
+  const firstSelection = parlay.selections[0];
+  const firstSideLabels = firstSelection ? getBetSideLabels(firstSelection) : null;
+  const firstPick = firstSelection && firstSideLabels
+    ? (firstSelection.selectedSide === firstSideLabels.side1.value 
+        ? firstSideLabels.side1.label 
+        : firstSideLabels.side2.label)
+    : '';
 
   return (
     <View 
@@ -107,14 +198,15 @@ export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardP
         style={{ padding: 16 }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
             <View style={{ backgroundColor: '#2563eb', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}>
               <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 13 }}>
                 {parlay.betCount} Leg
               </Text>
             </View>
+            <Text style={{ fontSize: 14 }}>{sportEmojis}</Text>
             <Text style={{ color: '#94a3b8', fontSize: 13, flex: 1 }} numberOfLines={1}>
-              {teamSummary}
+              {firstPick}{parlay.betCount > 1 ? '...' : ''}
             </Text>
           </View>
           
@@ -123,12 +215,14 @@ export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardP
               <LockTimer startTime={earliestStartTime} status={earliestGameStatus} />
             )}
             {isLocked && <Text style={{ fontSize: 14 }}>🔒</Text>}
+            <Text style={{ color: '#fb923c', fontWeight: 'bold', fontSize: 18 }}>
+              +{parlay.insured && parlay.insuranceCost ? parlay.parlayValue - parlay.insuranceCost : parlay.parlayValue}
+            </Text>
             {parlay.insured && (
               <View style={{ backgroundColor: 'rgba(251, 146, 60, 0.2)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
                 <Text style={{ color: '#fb923c', fontSize: 10, fontWeight: '600' }}>INS</Text>
               </View>
             )}
-            <Text style={{ color: '#fb923c', fontWeight: 'bold', fontSize: 18 }}>+{parlay.parlayValue}</Text>
             {parlayOutcome && (
               <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: parlayOutcome === 'win' ? 'rgba(16, 185, 129, 0.2)' : parlayOutcome === 'loss' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(250, 204, 21, 0.2)' }}>
                 <Text style={{ fontSize: 11, fontWeight: 'bold', color: parlayOutcome === 'win' ? '#34d399' : parlayOutcome === 'loss' ? '#f87171' : '#fbbf24' }}>{parlayOutcome.toUpperCase()}</Text>
@@ -146,33 +240,51 @@ export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardP
       {/* Expanded content */}
       {isExpanded && (
         <View style={{ paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
-          {/* Selections */}
+          {/* Selections - simple list showing pick and context */}
           <View style={{ gap: 8, marginTop: 12 }}>
-            {parlay.selections.map((selection, index) => (
-              <View key={selection.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Text style={{ fontSize: 16 }}>{getSportEmoji(selection.game.sport)}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#94a3b8', fontSize: 12 }}>
-                    {selection.game.awayTeam} @ {selection.game.homeTeam} • {formatTime(selection.game.startTime)}
-                  </Text>
-                  <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }} numberOfLines={1}>
-                    {getSideDisplayLabel(selection)}
-                  </Text>
-                </View>
-                {selection.outcome && selection.outcome !== 'pending' && (
-                  <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: selection.outcome === 'win' ? 'rgba(16, 185, 129, 0.2)' : selection.outcome === 'loss' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(250, 204, 21, 0.2)' }}>
-                    <Text style={{ fontSize: 11, fontWeight: 'bold', color: selection.outcome === 'win' ? '#34d399' : selection.outcome === 'loss' ? '#f87171' : '#fbbf24' }}>
-                      {selection.outcome.toUpperCase()}
+            {parlay.selections.map((selection) => {
+              const sideLabels = getBetSideLabels(selection);
+              const isSelected1 = selection.selectedSide === sideLabels.side1.value;
+              const selectedLabel = isSelected1 ? sideLabels.side1.label : sideLabels.side2.label;
+              
+              return (
+                <View 
+                  key={selection.id} 
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}
+                >
+                  <Text style={{ fontSize: 16 }}>{getSportEmoji(selection.game.sport)}</Text>
+                  <View style={{ flex: 1 }}>
+                    {/* Context/bet name */}
+                    {sideLabels.context && (
+                      <Text style={{ color: '#94a3b8', fontSize: 11 }} numberOfLines={1}>
+                        {sideLabels.context}
+                      </Text>
+                    )}
+                    {!sideLabels.context && (
+                      <Text style={{ color: '#94a3b8', fontSize: 11 }} numberOfLines={1}>
+                        {selection.game.awayTeam} @ {selection.game.homeTeam}
+                      </Text>
+                    )}
+                    {/* Selected pick */}
+                    <Text style={{ color: '#fb923c', fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
+                      {selectedLabel}
                     </Text>
                   </View>
-                )}
-              </View>
-            ))}
+                  {selection.outcome && selection.outcome !== 'pending' && (
+                    <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: selection.outcome === 'win' ? 'rgba(16, 185, 129, 0.2)' : selection.outcome === 'loss' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(250, 204, 21, 0.2)' }}>
+                      <Text style={{ fontSize: 10, fontWeight: 'bold', color: selection.outcome === 'win' ? '#34d399' : selection.outcome === 'loss' ? '#f87171' : '#fbbf24' }}>
+                        {selection.outcome.toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </View>
 
           {/* Actions */}
           {canModify && (
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
               <TouchableOpacity 
                 onPress={() => onOpen(parlay)} 
                 style={{ flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center', backgroundColor: '#2563eb' }}
@@ -182,12 +294,12 @@ export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardP
               <TouchableOpacity 
                 onPress={() => onDelete(parlay.id)} 
                 disabled={deletingId === parlay.id} 
-                style={{ width: 48, height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(127, 29, 29, 0.3)', borderWidth: 1, borderColor: 'rgba(127, 29, 29, 0.5)' }}
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(127, 29, 29, 0.3)', borderWidth: 1, borderColor: 'rgba(127, 29, 29, 0.5)' }}
               >
                 {deletingId === parlay.id ? (
                   <ActivityIndicator size="small" color="#f87171" />
                 ) : (
-                  <Ionicons name="trash-outline" size={20} color="#f87171" />
+                  <Text style={{ color: '#f87171', fontWeight: '600', fontSize: 15 }}>Delete</Text>
                 )}
               </TouchableOpacity>
             </View>
