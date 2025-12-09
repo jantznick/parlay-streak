@@ -6,11 +6,15 @@ import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../services/api';
 import { BetSelectionGroup } from '../components/bets/BetSelectionGroup';
+import { ParlayCard } from '../components/bets/ParlayCard';
+import { SingleBetCard } from '../components/bets/SingleBetCard';
 import { CalendarModal } from '../components/common/CalendarModal';
 import { ConfirmationModal } from '../components/common/ConfirmationModal';
-import { LockTimer } from '../components/common/LockTimer';
 import { streakMessages } from '../utils/streakMessages';
 import { useToast } from '../context/ToastContext';
+import { useParlay } from '../context/ParlayContext';
+import { useBets } from '../context/BetsContext';
+import type { Parlay } from '../interfaces/parlay';
 
 interface Bet {
   id: string;
@@ -64,23 +68,28 @@ interface BetSelection {
 export function Dashboard() {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { activeParlay, setActiveParlay, isParlayBuilderOpen, setIsParlayBuilderOpen } = useParlay();
+  const { refreshTrigger, triggerRefresh } = useBets();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mySelections, setMySelections] = useState<BetSelection[]>([]);
+  const [myParlays, setMyParlays] = useState<Parlay[]>([]);
   const [loadingMyBets, setLoadingMyBets] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingParlayId, setDeletingParlayId] = useState<string | null>(null);
   const [streakTitle, setStreakTitle] = useState<string>('');
   const [streakSubtitle, setStreakSubtitle] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteParlayId, setConfirmDeleteParlayId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchTodaysBets(), fetchMyBets()]);
+    await Promise.all([fetchTodaysBets(), fetchMyBets(), fetchMyParlays()]);
     setRefreshing(false);
   }, [selectedDate]);
 
@@ -157,6 +166,24 @@ export function Dashboard() {
     }
   };
 
+  const fetchMyParlays = async () => {
+    try {
+      const dateString = formatDateString(selectedDate);
+      const timezoneOffset = getTimezoneOffset();
+      // getParlays(status, includeSelections, date, timezoneOffset)
+      const response = await api.getParlays(undefined, true, dateString, timezoneOffset);
+      if (response.success && response.data) {
+        const data = response.data as { parlays?: Parlay[] };
+        setMyParlays(data.parlays || []);
+      } else {
+        setMyParlays([]);
+      }
+    } catch (error: any) {
+      console.error('Failed to load parlays:', error);
+      setMyParlays([]);
+    }
+  };
+
   const handleDeleteBet = (selectionId: string) => {
     setConfirmDeleteId(selectionId);
   };
@@ -183,6 +210,78 @@ export function Dashboard() {
     }
   };
 
+  const handleOpenParlay = (parlay: Parlay) => {
+    setActiveParlay(parlay);
+    setIsParlayBuilderOpen(true);
+  };
+
+  const handleDeleteParlay = (parlayId: string) => {
+    setConfirmDeleteParlayId(parlayId);
+  };
+
+  const performDeleteParlay = async () => {
+    if (!confirmDeleteParlayId) return;
+    
+    const idToDelete = confirmDeleteParlayId;
+    setConfirmDeleteParlayId(null);
+    setDeletingParlayId(idToDelete);
+
+    try {
+      const response = await api.deleteParlay(idToDelete);
+      if (response.success) {
+        showToast('Parlay deleted', 'info');
+        await fetchMyParlays();
+        await fetchMyBets();
+      } else {
+        showToast(response.error?.message || 'Failed to delete parlay', 'error');
+      }
+    } catch (error: any) {
+      showToast(error.message || 'Failed to delete parlay', 'error');
+    } finally {
+      setDeletingParlayId(null);
+    }
+  };
+
+  const handleMakeParlay = async (selection: BetSelection) => {
+    try {
+      // If parlay builder is open with an active parlay, add to it
+      if (isParlayBuilderOpen && activeParlay) {
+        const response = await api.addSelectionToParlay(activeParlay.id, selection.betId, selection.selectedSide);
+        if (response.success && response.data) {
+          const data = response.data as { parlay?: Parlay };
+          if (data.parlay) {
+            // Delete the old single bet selection
+            await api.deleteSelection(selection.id);
+            setActiveParlay(data.parlay);
+            showToast('Added to parlay!', 'success');
+            await fetchMyBets();
+            await fetchMyParlays();
+          }
+        } else {
+          showToast(response.error?.message || 'Failed to add to parlay', 'error');
+        }
+      } else {
+        // Start a new parlay
+        const response = await api.startParlay(selection.betId, selection.selectedSide);
+        if (response.success && response.data) {
+          const data = response.data as { parlay?: Parlay };
+          if (data.parlay) {
+            // Delete the old single bet selection
+            await api.deleteSelection(selection.id);
+            setActiveParlay(data.parlay);
+            setIsParlayBuilderOpen(true);
+            await fetchMyBets();
+            await fetchMyParlays();
+          }
+        } else {
+          showToast(response.error?.message || 'Failed to start parlay', 'error');
+        }
+      }
+    } catch (error: any) {
+      showToast(error.message || 'Failed to convert to parlay', 'error');
+    }
+  };
+
   useEffect(() => {
     // Set random streak messages on mount
     const randomTitle = streakMessages.titles[Math.floor(Math.random() * streakMessages.titles.length)];
@@ -194,7 +293,16 @@ export function Dashboard() {
   useEffect(() => {
     fetchTodaysBets();
     fetchMyBets();
+    fetchMyParlays();
   }, [selectedDate]);
+
+  // Refresh when parlay builder triggers a refresh
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      fetchMyBets();
+      fetchMyParlays();
+    }
+  }, [refreshTrigger]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -253,17 +361,17 @@ export function Dashboard() {
                   </View>
                   <View className="items-end">
                     <Text className="text-xs text-orange-200 mb-1">
-                      Total Points
+                      Rank
                     </Text>
                     <Text className="text-2xl font-bold text-white">
-                      {user.totalPointsEarned}
+                      #{user.leaderboardRank || '-'}
                     </Text>
                   </View>
                 </View>
               </View>
 
-              {/* Status banner */}
-              {streakTitle && streakSubtitle && (
+              {/* Status banner - only show when no bets/parlays placed */}
+              {streakTitle && streakSubtitle && mySelections.length === 0 && myParlays.length === 0 && (
                 <View className="bg-slate-900 rounded-xl border border-slate-800 px-4 py-3 mb-6 flex-row items-start gap-3">
                   <View className="bg-slate-800 p-2 rounded-full">
                     <Ionicons name="trending-up" size={16} color="#fb923c" />
@@ -325,6 +433,17 @@ export function Dashboard() {
             onConfirm={performDeleteBet}
             onCancel={() => setConfirmDeleteId(null)}
           />
+
+          <ConfirmationModal
+            visible={!!confirmDeleteParlayId}
+            title="Delete Parlay"
+            message="Are you sure you want to delete this parlay? All selections will be removed."
+            confirmText="Delete"
+            cancelText="Cancel"
+            isDestructive
+            onConfirm={performDeleteParlay}
+            onCancel={() => setConfirmDeleteParlayId(null)}
+          />
         </View>
 
         {/* My Bets section */}
@@ -339,7 +458,7 @@ export function Dashboard() {
             <View className="py-4 items-center">
               <ActivityIndicator size="small" color="#e5e7eb" />
             </View>
-          ) : mySelections.length === 0 ? (
+          ) : mySelections.length === 0 && myParlays.length === 0 ? (
             <View className="bg-slate-900/50 rounded-2xl p-6 items-center border border-slate-800 border-dashed">
               <Ionicons name="clipboard-outline" size={32} color="#475569" />
               <Text className="text-slate-500 text-sm mt-2 text-center">
@@ -348,151 +467,29 @@ export function Dashboard() {
             </View>
           ) : (
             <View className="gap-3">
-              {mySelections.map((selection) => {
-                  const game = selection.bet.game;
-                  const getBetSideLabels = (bet: any, game: any) => {
-                    const config = bet.config;
-                    if (!config) {
-                      return { side1: { label: 'Side 1' }, side2: { label: 'Side 2' } };
-                    }
-                    if (bet.betType === 'COMPARISON') {
-                      const compConfig = config;
-                      const participant1 = compConfig.participant_1;
-                      const participant2 = compConfig.participant_2;
-                      let name1 = participant1?.subject_name || 'Participant 1';
-                      let name2 = participant2?.subject_name || 'Participant 2';
-                      if (participant1?.subject_type === 'TEAM') {
-                        const metadata = game.metadata;
-                        const apiData = metadata?.apiData;
-                        if (apiData?.teams?.home?.id === participant1.subject_id) {
-                          name1 = game.homeTeam;
-                        } else if (apiData?.teams?.away?.id === participant1.subject_id) {
-                          name1 = game.awayTeam;
-                        }
-                      }
-                      if (participant2?.subject_type === 'TEAM') {
-                        const metadata = game.metadata;
-                        const apiData = metadata?.apiData;
-                        if (apiData?.teams?.home?.id === participant2.subject_id) {
-                          name2 = game.homeTeam;
-                        } else if (apiData?.teams?.away?.id === participant2.subject_id) {
-                          name2 = game.awayTeam;
-                        }
-                      }
-                      if (compConfig.spread) {
-                        const spreadValue = compConfig.spread.value;
-                        const spreadDir = compConfig.spread.direction;
-                        if (spreadDir === '+') {
-                          name1 = `${name1} +${spreadValue}`;
-                        } else {
-                          name1 = `${name1} -${spreadValue}`;
-                        }
-                      }
-                      return {
-                        side1: { label: name1 },
-                        side2: { label: name2 },
-                      };
-                    } else if (bet.betType === 'THRESHOLD') {
-                      const threshConfig = config;
-                      const threshold = threshConfig.threshold || 0;
-                      return {
-                        side1: { label: `OVER ${threshold}` },
-                        side2: { label: `UNDER ${threshold}` },
-                      };
-                    } else if (bet.betType === 'EVENT') {
-                      return {
-                        side1: { label: 'YES' },
-                        side2: { label: 'NO' },
-                      };
-                    }
-                    return { side1: { label: 'Side 1' }, side2: { label: 'Side 2' } };
-                  };
-                  const sideLabels = getBetSideLabels(selection.bet, game);
-                  const selectedLabel =
-                    selection.selectedSide === 'participant_1' || selection.selectedSide === 'over' || selection.selectedSide === 'yes'
-                      ? sideLabels.side1.label
-                      : sideLabels.side2.label;
+              {/* Parlays first (only show valid parlays with 2+ bets) */}
+              {myParlays
+                .filter((parlay) => parlay.betCount >= 2)
+                .map((parlay) => (
+                <ParlayCard
+                  key={parlay.id}
+                  parlay={parlay}
+                  onOpen={handleOpenParlay}
+                  onDelete={handleDeleteParlay}
+                  deletingId={deletingParlayId}
+                />
+              ))}
 
-                  const canModify = selection.status !== 'locked' && game.status === 'scheduled';
-
-                  return (
-                    <View
-                      key={selection.id}
-                      className="bg-slate-900 rounded-2xl border border-slate-800 p-4"
-                    >
-                      <View className="flex-row items-center justify-between mb-3">
-                        <View className="flex-row items-center gap-2">
-                          <Text className="text-xl">{getSportEmoji(game.sport)}</Text>
-                          <View>
-                            <Text className="text-xs text-slate-400 font-medium">
-                                {game.awayTeam} @ {game.homeTeam}
-                            </Text>
-                            <View className="flex-row items-center gap-2 mt-0.5">
-                              <Text className="text-[10px] text-slate-500">
-                                  {formatTime(game.startTime)}
-                              </Text>
-                              {canModify && <LockTimer startTime={game.startTime} status={game.status} />}
-                            </View>
-                          </View>
-                        </View>
-                        {selection.outcome && selection.outcome !== 'pending' && (
-                          <View
-                            className={`px-2 py-1 rounded-md ${
-                              selection.outcome === 'win'
-                                ? 'bg-emerald-500/10'
-                                : selection.outcome === 'loss'
-                                ? 'bg-red-500/10'
-                                : 'bg-yellow-500/10'
-                            }`}
-                          >
-                            <Text
-                              className={`text-[10px] font-bold ${
-                                selection.outcome === 'win'
-                                  ? 'text-emerald-400'
-                                  : selection.outcome === 'loss'
-                                  ? 'text-red-400'
-                                  : 'text-yellow-400'
-                              }`}
-                            >
-                              {selection.outcome.toUpperCase()}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                      
-                      <View className="flex-row items-center justify-between">
-                         <Text className="text-base text-white font-bold">
-                            {selectedLabel}
-                          </Text>
-                          
-                        {canModify && (
-                          <TouchableOpacity
-                            onPress={() => handleDeleteBet(selection.id)}
-                            disabled={deletingId === selection.id}
-                            className="h-8 w-8 items-center justify-center rounded-full bg-slate-800"
-                          >
-                            {deletingId === selection.id ? (
-                              <ActivityIndicator size="small" color="#ef4444" />
-                            ) : (
-                              <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                            )}
-                          </TouchableOpacity>
-                        )}
-                      </View>
-
-                      {game.status === 'completed' &&
-                        game.homeScore !== null &&
-                        game.awayScore !== null && (
-                          <View className="mt-3 pt-3 border-t border-slate-800 flex-row justify-between">
-                             <Text className="text-xs text-slate-500">Final Score</Text>
-                             <Text className="text-xs text-slate-400 font-medium">
-                               {game.awayTeam} {game.awayScore} - {game.homeScore} {game.homeTeam}
-                             </Text>
-                          </View>
-                        )}
-                    </View>
-                  );
-                })}
+              {/* Single bets */}
+              {mySelections.map((selection) => (
+                <SingleBetCard
+                  key={selection.id}
+                  selection={selection}
+                  onDelete={handleDeleteBet}
+                  onMakeParlay={handleMakeParlay}
+                  deletingId={deletingId}
+                />
+              ))}
             </View>
           )}
         </View>

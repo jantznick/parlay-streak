@@ -362,6 +362,16 @@ export const getCurrentUser = async (req: Request, res: Response, next: NextFunc
       throw new AuthenticationError('User not found');
     }
 
+    // Calculate leaderboard rank (1-based position by total points)
+    const usersAhead = await prisma.user.count({
+      where: {
+        totalPointsEarned: {
+          gt: user.totalPointsEarned,
+        },
+      },
+    });
+    const leaderboardRank = usersAhead + 1;
+
     // Check if user is admin
     const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(email => email.trim()) || [];
     const isAdmin = adminEmails.includes(user.email);
@@ -371,6 +381,7 @@ export const getCurrentUser = async (req: Request, res: Response, next: NextFunc
       data: { 
         user: {
           ...user,
+          leaderboardRank,
           isAdmin,
         },
       },

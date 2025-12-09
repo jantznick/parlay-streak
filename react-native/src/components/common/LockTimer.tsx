@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 interface LockTimerProps {
   startTime: string;
@@ -29,9 +28,9 @@ export function LockTimer({ startTime, status }: LockTimerProps) {
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-      if (days > 0) return `Locks in ${days}d ${hours}h`;
-      if (hours > 0) return `Locks in ${hours}h ${minutes}m`;
-      return `Locks in ${minutes}m ${seconds}s`;
+      if (days > 0) return `${days}d ${hours}h`;
+      if (hours > 0) return `${hours}h ${minutes}m`;
+      return `${minutes}m ${seconds}s`;
     };
 
     // Initial calculation
@@ -55,7 +54,7 @@ export function LockTimer({ startTime, status }: LockTimerProps) {
 
   return (
     <View className="flex-row items-center bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
-      <Ionicons name="time-outline" size={10} color="#fb923c" style={{ marginRight: 4 }} />
+      <Text style={{ fontSize: 10, marginRight: 4 }}>🔒</Text>
       <Text className="text-[10px] text-orange-400 font-medium">
         {timeLeft}
       </Text>

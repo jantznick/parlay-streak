@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { api } from '../../services/api';
 import { BetSelectionCard } from './BetSelectionCard';
 import type { BetConfig } from '@shared/types/bets';
 import { useToast } from '../../context/ToastContext';
+import { useParlay } from '../../context/ParlayContext';
+import { useBets } from '../../context/BetsContext';
 
 interface Bet {
   id: string;
@@ -30,6 +32,7 @@ interface BetSelectionGroupProps {
 function getBetSideLabels(bet: Bet, game: Game): {
   side1: { value: string; label: string };
   side2: { value: string; label: string };
+  context?: string; // Optional context to display above buttons
 } {
   const config = bet.config;
 
@@ -68,6 +71,21 @@ function getBetSideLabels(bet: Bet, game: Game): {
       }
     }
 
+    // Add metric and time period for non-team-vs-team bets
+    const isTeamVsTeam = participant1?.subject_type === 'TEAM' && participant2?.subject_type === 'TEAM';
+    
+    if (!isTeamVsTeam) {
+      // Add metric info to each participant
+      if (participant1?.metric) {
+        const timePeriod = participant1.time_period ? ` ${participant1.time_period}` : '';
+        name1 = `${name1} - ${participant1.metric}${timePeriod}`;
+      }
+      if (participant2?.metric) {
+        const timePeriod = participant2.time_period ? ` ${participant2.time_period}` : '';
+        name2 = `${name2} - ${participant2.metric}${timePeriod}`;
+      }
+    }
+
     if (compConfig.spread) {
       const spreadValue = compConfig.spread.value;
       const spreadDir = compConfig.spread.direction;
@@ -85,15 +103,30 @@ function getBetSideLabels(bet: Bet, game: Game): {
   } else if (bet.betType === 'THRESHOLD') {
     const threshConfig = config as any;
     const threshold = threshConfig.threshold || 0;
+    const participant = threshConfig.participant;
+    
+    // Build context: "{Subject} {Metric} {TimePeriod}"
+    let context = '';
+    if (participant) {
+      const subjectName = participant.subject_name || '';
+      const metric = participant.metric || '';
+      const timePeriod = participant.time_period && participant.time_period !== 'FULL_GAME' 
+        ? ` (${participant.time_period})` 
+        : '';
+      context = `${subjectName} ${metric}${timePeriod}`.trim();
+    }
 
     return {
       side1: { value: 'over', label: `OVER ${threshold}` },
       side2: { value: 'under', label: `UNDER ${threshold}` },
+      context: context || undefined,
     };
   } else if (bet.betType === 'EVENT') {
+    // Use displayText for context shown above buttons
     return {
       side1: { value: 'yes', label: 'YES' },
       side2: { value: 'no', label: 'NO' },
+      context: bet.displayText || undefined,
     };
   }
 
@@ -106,13 +139,19 @@ function getBetSideLabels(bet: Bet, game: Game): {
 export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionGroupProps) {
   const [selectedSide, setSelectedSide] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [parlayLoading, setParlayLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const { showToast } = useToast();
+  const { activeParlay, setActiveParlay, isParlayBuilderOpen, setIsParlayBuilderOpen, refreshActiveParlay } = useParlay();
+  const { triggerRefresh } = useBets();
 
   const sideLabels = getBetSideLabels(bet, game);
   const gameStarted = game.status !== 'scheduled';
-  const disabled = gameStarted || loading || saved;
+  const disabled = gameStarted || loading || parlayLoading || saved;
+
+  // Check if parlay is full (5 bets max)
+  const parlayFull = activeParlay && activeParlay.betCount >= 5;
 
   const handleCardPress = (side: string) => {
     if (disabled) return;
@@ -130,30 +169,115 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
       const response = await api.selectBet(bet.id, selectedSide);
       if (response.success) {
         setSaved(true);
-        showToast('Bet selection saved successfully!');
+        showToast('Bet selection saved!', 'success');
+        triggerRefresh();
         if (onSelectionSaved) {
           onSelectionSaved();
         }
       } else {
         const errorMsg = response.error?.message || 'Failed to save bet selection';
         setError(errorMsg);
-        Alert.alert('Error', errorMsg);
+        showToast(errorMsg, 'error');
       }
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to save bet selection';
       setError(errorMsg);
-      Alert.alert('Error', errorMsg);
+      showToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleStartParlay = async () => {
+    if (!selectedSide || disabled) return;
+
+    setParlayLoading(true);
+    setError(null);
+
+    try {
+      // If there's an existing 1-bet parlay open, close it first
+      if (activeParlay && activeParlay.betCount === 1 && isParlayBuilderOpen) {
+        try {
+          await api.deleteParlay(activeParlay.id);
+          setIsParlayBuilderOpen(false);
+          triggerRefresh();
+        } catch (err) {
+          console.error('Error closing old parlay:', err);
+        }
+      }
+
+      const response = await api.startParlay(bet.id, selectedSide);
+      if (response.success && response.data) {
+        const data = response.data as { parlay?: any };
+        if (data.parlay) {
+          setActiveParlay(data.parlay);
+          setIsParlayBuilderOpen(true);
+          setSaved(true);
+          if (onSelectionSaved) {
+            onSelectionSaved();
+          }
+        } else {
+          showToast('Failed to start parlay', 'error');
+        }
+      } else {
+        const errorMsg = response.error?.message || 'Failed to start parlay';
+        if (errorMsg.includes('already in a parlay')) {
+          showToast('This bet is already in a parlay', 'error');
+        } else {
+          showToast(errorMsg, 'error');
+        }
+        setError(errorMsg);
+      }
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to start parlay';
+      showToast(errorMsg, 'error');
+      setError(errorMsg);
+    } finally {
+      setParlayLoading(false);
+    }
+  };
+
+  const handleAddToParlay = async () => {
+    if (!selectedSide || disabled || !activeParlay) return;
+
+    setParlayLoading(true);
+    setError(null);
+
+    try {
+      const response = await api.addSelectionToParlay(activeParlay.id, bet.id, selectedSide);
+      if (response.success && response.data) {
+        const data = response.data as { parlay?: any };
+        if (data.parlay) {
+          setActiveParlay(data.parlay);
+          await refreshActiveParlay();
+          setSaved(true);
+          if (onSelectionSaved) {
+            onSelectionSaved();
+          }
+        } else {
+          showToast('Failed to add to parlay', 'error');
+        }
+      } else {
+        const errorMsg = response.error?.message || 'Failed to add to parlay';
+        showToast(errorMsg, 'error');
+        setError(errorMsg);
+      }
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to add to parlay';
+      showToast(errorMsg, 'error');
+      setError(errorMsg);
+    } finally {
+      setParlayLoading(false);
+    }
+  };
+
   return (
     <View className="bg-slate-800 rounded-2xl px-3 py-3 mb-2">
-      <Text className="text-xs font-medium text-slate-200 mb-2" numberOfLines={2}>
-        {bet.displayText}
-      </Text>
-
+      {sideLabels.context && (
+        <Text className="text-xs font-medium text-slate-300 mb-2" numberOfLines={2}>
+          {sideLabels.context}
+        </Text>
+      )}
       <View className="flex-row gap-2 mb-2">
         <BetSelectionCard
           side={sideLabels.side1.value}
@@ -178,18 +302,52 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
       )}
 
       {selectedSide && !saved && (
-        <TouchableOpacity
-          onPress={handleSave}
-          disabled={loading || disabled}
-          className={`px-3 py-2 rounded-xl ${
-            loading || disabled ? 'bg-slate-700' : 'bg-orange-600'
-          } flex-row items-center justify-center`}
-        >
-          {loading && <ActivityIndicator size="small" color="#e5e7eb" className="mr-2" />}
-          <Text className="text-white text-xs font-semibold">
-            {loading ? 'Saving…' : 'Save Selection'}
-          </Text>
-        </TouchableOpacity>
+        <View className="flex-row gap-2">
+          {/* Save Button */}
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={loading || parlayLoading || gameStarted}
+            className={`flex-1 px-3 py-2.5 rounded-xl ${
+              loading || parlayLoading || gameStarted ? 'bg-slate-700' : 'bg-orange-600'
+            } flex-row items-center justify-center`}
+          >
+            {loading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />}
+            <Text className="text-white text-sm font-semibold">
+              {loading ? 'Saving…' : 'Save'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Parlay Button */}
+          {isParlayBuilderOpen && activeParlay ? (
+            <TouchableOpacity
+              onPress={handleAddToParlay}
+              disabled={loading || parlayLoading || gameStarted || parlayFull}
+              className={`flex-1 px-3 py-2.5 rounded-xl ${
+                loading || parlayLoading || gameStarted || parlayFull ? 'bg-slate-700' : 'bg-blue-600'
+              } flex-row items-center justify-center`}
+            >
+              {parlayLoading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />}
+              <Text className={`text-sm font-semibold ${
+                parlayFull ? 'text-slate-500' : 'text-white'
+              }`}>
+                {parlayLoading ? 'Adding…' : parlayFull ? 'Full' : '+ Parlay'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={handleStartParlay}
+              disabled={loading || parlayLoading || gameStarted}
+              className={`flex-1 px-3 py-2.5 rounded-xl ${
+                loading || parlayLoading || gameStarted ? 'bg-slate-700' : 'bg-blue-600'
+              } flex-row items-center justify-center`}
+            >
+              {parlayLoading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />}
+              <Text className="text-white text-sm font-semibold">
+                {parlayLoading ? 'Starting…' : 'Parlay'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       )}
 
       {saved && (
@@ -204,4 +362,3 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
     </View>
   );
 }
-

@@ -20,6 +20,7 @@ import { VerifyMagicLink } from './src/pages/VerifyMagicLink';
 import { ForgotPassword } from './src/pages/ForgotPassword';
 import { ResetPassword } from './src/pages/ResetPassword';
 import { LoadingScreen } from './src/components/common/LoadingScreen';
+import { ParlayBuilder } from './src/components/parlay/ParlayBuilder';
 
 const Stack = createNativeStackNavigator();
 
@@ -89,6 +90,7 @@ export default function App() {
             <BetsProvider>
               <StatusBar style="light" />
               <RootNavigator />
+              <ParlayBuilder />
             </BetsProvider>
           </ParlayProvider>
         </AuthProvider>
