@@ -9,6 +9,10 @@ interface ParlayCardProps {
   onOpen: (parlay: Parlay) => void;
   onDelete: (parlayId: string) => void;
   deletingId: string | null;
+  onSelectionPress?: (selection: ParlaySelection) => void;
+  hideLockIcon?: boolean;
+  initiallyExpanded?: boolean;
+  collapsible?: boolean;
 }
 
 // Returns labels for both sides of a bet + optional context
@@ -141,8 +145,17 @@ function formatTime(dateString: string): string {
   });
 }
 
-export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function ParlayCard({ 
+  parlay, 
+  onOpen, 
+  onDelete, 
+  deletingId, 
+  onSelectionPress, 
+  hideLockIcon = false,
+  initiallyExpanded = false,
+  collapsible = true
+}: ParlayCardProps) {
+  const [isExpanded, setIsExpanded] = useState(initiallyExpanded);
   
   const isLocked = parlay.lockedAt !== null && parlay.lockedAt !== undefined;
   const canModify = !isLocked && parlay.status === 'building';
@@ -193,8 +206,8 @@ export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardP
     >
       {/* Header - always visible, tap to expand */}
       <TouchableOpacity 
-        onPress={() => setIsExpanded(!isExpanded)}
-        activeOpacity={0.8}
+        onPress={() => collapsible && setIsExpanded(!isExpanded)}
+        activeOpacity={collapsible ? 0.8 : 1}
         style={{ padding: 16 }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -214,7 +227,7 @@ export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardP
             {!isLocked && earliestStartTime && (
               <LockTimer startTime={earliestStartTime} status={earliestGameStatus} />
             )}
-            {isLocked && <Text style={{ fontSize: 14 }}>🔒</Text>}
+            {isLocked && !hideLockIcon && <Text style={{ fontSize: 14 }}>🔒</Text>}
             <Text style={{ color: '#fb923c', fontWeight: 'bold', fontSize: 18 }}>
               +{parlay.insured && parlay.insuranceCost ? parlay.parlayValue - parlay.insuranceCost : parlay.parlayValue}
             </Text>
@@ -228,11 +241,13 @@ export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardP
                 <Text style={{ fontSize: 11, fontWeight: 'bold', color: parlayOutcome === 'win' ? '#34d399' : parlayOutcome === 'loss' ? '#f87171' : '#fbbf24' }}>{parlayOutcome.toUpperCase()}</Text>
               </View>
             )}
-            <Ionicons 
-              name={isExpanded ? 'chevron-up' : 'chevron-down'} 
-              size={20} 
-              color="#64748b" 
-            />
+            {collapsible && (
+              <Ionicons 
+                name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+                size={20} 
+                color="#64748b" 
+              />
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -247,10 +262,13 @@ export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardP
               const isSelected1 = selection.selectedSide === sideLabels.side1.value;
               const selectedLabel = isSelected1 ? sideLabels.side1.label : sideLabels.side2.label;
               
+              const SelectionWrapper = onSelectionPress ? TouchableOpacity : View;
+
               return (
-                <View 
+                <SelectionWrapper 
                   key={selection.id} 
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}
+                  onPress={onSelectionPress ? () => onSelectionPress(selection) : undefined}
                 >
                   <Text style={{ fontSize: 16 }}>{getSportEmoji(selection.game.sport)}</Text>
                   <View style={{ flex: 1 }}>
@@ -277,7 +295,7 @@ export function ParlayCard({ parlay, onOpen, onDelete, deletingId }: ParlayCardP
                       </Text>
                     </View>
                   )}
-                </View>
+                </SelectionWrapper>
               );
             })}
           </View>
