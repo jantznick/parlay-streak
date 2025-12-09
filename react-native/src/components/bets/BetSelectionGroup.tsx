@@ -272,9 +272,9 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
   };
 
   return (
-    <View className="bg-slate-800 rounded-2xl px-3 py-3 mb-2">
+    <View>
       {sideLabels.context && (
-        <Text className="text-xs font-medium text-slate-300 mb-2" numberOfLines={2}>
+        <Text className="text-xs font-medium text-muted-foreground mb-2" numberOfLines={2}>
           {sideLabels.context}
         </Text>
       )}
@@ -296,8 +296,8 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
       </View>
 
       {error && (
-        <View className="bg-red-900/40 border border-red-500/70 rounded-xl px-2 py-1 mb-2">
-          <Text className="text-red-200 text-[10px] text-center">{error}</Text>
+        <View className="bg-destructive/20 border border-destructive/50 rounded-xl px-2 py-1 mb-2">
+          <Text className="text-destructive text-[10px] text-center">{error}</Text>
         </View>
       )}
 
@@ -308,11 +308,11 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
             onPress={handleSave}
             disabled={loading || parlayLoading || gameStarted}
             className={`flex-1 px-3 py-2.5 rounded-xl ${
-              loading || parlayLoading || gameStarted ? 'bg-slate-700' : 'bg-orange-600'
+              loading || parlayLoading || gameStarted ? 'bg-secondary' : 'bg-primary'
             } flex-row items-center justify-center`}
           >
             {loading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />}
-            <Text className="text-white text-sm font-semibold">
+            <Text className={`text-sm font-semibold ${loading || parlayLoading || gameStarted ? 'text-muted-foreground' : 'text-primary-foreground'}`}>
               {loading ? 'Saving…' : 'Save'}
             </Text>
           </TouchableOpacity>
@@ -323,12 +323,12 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
               onPress={handleAddToParlay}
               disabled={loading || parlayLoading || gameStarted || parlayFull}
               className={`flex-1 px-3 py-2.5 rounded-xl ${
-                loading || parlayLoading || gameStarted || parlayFull ? 'bg-slate-700' : 'bg-blue-600'
+                loading || parlayLoading || gameStarted || parlayFull ? 'bg-secondary' : 'bg-blue-600'
               } flex-row items-center justify-center`}
             >
               {parlayLoading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />}
               <Text className={`text-sm font-semibold ${
-                parlayFull ? 'text-slate-500' : 'text-white'
+                parlayFull ? 'text-muted-foreground' : 'text-white'
               }`}>
                 {parlayLoading ? 'Adding…' : parlayFull ? 'Full' : '+ Parlay'}
               </Text>
@@ -338,11 +338,11 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
               onPress={handleStartParlay}
               disabled={loading || parlayLoading || gameStarted}
               className={`flex-1 px-3 py-2.5 rounded-xl ${
-                loading || parlayLoading || gameStarted ? 'bg-slate-700' : 'bg-blue-600'
+                loading || parlayLoading || gameStarted ? 'bg-secondary' : 'bg-blue-600'
               } flex-row items-center justify-center`}
             >
               {parlayLoading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />}
-              <Text className="text-white text-sm font-semibold">
+              <Text className={`text-sm font-semibold ${loading || parlayLoading || gameStarted ? 'text-muted-foreground' : 'text-white'}`}>
                 {parlayLoading ? 'Starting…' : 'Parlay'}
               </Text>
             </TouchableOpacity>
@@ -351,13 +351,13 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
       )}
 
       {saved && (
-        <View className="bg-emerald-900/40 border border-emerald-500/70 rounded-xl px-2 py-1">
-          <Text className="text-emerald-200 text-[10px] text-center">Selection saved!</Text>
+        <View className="bg-emerald-500/20 border border-emerald-500/50 rounded-xl px-2 py-1">
+          <Text className="text-emerald-500 text-[10px] text-center">Selection saved!</Text>
         </View>
       )}
 
       {gameStarted && (
-        <Text className="text-slate-500 text-[10px] text-center mt-1">Game has started</Text>
+        <Text className="text-muted-foreground text-[10px] text-center mt-1">Game has started</Text>
       )}
     </View>
   );

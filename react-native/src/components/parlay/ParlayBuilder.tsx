@@ -370,10 +370,10 @@ export function ParlayBuilder() {
       });
       if (response.success && response.data?.parlay) {
         setActiveParlay(response.data.parlay);
-        showToast(
-          response.data.parlay.insured ? 'Insurance enabled' : 'Insurance disabled',
-          'success'
-        );
+        // showToast(
+        //   response.data.parlay.insured ? 'Insurance enabled' : 'Insurance disabled',
+        //   'success'
+        // );
       } else {
         showToast(response.error?.message || 'Failed to update insurance', 'error');
       }
@@ -474,7 +474,6 @@ export function ParlayBuilder() {
           left: 0,
           right: 0,
           height: SHEET_HEIGHT,
-          backgroundColor: '#0f172a',
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
           shadowColor: '#000',
@@ -483,6 +482,7 @@ export function ParlayBuilder() {
           shadowRadius: 8,
           elevation: 20,
         }}
+        className="bg-background-light dark:bg-card-dark"
       >
         {/* Handle */}
         <View 
@@ -507,12 +507,12 @@ export function ParlayBuilder() {
                     {activeParlay.betCount} {activeParlay.betCount === 1 ? 'Bet' : 'Bets'}
                   </Text>
                 </View>
-                <Text style={{ color: '#fb923c', fontWeight: 'bold', fontSize: 18 }}>
+                <Text className="text-primary font-bold text-lg">
                   +{activeParlay.insured && activeParlay.insuranceCost ? activeParlay.parlayValue - activeParlay.insuranceCost : activeParlay.parlayValue}
                 </Text>
                 {activeParlay.insured && (
-                  <View style={{ backgroundColor: 'rgba(251, 146, 60, 0.2)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
-                    <Text style={{ color: '#fb923c', fontSize: 10, fontWeight: '600' }}>INS</Text>
+                  <View className="bg-primary/20" style={{ paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
+                    <Text className="text-primary text-xs font-semibold">INS</Text>
                   </View>
                 )}
               </View>
@@ -525,8 +525,8 @@ export function ParlayBuilder() {
                     handleSaveParlay();
                   }}
                   disabled={loading}
+                  className="bg-primary"
                   style={{
-                    backgroundColor: '#ea580c',
                     paddingHorizontal: 20,
                     paddingVertical: 10,
                     borderRadius: 10,
@@ -535,7 +535,7 @@ export function ParlayBuilder() {
                   {loading ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Save</Text>
+                    <Text className="text-white font-bold text-base">Save</Text>
                   )}
                 </TouchableOpacity>
               ) : (
@@ -558,11 +558,11 @@ export function ParlayBuilder() {
                     {activeParlay.betCount} {activeParlay.betCount === 1 ? 'Bet' : 'Bets'}
                   </Text>
                 </View>
-                <Text style={{ color: '#fb923c', fontWeight: 'bold', fontSize: 18 }}>
+                <Text className="text-primary font-bold text-lg">
                   +{activeParlay.insured && activeParlay.insuranceCost ? activeParlay.parlayValue - activeParlay.insuranceCost : activeParlay.parlayValue}
                 </Text>
                 {activeParlay.insured && (
-                  <Text style={{ color: '#64748b', fontSize: 12 }}>
+                  <Text className="text-muted-foreground-light dark:text-muted-foreground-dark text-xs">
                     ({activeParlay.parlayValue} - {activeParlay.insuranceCost} insurance cost)
                   </Text>
                 )}
@@ -574,8 +574,8 @@ export function ParlayBuilder() {
 
             {/* Warning for 1-bet parlay */}
             {activeParlay.betCount === 1 && (
-              <View style={{ backgroundColor: 'rgba(161, 98, 7, 0.3)', borderWidth: 1, borderColor: '#a16207', borderRadius: 12, padding: 12, marginBottom: 16 }}>
-                <Text style={{ color: '#fbbf24', fontSize: 13 }}>
+              <View className="bg-yellow-500/20 border border-yellow-500/30 rounded-xl p-3 mb-4">
+                <Text className="text-yellow-600 dark:text-yellow-400 text-sm">
                   Add at least one more bet to create a valid parlay, or tap ✕ to cancel.
                 </Text>
               </View>
@@ -591,13 +591,13 @@ export function ParlayBuilder() {
                 return (
                   <View
                     key={selection.id}
-                    style={{ backgroundColor: '#1e293b', borderWidth: 1, borderColor: '#334155', borderRadius: 12, padding: 12 }}
+                    className="bg-slate-800 border border-slate-700 rounded-xl p-3"
                   >
                     {/* Header: emoji, matchup, lock timer, remove button */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginRight: 8 }}>
                         <Text style={{ fontSize: 16 }}>{getSportEmoji(selection.game.sport)}</Text>
-                        <Text style={{ color: '#94a3b8', fontSize: 11, flex: 1 }} numberOfLines={1}>
+                        <Text className="text-slate-400 text-xs flex-1" numberOfLines={1}>
                           {selection.game.awayTeam} @ {selection.game.homeTeam}
                         </Text>
                       </View>
@@ -609,7 +609,7 @@ export function ParlayBuilder() {
                           <TouchableOpacity
                             onPress={() => handleRemoveSelection(selection.id)}
                             disabled={removingId === selection.id}
-                            style={{ height: 28, width: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#334155' }}
+                            className="h-7 w-7 items-center justify-center rounded-full bg-slate-700"
                           >
                             {removingId === selection.id ? (
                               <ActivityIndicator size="small" color="#ef4444" />
@@ -623,7 +623,7 @@ export function ParlayBuilder() {
                     
                     {/* Context (for threshold/event bets) */}
                     {sideLabels.context && (
-                      <Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '500', marginBottom: 8 }}>
+                      <Text className="text-white text-sm font-medium mb-2">
                         {sideLabels.context}
                       </Text>
                     )}
@@ -637,19 +637,18 @@ export function ParlayBuilder() {
                           paddingVertical: 8,
                           borderRadius: 8,
                           borderWidth: 1,
-                          borderColor: isSelected1 ? '#f97316' : '#334155',
-                          backgroundColor: isSelected1 ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
+                        className={isSelected1 ? 'border-primary bg-primary/15' : 'border-slate-700'}
                       >
                         <Text
                           style={{
                             fontSize: 11,
                             fontWeight: '600',
-                            color: isSelected1 ? '#fb923c' : '#64748b',
                             textAlign: 'center',
                           }}
+                          className={isSelected1 ? 'text-primary' : 'text-slate-400'}
                           numberOfLines={2}
                         >
                           {sideLabels.side1.label}
@@ -662,19 +661,18 @@ export function ParlayBuilder() {
                           paddingVertical: 8,
                           borderRadius: 8,
                           borderWidth: 1,
-                          borderColor: isSelected2 ? '#f97316' : '#334155',
-                          backgroundColor: isSelected2 ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
+                        className={isSelected2 ? 'border-primary bg-primary/15' : 'border-slate-700'}
                       >
                         <Text
                           style={{
                             fontSize: 11,
                             fontWeight: '600',
-                            color: isSelected2 ? '#fb923c' : '#64748b',
                             textAlign: 'center',
                           }}
+                          className={isSelected2 ? 'text-primary' : 'text-slate-400'}
                           numberOfLines={2}
                         >
                           {sideLabels.side2.label}
@@ -688,12 +686,12 @@ export function ParlayBuilder() {
 
             {/* Insurance Toggle */}
             {canInsure && (
-              <View style={{ backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: 12, padding: 12, marginBottom: 16 }}>
+              <View className="bg-slate-800/50 rounded-xl p-3 mb-4">
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View>
-                    <Text style={{ color: '#cbd5e1', fontSize: 14, fontWeight: '500' }}>Insurance</Text>
+                    <Text className="text-white text-sm font-medium">Insurance</Text>
                     {insuranceCost !== null && (
-                      <Text style={{ color: '#64748b', fontSize: 11 }}>
+                      <Text className="text-slate-400 text-xs">
                         Cost: {insuranceCost} streak point{insuranceCost !== 1 ? 's' : ''}
                       </Text>
                     )}
@@ -706,8 +704,8 @@ export function ParlayBuilder() {
                       height: 28,
                       borderRadius: 14,
                       justifyContent: 'center',
-                      backgroundColor: activeParlay.insured ? '#ea580c' : '#334155',
                     }}
+                    className={activeParlay.insured ? 'bg-primary' : 'bg-slate-700'}
                   >
                     <View
                       style={{
@@ -715,7 +713,7 @@ export function ParlayBuilder() {
                         height: 20,
                         borderRadius: 10,
                         backgroundColor: '#fff',
-                        marginLeft: activeParlay.insured ? 24 : 4,
+                        transform: [{ translateX: activeParlay.insured ? 24 : 4 }],
                       }}
                     />
                   </TouchableOpacity>
@@ -730,8 +728,8 @@ export function ParlayBuilder() {
 
             {/* Locked indicator */}
             {isLocked && (
-              <View style={{ backgroundColor: 'rgba(161, 98, 7, 0.2)', borderWidth: 1, borderColor: 'rgba(161, 98, 7, 0.3)', borderRadius: 12, padding: 12, marginBottom: 16 }}>
-                <Text style={{ color: '#fbbf24', fontSize: 13, textAlign: 'center' }}>
+              <View className="bg-yellow-500/20 border border-yellow-500/30 rounded-xl p-3 mb-4">
+                <Text className="text-yellow-300 text-sm text-center">
                   🔒 This parlay is locked
                 </Text>
               </View>
@@ -747,13 +745,13 @@ export function ParlayBuilder() {
                     paddingVertical: 14,
                     borderRadius: 12,
                     alignItems: 'center',
-                    backgroundColor: loading || activeParlay.betCount < 2 ? '#334155' : '#ea580c',
                   }}
+                  className={loading || activeParlay.betCount < 2 ? 'bg-slate-700' : 'bg-primary'}
                 >
                   {loading ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Text style={{ fontWeight: 'bold', color: activeParlay.betCount < 2 ? '#64748b' : '#fff' }}>
+                    <Text style={{ fontWeight: 'bold' }} className={activeParlay.betCount < 2 ? 'text-slate-400' : 'text-white'}>
                       Save Parlay
                     </Text>
                   )}
@@ -766,12 +764,10 @@ export function ParlayBuilder() {
                     paddingVertical: 12,
                     borderRadius: 12,
                     alignItems: 'center',
-                    backgroundColor: 'rgba(127, 29, 29, 0.3)',
-                    borderWidth: 1,
-                    borderColor: 'rgba(127, 29, 29, 0.5)',
                   }}
+                  className="bg-red-500/10 border border-red-500/20"
                 >
-                  <Text style={{ color: '#f87171', fontWeight: '500' }}>
+                  <Text className="text-red-400 font-medium">
                     {activeParlay.betCount === 1 ? 'Cancel Parlay' : 'Delete Parlay'}
                   </Text>
                 </TouchableOpacity>
@@ -789,39 +785,27 @@ export function ParlayBuilder() {
         onRequestClose={() => setShowCloseModal(false)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.7)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-          <View style={{ backgroundColor: '#1e293b', borderRadius: 20, padding: 24, width: '100%', maxWidth: 340 }}>
-            <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 }}>
+          <View className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-[340px]">
+            <Text className="text-white text-xl font-bold text-center mb-2">
               Save Parlay?
             </Text>
-            <Text style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center', marginBottom: 24 }}>
+            <Text className="text-slate-400 text-sm text-center mb-6">
               You have {activeParlay?.betCount} bets in your parlay worth +{activeParlay?.parlayValue} points.
             </Text>
             
             <View style={{ gap: 10 }}>
               <TouchableOpacity
                 onPress={handleSaveAndClose}
-                style={{
-                  backgroundColor: '#ea580c',
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  alignItems: 'center',
-                }}
+                className="bg-primary py-3.5 rounded-xl items-center"
               >
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Save</Text>
+                <Text className="text-white font-bold text-base">Save</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
                 onPress={handleDiscardChanges}
-                style={{
-                  backgroundColor: 'rgba(100, 116, 139, 0.2)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(100, 116, 139, 0.3)',
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  alignItems: 'center',
-                }}
+                className="bg-slate-700 border border-slate-600 py-3.5 rounded-xl items-center"
               >
-                <Text style={{ color: '#94a3b8', fontWeight: '600', fontSize: 16 }}>Discard Changes</Text>
+                <Text className="text-slate-200 font-semibold text-base">Discard Changes</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -831,7 +815,7 @@ export function ParlayBuilder() {
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ color: '#64748b', fontSize: 14 }}>Cancel</Text>
+                <Text className="text-slate-400 text-sm">Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -32,29 +32,29 @@ export function ConfirmationModal({
       <TouchableWithoutFeedback onPress={onCancel}>
         <View className="flex-1 bg-black/70 justify-center items-center px-6">
           <TouchableWithoutFeedback>
-            <View className="w-full bg-slate-900 rounded-3xl border border-slate-800 p-6">
-              <Text className="text-xl font-bold text-white mb-2 text-center">
+            <View className="w-full bg-card rounded-3xl border border-border p-6 shadow-xl">
+              <Text className="text-xl font-bold text-card-foreground mb-2 text-center">
                 {title}
               </Text>
-              <Text className="text-slate-400 text-sm text-center mb-6 leading-5">
+              <Text className="text-muted-foreground text-sm text-center mb-6 leading-5">
                 {message}
               </Text>
 
               <View className="flex-row gap-3">
                 <TouchableOpacity
                   onPress={onCancel}
-                  className="flex-1 bg-slate-800 py-3.5 rounded-xl border border-slate-700 items-center"
+                  className="flex-1 bg-secondary py-3.5 rounded-xl border border-border items-center"
                 >
-                  <Text className="text-white font-semibold">{cancelText}</Text>
+                  <Text className="text-foreground font-semibold">{cancelText}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={onConfirm}
                   className={`flex-1 py-3.5 rounded-xl items-center ${
-                    isDestructive ? 'bg-red-600' : 'bg-orange-600'
+                    isDestructive ? 'bg-destructive' : 'bg-primary'
                   }`}
                 >
-                  <Text className="text-white font-semibold">{confirmText}</Text>
+                  <Text className={`font-semibold ${isDestructive ? 'text-destructive-foreground' : 'text-primary-foreground'}`}>{confirmText}</Text>
                 </TouchableOpacity>
               </View>
             </View>

@@ -8,6 +8,7 @@ import { Dashboard } from '../pages/Dashboard';
 import { Settings } from '../pages/Settings';
 import { AdminHome } from '../pages/admin/AdminHome';
 import { AdminBetBuilder } from '../pages/admin/AdminBetBuilder';
+import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -22,12 +23,15 @@ function AdminStack() {
 }
 
 export function TabNavigator() {
+  // const { effectiveTheme } = useTheme();
+  // const isDark = effectiveTheme === 'dark';
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#0f172a', // slate-900
+          backgroundColor: '#0f172a', // slate-900 
           borderTopColor: '#1e293b', // slate-800
           height: Platform.OS === 'ios' ? 88 : 60,
           paddingBottom: Platform.OS === 'ios' ? 28 : 8,

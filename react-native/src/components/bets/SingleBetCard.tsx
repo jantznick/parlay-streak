@@ -179,12 +179,10 @@ export function SingleBetCard({
   return (
     <View
       style={{
-        backgroundColor: '#0f172a',
-        borderWidth: 1,
-        borderColor: '#1e293b',
         borderRadius: 16,
         overflow: 'hidden',
       }}
+      className="bg-card border border-border"
     >
       {/* Header - always visible, tap to expand */}
       <TouchableOpacity
@@ -203,13 +201,13 @@ export function SingleBetCard({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, marginRight: 8 }}>
             <Text style={{ fontSize: 18 }}>{getSportEmoji(game.sport)}</Text>
             {/* Show context as main text if exists, otherwise show selected pick */}
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600', flex: 1 }} numberOfLines={1}>
+            <Text className="text-card-foreground text-[15px] font-semibold flex-1" numberOfLines={1}>
               {sideLabels.context ? (
                 <>
-                  {sideLabels.context} • <Text style={{ color: '#fb923c' }}>{isSelected1 ? sideLabels.side1.label : sideLabels.side2.label}</Text>
+                  {sideLabels.context} • <Text className="text-primary">{isSelected1 ? sideLabels.side1.label : sideLabels.side2.label}</Text>
                 </>
               ) : (
-                <Text style={{ color: '#fb923c' }}>{isSelected1 ? sideLabels.side1.label : sideLabels.side2.label}</Text>
+                <Text className="text-primary">{isSelected1 ? sideLabels.side1.label : sideLabels.side2.label}</Text>
               )}
             </Text>
           </View>
@@ -277,20 +275,32 @@ export function SingleBetCard({
 
       {/* Expanded content */}
       {isExpanded && (
-        <View style={{ paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
+        <View className="px-4 pb-4 border-t border-border">
           {/* Read-Only Tabular View */}
           {!canModify && (
-            <View style={{ backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: 12, padding: 12, marginTop: 12, gap: 10 }}>
+            <View className="bg-secondary/50 rounded-xl p-3 mt-3 gap-2.5">
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Matchup</Text>
+                <Text className="text-muted-foreground text-[13px] w-20">Matchup</Text>
                 <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-                    <Text style={{ color: '#fff', fontSize: 13 }}>{game.awayTeam} @ {game.homeTeam}</Text>
+                    <Text className="text-card-foreground text-[13px]">{game.awayTeam} @ {game.homeTeam}</Text>
+                    {game.externalId && (
+                      <TouchableOpacity 
+                        onPress={() => openEspnGame(game.sport, game.externalId)} 
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Image 
+                          source={require('../../../assets/images/espn.png')}
+                          style={{ width: 20, height: 20 }}
+                          resizeMode="contain"
+                        />
+                      </TouchableOpacity>
+                    )}
                 </View>
               </View>
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Time</Text>
-                <Text style={{ color: '#cbd5e1', fontSize: 13, textAlign: 'right' }}>
+                <Text className="text-muted-foreground text-[13px] w-20">Time</Text>
+                <Text className="text-foreground text-[13px] text-right">
                   {formatTime(game.startTime)}
                   {game.status === 'completed' && game.homeScore !== null && game.awayScore !== null && (
                     ` • ${game.awayScore}-${game.homeScore}`
@@ -298,13 +308,13 @@ export function SingleBetCard({
                 </Text>
               </View>
               
-              <View style={{ height: 1, backgroundColor: 'rgba(51, 65, 85, 0.5)' }} />
+              <View className="h-[1px] bg-border/50" />
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Selection</Text>
+                <Text className="text-muted-foreground text-[13px] w-20">Selection</Text>
                 <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                   {sideLabels.context && <Text style={{ color: '#e2e8f0', fontSize: 13, textAlign: 'right', marginBottom: 2 }}>{sideLabels.context}</Text>}
-                   <Text style={{ color: '#fb923c', fontSize: 14, fontWeight: 'bold', textAlign: 'right' }}>
+                   {sideLabels.context && <Text className="text-muted-foreground text-[13px] text-right mb-0.5">{sideLabels.context}</Text>}
+                   <Text className="text-primary text-[14px] font-bold text-right">
                      {isSelected1 ? sideLabels.side1.label : sideLabels.side2.label}
                    </Text>
                 </View>
@@ -312,7 +322,7 @@ export function SingleBetCard({
 
               {selection.outcome && selection.outcome !== 'pending' && (
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Result</Text>
+                  <Text className="text-muted-foreground text-[13px] w-20">Result</Text>
                   <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, backgroundColor: selection.outcome === 'win' ? 'rgba(16, 185, 129, 0.2)' : selection.outcome === 'loss' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(250, 204, 21, 0.2)' }}>
                     <Text style={{ fontSize: 11, fontWeight: 'bold', color: selection.outcome === 'win' ? '#34d399' : selection.outcome === 'loss' ? '#f87171' : '#fbbf24' }}>
                         {selection.outcome.toUpperCase()}
@@ -328,10 +338,10 @@ export function SingleBetCard({
             <>
               {/* Game info row */}
               <View style={{ marginTop: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 12, flex: 1 }} numberOfLines={1}>
+                <Text className="text-muted-foreground text-xs flex-1" numberOfLines={1}>
                   {game.awayTeam} @ {game.homeTeam}
                 </Text>
-                <Text style={{ color: '#64748b', fontSize: 12 }}>
+                <Text className="text-muted-foreground/80 text-xs">
                   {formatTime(game.startTime)}
                   {game.status === 'completed' && game.homeScore !== null && game.awayScore !== null && (
                     ` • ${game.awayScore}-${game.homeScore}`
@@ -348,19 +358,13 @@ export function SingleBetCard({
                     paddingVertical: 10,
                     borderRadius: 10,
                     borderWidth: 1,
-                    borderColor: isSelected1 ? '#f97316' : '#334155',
-                    backgroundColor: isSelected1 ? 'rgba(249, 115, 22, 0.15)' : '#0f172a',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
+                  className={`${isSelected1 ? 'bg-primary/15 border-primary' : 'bg-card border-border'}`}
                 >
                   <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: isSelected1 ? '#fb923c' : '#64748b',
-                      textAlign: 'center',
-                    }}
+                    className={`text-[13px] font-semibold text-center ${isSelected1 ? 'text-primary' : 'text-muted-foreground'}`}
                     numberOfLines={2}
                   >
                     {sideLabels.side1.label}
@@ -373,19 +377,13 @@ export function SingleBetCard({
                     paddingVertical: 10,
                     borderRadius: 10,
                     borderWidth: 1,
-                    borderColor: isSelected2 ? '#f97316' : '#334155',
-                    backgroundColor: isSelected2 ? 'rgba(249, 115, 22, 0.15)' : '#0f172a',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
+                  className={`${isSelected2 ? 'bg-primary/15 border-primary' : 'bg-card border-border'}`}
                 >
                   <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: isSelected2 ? '#fb923c' : '#64748b',
-                      textAlign: 'center',
-                    }}
+                    className={`text-[13px] font-semibold text-center ${isSelected2 ? 'text-primary' : 'text-muted-foreground'}`}
                     numberOfLines={2}
                   >
                     {sideLabels.side2.label}

@@ -68,16 +68,16 @@ export function CalendarModal({ visible, onClose, selectedDate, onSelectDate }: 
         >
           <View
             className={`w-full h-full items-center justify-center rounded-xl ${
-              isSelected ? 'bg-orange-600' : isToday ? 'bg-slate-800' : ''
+              isSelected ? 'bg-primary' : isToday ? 'bg-secondary' : ''
             }`}
           >
             <Text
               className={`text-sm font-medium ${
                 isSelected
-                  ? 'text-white'
+                  ? 'text-primary-foreground'
                   : isToday
-                  ? 'text-orange-400'
-                  : 'text-slate-300'
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
               }`}
             >
               {i}
@@ -100,23 +100,23 @@ export function CalendarModal({ visible, onClose, selectedDate, onSelectDate }: 
       <TouchableWithoutFeedback onPress={onClose}>
         <View className="flex-1 bg-black/70 justify-center items-center px-6">
           <TouchableWithoutFeedback>
-            <View className="w-full bg-slate-900 rounded-3xl border border-slate-800 p-4">
+            <View className="w-full bg-card rounded-3xl border border-border p-4 shadow-xl">
               {/* Header */}
               <View className="flex-row items-center justify-between mb-4">
                 <TouchableOpacity
                   onPress={() => shiftMonth(-1)}
-                  className="h-10 w-10 items-center justify-center rounded-full bg-slate-800"
+                  className="h-10 w-10 items-center justify-center rounded-full bg-secondary"
                 >
-                  <Ionicons name="chevron-back" size={20} color="#e2e8f0" />
+                  <Ionicons name="chevron-back" size={20} color="#94a3b8" />
                 </TouchableOpacity>
-                <Text className="text-white text-lg font-bold">
+                <Text className="text-card-foreground text-lg font-bold">
                   {currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
                 </Text>
                 <TouchableOpacity
                   onPress={() => shiftMonth(1)}
-                  className="h-10 w-10 items-center justify-center rounded-full bg-slate-800"
+                  className="h-10 w-10 items-center justify-center rounded-full bg-secondary"
                 >
-                  <Ionicons name="chevron-forward" size={20} color="#e2e8f0" />
+                  <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
                 </TouchableOpacity>
               </View>
 
@@ -124,7 +124,7 @@ export function CalendarModal({ visible, onClose, selectedDate, onSelectDate }: 
               <View className="flex-row mb-2">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
                   <View key={index} className="w-[14.28%] items-center">
-                    <Text className="text-slate-500 text-xs font-semibold">{day}</Text>
+                    <Text className="text-muted-foreground text-xs font-semibold">{day}</Text>
                   </View>
                 ))}
               </View>

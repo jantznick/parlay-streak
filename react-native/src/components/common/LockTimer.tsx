@@ -53,9 +53,9 @@ export function LockTimer({ startTime, status }: LockTimerProps) {
   if (isLocked) return null;
 
   return (
-    <View className="flex-row items-center bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
+    <View className="flex-row items-center bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">
       <Text style={{ fontSize: 10, marginRight: 4 }}>🔒</Text>
-      <Text className="text-[10px] text-orange-400 font-medium">
+      <Text className="text-[10px] text-primary font-medium">
         {timeLeft}
       </Text>
     </View>
