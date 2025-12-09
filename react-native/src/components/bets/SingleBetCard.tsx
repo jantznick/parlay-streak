@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LockTimer } from '../common/LockTimer';
 import { useParlay } from '../../context/ParlayContext';
 import { BetSelection } from '../../interfaces/bet';
+import { openEspnGame } from '../../utils/espn';
 
 interface SingleBetCardProps {
   selection: BetSelection;
@@ -220,6 +221,19 @@ export function SingleBetCard({
               <LockTimer startTime={game.startTime} status={gameStatus} />
             )}
             {selection.outcome && selection.outcome !== 'pending' && (
+              <>
+                {game.externalId && (
+                  <TouchableOpacity 
+                    onPress={() => openEspnGame(game.sport, game.externalId)} 
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Image 
+                      source={require('../../../assets/images/espn.png')}
+                      style={{ width: 20, height: 20 }}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
+                )}
               <View
                 style={{
                   paddingHorizontal: 8,
@@ -248,6 +262,7 @@ export function SingleBetCard({
                   {selection.outcome.toUpperCase()}
                 </Text>
               </View>
+              </>
             )}
             {collapsible && (
               <Ionicons
@@ -266,9 +281,11 @@ export function SingleBetCard({
           {/* Read-Only Tabular View */}
           {!canModify && (
             <View style={{ backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: 12, padding: 12, marginTop: 12, gap: 10 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Matchup</Text>
-                <Text style={{ color: '#fff', fontSize: 13, flex: 1, textAlign: 'right' }}>{game.awayTeam} @ {game.homeTeam}</Text>
+                <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
+                    <Text style={{ color: '#fff', fontSize: 13 }}>{game.awayTeam} @ {game.homeTeam}</Text>
+                </View>
               </View>
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

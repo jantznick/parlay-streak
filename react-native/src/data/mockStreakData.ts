@@ -84,9 +84,10 @@ const createMockSingleBet = (
     betType: 'COMPARISON',
     priority: 1
   },
-  game: {
-    id: `game-${id}`,
-    homeTeam: 'Team Y',
+    game: {
+        id: `game-${id}`,
+        externalId: '401585601',
+        homeTeam: 'Team Y',
     awayTeam: 'Team X',
     startTime: new Date().toISOString(),
     sport: 'BASKETBALL',

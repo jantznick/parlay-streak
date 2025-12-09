@@ -21,6 +21,7 @@ export interface BetSelection {
   outcome?: string;
   game: {
     id: string;
+    externalId?: string;
     homeTeam: string;
     awayTeam: string;
     startTime: string;
