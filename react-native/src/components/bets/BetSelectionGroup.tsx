@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { api } from '../../services/api';
 import { BetSelectionCard } from './BetSelectionCard';
@@ -27,11 +27,13 @@ interface BetSelectionGroupProps {
   bet: Bet;
   game: Game;
   onSelectionSaved?: () => void;
+  selectedBetId?: string | null;
+  onBetSelected?: (betId: string | null) => void;
 }
 
 function getBetSideLabels(bet: Bet, game: Game): {
-  side1: { value: string; label: string };
-  side2: { value: string; label: string };
+  side1: { value: string; label: string; isSimple?: boolean };
+  side2: { value: string; label: string; isSimple?: boolean };
   context?: string; // Optional context to display above buttons
 } {
   const config = bet.config;
@@ -99,6 +101,7 @@ function getBetSideLabels(bet: Bet, game: Game): {
     return {
       side1: { value: 'participant_1', label: name1 },
       side2: { value: 'participant_2', label: name2 },
+      context: bet.displayText || 'Select Winner', // Use displayText or default title
     };
   } else if (bet.betType === 'THRESHOLD') {
     const threshConfig = config as any;
@@ -117,15 +120,15 @@ function getBetSideLabels(bet: Bet, game: Game): {
     }
 
     return {
-      side1: { value: 'over', label: `OVER ${threshold}` },
-      side2: { value: 'under', label: `UNDER ${threshold}` },
+      side1: { value: 'over', label: `OVER ${threshold}`, isSimple: true },
+      side2: { value: 'under', label: `UNDER ${threshold}`, isSimple: true },
       context: context || undefined,
     };
   } else if (bet.betType === 'EVENT') {
     // Use displayText for context shown above buttons
     return {
-      side1: { value: 'yes', label: 'YES' },
-      side2: { value: 'no', label: 'NO' },
+      side1: { value: 'yes', label: 'YES', isSimple: true },
+      side2: { value: 'no', label: 'NO', isSimple: true },
       context: bet.displayText || undefined,
     };
   }
@@ -136,7 +139,7 @@ function getBetSideLabels(bet: Bet, game: Game): {
   };
 }
 
-export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionGroupProps) {
+export function BetSelectionGroup({ bet, game, onSelectionSaved, selectedBetId, onBetSelected }: BetSelectionGroupProps) {
   const [selectedSide, setSelectedSide] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [parlayLoading, setParlayLoading] = useState(false);
@@ -153,9 +156,27 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
   // Check if parlay is full (5 bets max)
   const parlayFull = activeParlay && activeParlay.betCount >= 5;
 
+  // Clear selection if another bet was selected
+  useEffect(() => {
+    if (selectedBetId !== null && selectedBetId !== bet.id && selectedSide !== null) {
+      setSelectedSide(null);
+    }
+  }, [selectedBetId, bet.id, selectedSide]);
+
   const handleCardPress = (side: string) => {
     if (disabled) return;
-    setSelectedSide(side);
+    // Toggle selection - if clicking the same side, deselect it
+    if (selectedSide === side) {
+      setSelectedSide(null);
+      if (onBetSelected) {
+        onBetSelected(null);
+      }
+    } else {
+      setSelectedSide(side);
+      if (onBetSelected) {
+        onBetSelected(bet.id);
+      }
+    }
     setError(null);
   };
 
@@ -272,19 +293,23 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
   };
 
   return (
-    <View className="bg-slate-800 rounded-2xl px-3 py-3 mb-2">
+    <View className="bg-transparent dark:bg-slate-800 rounded-2xl px-3 py-2 mb-0.5">
       {sideLabels.context && (
-        <Text className="text-xs font-medium text-slate-300 mb-2" numberOfLines={2}>
-          {sideLabels.context}
-        </Text>
+        <View className="mb-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-700">
+          <Text className="text-sm font-semibold text-slate-700 dark:text-slate-200" numberOfLines={2}>
+            {sideLabels.context}
+          </Text>
+        </View>
       )}
-      <View className="flex-row gap-2 mb-2">
+      <View className="flex-row gap-1.5">
         <BetSelectionCard
           side={sideLabels.side1.value}
           label={sideLabels.side1.label}
           isSelected={selectedSide === sideLabels.side1.value}
           disabled={disabled}
           onPress={() => handleCardPress(sideLabels.side1.value)}
+          isSimple={sideLabels.side1.isSimple}
+          hasContext={!!sideLabels.context}
         />
         <BetSelectionCard
           side={sideLabels.side2.value}
@@ -292,23 +317,25 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
           isSelected={selectedSide === sideLabels.side2.value}
           disabled={disabled}
           onPress={() => handleCardPress(sideLabels.side2.value)}
+          isSimple={sideLabels.side2.isSimple}
+          hasContext={!!sideLabels.context}
         />
       </View>
 
       {error && (
-        <View className="bg-red-900/40 border border-red-500/70 rounded-xl px-2 py-1 mb-2">
-          <Text className="text-red-200 text-[10px] text-center">{error}</Text>
+        <View className="bg-red-100 dark:bg-red-900/40 border border-red-200 dark:border-red-500/70 rounded-xl px-2 py-1 mb-2">
+          <Text className="text-red-700 dark:text-red-200 text-xs text-center">{error}</Text>
         </View>
       )}
 
       {selectedSide && !saved && (
-        <View className="flex-row gap-2">
+        <View className="flex-row gap-2 mt-2">
           {/* Save Button */}
           <TouchableOpacity
             onPress={handleSave}
             disabled={loading || parlayLoading || gameStarted}
             className={`flex-1 px-3 py-2.5 rounded-xl ${
-              loading || parlayLoading || gameStarted ? 'bg-slate-700' : 'bg-orange-600'
+              loading || parlayLoading || gameStarted ? 'bg-slate-300 dark:bg-slate-700' : 'bg-orange-600 shadow-lg shadow-orange-500/40 dark:shadow-none'
             } flex-row items-center justify-center`}
           >
             {loading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />}
@@ -323,7 +350,7 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
               onPress={handleAddToParlay}
               disabled={loading || parlayLoading || gameStarted || parlayFull}
               className={`flex-1 px-3 py-2.5 rounded-xl ${
-                loading || parlayLoading || gameStarted || parlayFull ? 'bg-slate-700' : 'bg-blue-600'
+                loading || parlayLoading || gameStarted || parlayFull ? 'bg-slate-300 dark:bg-slate-700' : 'bg-blue-600 shadow-lg shadow-blue-500/40 dark:shadow-none'
               } flex-row items-center justify-center`}
             >
               {parlayLoading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />}
@@ -338,7 +365,7 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
               onPress={handleStartParlay}
               disabled={loading || parlayLoading || gameStarted}
               className={`flex-1 px-3 py-2.5 rounded-xl ${
-                loading || parlayLoading || gameStarted ? 'bg-slate-700' : 'bg-blue-600'
+                loading || parlayLoading || gameStarted ? 'bg-slate-700' : 'bg-blue-600 shadow-lg shadow-blue-500/40 dark:shadow-none'
               } flex-row items-center justify-center`}
             >
               {parlayLoading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />}
@@ -351,13 +378,13 @@ export function BetSelectionGroup({ bet, game, onSelectionSaved }: BetSelectionG
       )}
 
       {saved && (
-        <View className="bg-emerald-900/40 border border-emerald-500/70 rounded-xl px-2 py-1">
-          <Text className="text-emerald-200 text-[10px] text-center">Selection saved!</Text>
+        <View className="bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-500/70 rounded-xl px-2 py-1">
+          <Text className="text-emerald-700 dark:text-emerald-200 text-xs text-center">Selection saved!</Text>
         </View>
       )}
 
       {gameStarted && (
-        <Text className="text-slate-500 text-[10px] text-center mt-1">Game has started</Text>
+        <Text className="text-slate-500 dark:text-slate-500 text-xs text-center mt-1">Game has started</Text>
       )}
     </View>
   );

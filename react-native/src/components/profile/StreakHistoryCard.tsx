@@ -26,7 +26,7 @@ export function StreakHistoryCard({ group }: StreakHistoryCardProps) {
     : `${formatDate(group.startDate)} - ${group.endDate ? formatDate(group.endDate) : '?'}`;
 
   return (
-    <View className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden mb-4">
+    <View className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-4 shadow-lg shadow-slate-900/10 dark:shadow-none">
       {/* Header - Always Visible */}
       <TouchableOpacity
         onPress={() => setIsExpanded(!isExpanded)}
@@ -37,20 +37,20 @@ export function StreakHistoryCard({ group }: StreakHistoryCardProps) {
           {/* Streak Badge */}
           <View
             className={`h-12 w-12 rounded-xl items-center justify-center ${
-              isActive ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-slate-800 border border-slate-700'
+              isActive ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700'
             }`}
           >
-            <Text className={`text-xl font-bold ${isActive ? 'text-emerald-400' : 'text-slate-400'}`}>
+            <Text className={`text-xl font-bold ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
               {group.peakStreak}
             </Text>
           </View>
 
           {/* Info */}
           <View>
-            <Text className="text-white font-semibold text-base">
+            <Text className="text-slate-900 dark:text-white font-semibold text-base">
               {isActive ? 'Current Streak' : 'Past Streak'}
             </Text>
-            <Text className="text-slate-400 text-xs">{dateRange}</Text>
+            <Text className="text-slate-500 dark:text-slate-400 text-xs">{dateRange}</Text>
           </View>
         </View>
 
@@ -67,7 +67,7 @@ export function StreakHistoryCard({ group }: StreakHistoryCardProps) {
           nestedScrollEnabled={true}
           style={{ maxHeight: 400 }}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16, paddingTop: 8 }}
-          className="border-t border-slate-800"
+          className="border-t border-slate-200 dark:border-slate-800"
         >
           {group.events.map((event, index) => (
             <View key={event.id} className="pb-3">
@@ -80,10 +80,10 @@ export function StreakHistoryCard({ group }: StreakHistoryCardProps) {
                     setViewingBet(event.betSelection);
                   }
                 }}
-                className="flex-row items-center p-3 bg-slate-800/50 rounded-xl border border-slate-700/50"
+                className="flex-row items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-none"
               >
                 {/* Left: Points or Image */}
-                <View className="w-12 items-center justify-center mr-3 border-r border-slate-700/50 pr-3">
+                <View className="w-12 items-center justify-center mr-3 border-r border-slate-200 dark:border-slate-700/50 pr-3">
                   {(event.type === 'parlay_loss' || event.type === 'bet_loss') ? (
                     <Image 
                       source={require('../../../assets/images/reset.png')} 
@@ -94,10 +94,10 @@ export function StreakHistoryCard({ group }: StreakHistoryCardProps) {
                     <Text
                       className={`font-bold text-xl ${
                         event.pointsChange > 0
-                          ? 'text-emerald-400'
+                          ? 'text-emerald-600 dark:text-emerald-400'
                           : event.type === 'insurance_deducted'
-                          ? 'text-orange-400'
-                          : 'text-red-400'
+                          ? 'text-orange-600 dark:text-orange-400'
+                          : 'text-red-600 dark:text-red-400'
                       }`}
                     >
                       {event.pointsChange > 0 ? '+' : ''}
@@ -109,7 +109,7 @@ export function StreakHistoryCard({ group }: StreakHistoryCardProps) {
                 {/* Middle: Info */}
                 <View className="flex-1 justify-center">
                   <View className="flex-row items-center gap-2 mb-0.5">
-                    <Text className="text-slate-300 font-bold text-sm">
+                    <Text className="text-slate-700 dark:text-slate-300 font-bold text-sm">
                       {event.type === 'parlay_win' || event.type === 'bet_win'
                         ? 'Streak Increased'
                         : event.type === 'insurance_deducted'
@@ -119,23 +119,23 @@ export function StreakHistoryCard({ group }: StreakHistoryCardProps) {
                     {/* Parlay Badge */}
                     {event.parlay && (
                       <View className="bg-blue-500/20 px-1.5 py-0.5 rounded">
-                        <Text className="text-blue-400 text-[10px] font-bold uppercase">{event.parlay.betCount} Leg</Text>
+                        <Text className="text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase">{event.parlay.betCount} Leg</Text>
                       </View>
                     )}
                   </View>
-                  <Text className="text-slate-500 text-xs font-medium">{formatDate(event.date)}</Text>
+                  <Text className="text-slate-500 dark:text-slate-500 text-xs font-medium">{formatDate(event.date)}</Text>
                 </View>
 
                 {/* Right: Streak */}
                 <View className="items-end pl-3">
-                   <Text className="text-slate-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Streak</Text>
-                   <Text className="text-white font-bold text-lg leading-5">{event.resultingStreak}</Text>
+                   <Text className="text-slate-500 dark:text-slate-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Streak</Text>
+                   <Text className="text-slate-900 dark:text-white font-bold text-lg leading-5">{event.resultingStreak}</Text>
                 </View>
               </TouchableOpacity>
 
               {/* Expanded Card (only for Parlays) */}
               {event.parlay && expandedParlayId === event.id && (
-                <View className="mt-2 pl-2 border-l-2 border-slate-700 ml-4">
+                <View className="mt-2 pl-2 border-l-2 border-slate-300 dark:border-slate-700 ml-4">
                   <ParlayCard
                     parlay={event.parlay}
                     onOpen={() => {}}
@@ -165,13 +165,13 @@ export function StreakHistoryCard({ group }: StreakHistoryCardProps) {
         onRequestClose={() => setViewingBet(null)}
       >
         <View className="flex-1 bg-black/80 justify-center items-center p-6">
-          <View className="w-full bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
-            <View className="flex-row items-center justify-between p-4 border-b border-slate-800">
-              <Text className="text-white font-bold text-lg">
+          <View className="w-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-2xl shadow-slate-900/20 dark:shadow-none">
+            <View className="flex-row items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+              <Text className="text-slate-900 dark:text-white font-bold text-lg">
                 Bet Details
               </Text>
               <TouchableOpacity onPress={() => setViewingBet(null)} className="p-2">
-                <Ionicons name="close" size={24} color="#94a3b8" />
+                <Ionicons name="close" size={24} color="#64748b" />
               </TouchableOpacity>
             </View>
             

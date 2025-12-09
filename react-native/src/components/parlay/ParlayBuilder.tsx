@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useParlay } from '../../context/ParlayContext';
 import { useBets } from '../../context/BetsContext';
 import { useToast } from '../../context/ToastContext';
+import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import type { ParlaySelection } from '../../interfaces/parlay';
 import { LockTimer } from '../common/LockTimer';
@@ -150,7 +151,10 @@ export function ParlayBuilder() {
   const { activeParlay, setActiveParlay, isParlayBuilderOpen, setIsParlayBuilderOpen, refreshActiveParlay } = useParlay();
   const { triggerRefresh } = useBets();
   const { showToast } = useToast();
+  const { effectiveTheme } = useTheme();
   const insets = useSafeAreaInsets();
+  
+  const isDark = effectiveTheme === 'dark';
   
   const [loading, setLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -370,10 +374,10 @@ export function ParlayBuilder() {
       });
       if (response.success && response.data?.parlay) {
         setActiveParlay(response.data.parlay);
-        showToast(
-          response.data.parlay.insured ? 'Insurance enabled' : 'Insurance disabled',
-          'success'
-        );
+        // showToast(
+        //   response.data.parlay.insured ? 'Insurance enabled' : 'Insurance disabled',
+        //   'success'
+        // );
       } else {
         showToast(response.error?.message || 'Failed to update insurance', 'error');
       }
@@ -474,14 +478,14 @@ export function ParlayBuilder() {
           left: 0,
           right: 0,
           height: SHEET_HEIGHT,
-          backgroundColor: '#0f172a',
+          backgroundColor: isDark ? '#0f172a' : '#e4e5f1',
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
-          shadowColor: '#000',
+          shadowColor: isDark ? '#000' : '#000',
           shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 20,
+          shadowOpacity: isDark ? 0.3 : 0.15,
+          shadowRadius: isDark ? 8 : 12,
+          elevation: isDark ? 20 : 16,
         }}
       >
         {/* Handle */}
@@ -489,7 +493,7 @@ export function ParlayBuilder() {
           {...panResponder.panHandlers}
           style={{ alignItems: 'center', paddingVertical: 12 }}
         >
-          <View style={{ width: 40, height: 4, backgroundColor: '#475569', borderRadius: 2 }} />
+          <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#475569' : '#cbd5e1', borderRadius: 2 }} />
         </View>
 
         {/* Minimized View */}
@@ -562,7 +566,7 @@ export function ParlayBuilder() {
                   +{activeParlay.insured && activeParlay.insuranceCost ? activeParlay.parlayValue - activeParlay.insuranceCost : activeParlay.parlayValue}
                 </Text>
                 {activeParlay.insured && (
-                  <Text style={{ color: '#64748b', fontSize: 12 }}>
+                  <Text style={{ color: isDark ? '#64748b' : '#475569', fontSize: 12 }}>
                     ({activeParlay.parlayValue} - {activeParlay.insuranceCost} insurance cost)
                   </Text>
                 )}
@@ -574,8 +578,8 @@ export function ParlayBuilder() {
 
             {/* Warning for 1-bet parlay */}
             {activeParlay.betCount === 1 && (
-              <View style={{ backgroundColor: 'rgba(161, 98, 7, 0.3)', borderWidth: 1, borderColor: '#a16207', borderRadius: 12, padding: 12, marginBottom: 16 }}>
-                <Text style={{ color: '#fbbf24', fontSize: 13 }}>
+              <View style={{ backgroundColor: isDark ? 'rgba(161, 98, 7, 0.3)' : 'rgba(161, 98, 7, 0.1)', borderWidth: 1, borderColor: '#a16207', borderRadius: 12, padding: 12, marginBottom: 16 }}>
+                <Text style={{ color: isDark ? '#fbbf24' : '#ca8a04', fontSize: 13 }}>
                   Add at least one more bet to create a valid parlay, or tap ✕ to cancel.
                 </Text>
               </View>
@@ -591,13 +595,13 @@ export function ParlayBuilder() {
                 return (
                   <View
                     key={selection.id}
-                    style={{ backgroundColor: '#1e293b', borderWidth: 1, borderColor: '#334155', borderRadius: 12, padding: 12 }}
+                    style={{ backgroundColor: isDark ? '#1e293b' : '#f1f5f9', borderWidth: 1, borderColor: isDark ? '#334155' : '#cbd5e1', borderRadius: 12, padding: 12 }}
                   >
                     {/* Header: emoji, matchup, lock timer, remove button */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginRight: 8 }}>
                         <Text style={{ fontSize: 16 }}>{getSportEmoji(selection.game.sport)}</Text>
-                        <Text style={{ color: '#94a3b8', fontSize: 11, flex: 1 }} numberOfLines={1}>
+                        <Text style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: 11, flex: 1 }} numberOfLines={1}>
                           {selection.game.awayTeam} @ {selection.game.homeTeam}
                         </Text>
                       </View>
@@ -609,7 +613,7 @@ export function ParlayBuilder() {
                           <TouchableOpacity
                             onPress={() => handleRemoveSelection(selection.id)}
                             disabled={removingId === selection.id}
-                            style={{ height: 28, width: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#334155' }}
+                            style={{ height: 28, width: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: isDark ? '#334155' : '#e2e8f0' }}
                           >
                             {removingId === selection.id ? (
                               <ActivityIndicator size="small" color="#ef4444" />
@@ -623,7 +627,7 @@ export function ParlayBuilder() {
                     
                     {/* Context (for threshold/event bets) */}
                     {sideLabels.context && (
-                      <Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '500', marginBottom: 8 }}>
+                      <Text style={{ color: isDark ? '#e2e8f0' : '#1e293b', fontSize: 12, fontWeight: '500', marginBottom: 8 }}>
                         {sideLabels.context}
                       </Text>
                     )}
@@ -637,7 +641,7 @@ export function ParlayBuilder() {
                           paddingVertical: 8,
                           borderRadius: 8,
                           borderWidth: 1,
-                          borderColor: isSelected1 ? '#f97316' : '#334155',
+                          borderColor: isSelected1 ? '#f97316' : (isDark ? '#334155' : '#cbd5e1'),
                           backgroundColor: isSelected1 ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -647,7 +651,7 @@ export function ParlayBuilder() {
                           style={{
                             fontSize: 11,
                             fontWeight: '600',
-                            color: isSelected1 ? '#fb923c' : '#64748b',
+                            color: isSelected1 ? '#fb923c' : (isDark ? '#64748b' : '#475569'),
                             textAlign: 'center',
                           }}
                           numberOfLines={2}
@@ -662,7 +666,7 @@ export function ParlayBuilder() {
                           paddingVertical: 8,
                           borderRadius: 8,
                           borderWidth: 1,
-                          borderColor: isSelected2 ? '#f97316' : '#334155',
+                          borderColor: isSelected2 ? '#f97316' : (isDark ? '#334155' : '#cbd5e1'),
                           backgroundColor: isSelected2 ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -688,12 +692,12 @@ export function ParlayBuilder() {
 
             {/* Insurance Toggle */}
             {canInsure && (
-              <View style={{ backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: 12, padding: 12, marginBottom: 16 }}>
+              <View style={{ backgroundColor: isDark ? 'rgba(30, 41, 59, 0.5)' : '#e2e8f0', borderRadius: 12, padding: 12, marginBottom: 16 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View>
-                    <Text style={{ color: '#cbd5e1', fontSize: 14, fontWeight: '500' }}>Insurance</Text>
+                    <Text style={{ color: isDark ? '#cbd5e1' : '#1e293b', fontSize: 14, fontWeight: '500' }}>Insurance</Text>
                     {insuranceCost !== null && (
-                      <Text style={{ color: '#64748b', fontSize: 11 }}>
+                      <Text style={{ color: isDark ? '#64748b' : '#475569', fontSize: 11 }}>
                         Cost: {insuranceCost} streak point{insuranceCost !== 1 ? 's' : ''}
                       </Text>
                     )}
@@ -706,7 +710,7 @@ export function ParlayBuilder() {
                       height: 28,
                       borderRadius: 14,
                       justifyContent: 'center',
-                      backgroundColor: activeParlay.insured ? '#ea580c' : '#334155',
+                      backgroundColor: activeParlay.insured ? '#ea580c' : (isDark ? '#334155' : '#cbd5e1'),
                     }}
                   >
                     <View
@@ -730,8 +734,8 @@ export function ParlayBuilder() {
 
             {/* Locked indicator */}
             {isLocked && (
-              <View style={{ backgroundColor: 'rgba(161, 98, 7, 0.2)', borderWidth: 1, borderColor: 'rgba(161, 98, 7, 0.3)', borderRadius: 12, padding: 12, marginBottom: 16 }}>
-                <Text style={{ color: '#fbbf24', fontSize: 13, textAlign: 'center' }}>
+              <View style={{ backgroundColor: isDark ? 'rgba(161, 98, 7, 0.2)' : 'rgba(161, 98, 7, 0.1)', borderWidth: 1, borderColor: 'rgba(161, 98, 7, 0.3)', borderRadius: 12, padding: 12, marginBottom: 16 }}>
+                <Text style={{ color: isDark ? '#fbbf24' : '#ca8a04', fontSize: 13, textAlign: 'center' }}>
                   🔒 This parlay is locked
                 </Text>
               </View>
@@ -747,13 +751,13 @@ export function ParlayBuilder() {
                     paddingVertical: 14,
                     borderRadius: 12,
                     alignItems: 'center',
-                    backgroundColor: loading || activeParlay.betCount < 2 ? '#334155' : '#ea580c',
+                    backgroundColor: loading || activeParlay.betCount < 2 ? (isDark ? '#334155' : '#cbd5e1') : '#ea580c',
                   }}
                 >
                   {loading ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Text style={{ fontWeight: 'bold', color: activeParlay.betCount < 2 ? '#64748b' : '#fff' }}>
+                    <Text style={{ fontWeight: 'bold', color: activeParlay.betCount < 2 ? (isDark ? '#64748b' : '#475569') : '#fff' }}>
                       Save Parlay
                     </Text>
                   )}
@@ -789,11 +793,11 @@ export function ParlayBuilder() {
         onRequestClose={() => setShowCloseModal(false)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.7)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-          <View style={{ backgroundColor: '#1e293b', borderRadius: 20, padding: 24, width: '100%', maxWidth: 340 }}>
-            <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 }}>
+          <View style={{ backgroundColor: isDark ? '#1e293b' : '#e4e5f1', borderRadius: 20, padding: 24, width: '100%', maxWidth: 340 }}>
+            <Text style={{ color: isDark ? '#fff' : '#1e293b', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 }}>
               Save Parlay?
             </Text>
-            <Text style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center', marginBottom: 24 }}>
+            <Text style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: 14, textAlign: 'center', marginBottom: 24 }}>
               You have {activeParlay?.betCount} bets in your parlay worth +{activeParlay?.parlayValue} points.
             </Text>
             
@@ -813,7 +817,7 @@ export function ParlayBuilder() {
               <TouchableOpacity
                 onPress={handleDiscardChanges}
                 style={{
-                  backgroundColor: 'rgba(100, 116, 139, 0.2)',
+                  backgroundColor: isDark ? 'rgba(100, 116, 139, 0.2)' : 'rgba(100, 116, 139, 0.1)',
                   borderWidth: 1,
                   borderColor: 'rgba(100, 116, 139, 0.3)',
                   paddingVertical: 14,
@@ -821,7 +825,7 @@ export function ParlayBuilder() {
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ color: '#94a3b8', fontWeight: '600', fontSize: 16 }}>Discard Changes</Text>
+                <Text style={{ color: isDark ? '#94a3b8' : '#64748b', fontWeight: '600', fontSize: 16 }}>Discard Changes</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -831,7 +835,7 @@ export function ParlayBuilder() {
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ color: '#64748b', fontSize: 14 }}>Cancel</Text>
+                <Text style={{ color: isDark ? '#64748b' : '#475569', fontSize: 14 }}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>

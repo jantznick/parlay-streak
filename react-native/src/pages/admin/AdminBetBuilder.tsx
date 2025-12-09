@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import { ComparisonBetForm } from '../../components/admin/ComparisonBetForm';
 import { ThresholdBetForm } from '../../components/admin/ThresholdBetForm';
@@ -16,6 +17,8 @@ export function AdminBetBuilder() {
   const navigation = useNavigation();
   const route = useRoute();
   const { game } = route.params as RouteParams;
+  const { effectiveTheme } = useTheme();
+  const isDark = effectiveTheme === 'dark';
 
   // Tabs map directly to bet types
   const [tab, setTab] = useState<'COMPARISON' | 'THRESHOLD' | 'EVENT'>('COMPARISON');
@@ -91,24 +94,24 @@ export function AdminBetBuilder() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
+    <SafeAreaView className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-light-bg'}`}>
       {/* Header with back button */}
-      <View className="flex-row items-center justify-between px-5 py-3 border-b border-slate-800 bg-slate-950">
+      <View className={`flex-row items-center justify-between px-5 py-3 border-b ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-300 bg-light-bg-alt'}`}>
         <TouchableOpacity onPress={() => navigation.goBack()} className="pr-4 py-1">
-          <Text className="text-purple-300 text-base">‹ Back</Text>
+          <Text className={`text-base ${isDark ? 'text-purple-300' : 'text-purple-600'}`}>‹ Back</Text>
         </TouchableOpacity>
-        <Text className="text-lg font-semibold text-white">Bet builder</Text>
+        <Text className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Bet builder</Text>
         <View className="w-12" />
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16 }}>
         {/* Game summary */}
-        <View className="bg-slate-900 rounded-3xl border border-slate-700 px-4 py-4 mb-5">
-          <Text className="text-xs font-medium text-slate-400 mb-1">Game</Text>
-          <Text className="text-white text-sm font-semibold" numberOfLines={1}>
+        <View className={`rounded-3xl border px-4 py-4 mb-5 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-lg shadow-slate-900/10'} dark:shadow-none`}>
+          <Text className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>Game</Text>
+          <Text className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`} numberOfLines={1}>
             {game.awayTeam} @ {game.homeTeam}
           </Text>
-          <Text className="text-slate-400 text-[11px] mt-1">
+          <Text className={`text-[11px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>
             {new Date(game.startTime).toLocaleTimeString(undefined, {
               hour: 'numeric',
               minute: '2-digit',
@@ -122,17 +125,17 @@ export function AdminBetBuilder() {
         </View>
 
         {/* Bet type tabs – COMPARISON / THRESHOLD / EVENT */}
-        <View className="bg-slate-900 rounded-3xl border border-slate-700 px-3 py-2 mb-5">
-          <View className="flex-row bg-slate-800 rounded-full p-1">
+        <View className={`rounded-3xl border px-3 py-2 mb-5 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-light-bg-alt border-slate-300 shadow-sm dark:shadow-none'}`}>
+          <View className={`flex-row rounded-full p-1 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
             <TouchableOpacity
               onPress={() => setTab('COMPARISON')}
               className={`flex-1 rounded-full px-3 py-1 items-center ${
-                tab === 'COMPARISON' ? 'bg-slate-100' : 'bg-transparent'
+                tab === 'COMPARISON' ? (isDark ? 'bg-slate-100' : 'bg-orange-600') : 'bg-transparent'
               }`}
             >
               <Text
                 className={`text-[11px] font-medium ${
-                  tab === 'COMPARISON' ? 'text-slate-900' : 'text-slate-300'
+                  tab === 'COMPARISON' ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-700')
                 }`}
               >
                 COMPARISON
@@ -141,12 +144,12 @@ export function AdminBetBuilder() {
             <TouchableOpacity
               onPress={() => setTab('THRESHOLD')}
               className={`flex-1 rounded-full px-3 py-1 items-center ${
-                tab === 'THRESHOLD' ? 'bg-slate-100' : 'bg-transparent'
+                tab === 'THRESHOLD' ? (isDark ? 'bg-slate-100' : 'bg-orange-600') : 'bg-transparent'
               }`}
             >
               <Text
                 className={`text-[11px] font-medium ${
-                  tab === 'THRESHOLD' ? 'text-slate-900' : 'text-slate-300'
+                  tab === 'THRESHOLD' ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-700')
                 }`}
               >
                 THRESHOLD
@@ -155,12 +158,12 @@ export function AdminBetBuilder() {
             <TouchableOpacity
               onPress={() => setTab('EVENT')}
               className={`flex-1 rounded-full px-3 py-1 items-center ${
-                tab === 'EVENT' ? 'bg-slate-100' : 'bg-transparent'
+                tab === 'EVENT' ? (isDark ? 'bg-slate-100' : 'bg-orange-600') : 'bg-transparent'
               }`}
             >
               <Text
                 className={`text-[11px] font-medium ${
-                  tab === 'EVENT' ? 'text-slate-900' : 'text-slate-300'
+                  tab === 'EVENT' ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-700')
                 }`}
               >
                 EVENT

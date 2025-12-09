@@ -7,22 +7,26 @@ interface BetSelectionCardProps {
   isSelected: boolean;
   disabled: boolean;
   onPress: () => void;
+  isSimple?: boolean; // For OVER/UNDER/YES/NO bets without descriptive labels
+  hasContext?: boolean; // Whether there's a context label above (true = has title, false = titleless)
 }
 
-export function BetSelectionCard({ side, label, isSelected, disabled, onPress }: BetSelectionCardProps) {
+export function BetSelectionCard({ side, label, isSelected, disabled, onPress, isSimple = false, hasContext = false }: BetSelectionCardProps) {
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled}
-      className={`flex-1 px-4 py-3.5 rounded-xl border ${
+      className={`flex-1 px-4 py-3 rounded-xl border ${
         isSelected
-          ? 'border-orange-500 bg-orange-500/20'
-          : 'border-slate-700 bg-slate-950'
-      } ${disabled ? 'opacity-50' : ''} justify-center items-center shadow-sm`}
+          ? 'border-orange-500 bg-orange-500/10'
+          : 'border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-950'
+      } ${disabled ? 'opacity-50' : ''} justify-center items-center shadow-sm dark:shadow-none`}
     >
       <Text
-        className={`text-xs font-bold text-center ${
-          isSelected ? 'text-orange-400' : 'text-slate-300'
+        className={`${isSimple ? 'text-lg' : 'text-base'} font-bold text-center ${
+          isSelected 
+            ? 'text-orange-600 dark:text-orange-400' 
+            : 'text-slate-700 dark:text-slate-200'
         }`}
         numberOfLines={2}
       >
