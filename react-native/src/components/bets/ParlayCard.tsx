@@ -197,10 +197,12 @@ export function ParlayCard({
   return (
     <View 
       style={{ 
+        backgroundColor: '#0f172a',
+        borderWidth: 1,
+        borderColor: '#1e293b',
         borderRadius: 16,
         overflow: 'hidden',
       }}
-      className="bg-card border border-border"
     >
       {/* Header - always visible, tap to expand */}
       <TouchableOpacity 
@@ -210,13 +212,13 @@ export function ParlayCard({
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-            <View className="bg-blue-600" style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}>
-              <Text className="text-white font-bold text-[13px]">
+            <View style={{ backgroundColor: '#2563eb', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}>
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 13 }}>
                 {parlay.betCount} Leg
               </Text>
             </View>
             <Text style={{ fontSize: 14 }}>{sportEmojis}</Text>
-            <Text className="text-muted-foreground text-[13px] flex-1" numberOfLines={1}>
+            <Text style={{ color: '#94a3b8', fontSize: 13, flex: 1 }} numberOfLines={1}>
               {firstPick}{parlay.betCount > 1 ? '...' : ''}
             </Text>
           </View>
@@ -226,12 +228,12 @@ export function ParlayCard({
               <LockTimer startTime={earliestStartTime} status={earliestGameStatus} />
             )}
             {isLocked && !hideLockIcon && <Text style={{ fontSize: 14 }}>🔒</Text>}
-            <Text className="text-primary font-bold text-[18px]">
+            <Text style={{ color: '#fb923c', fontWeight: 'bold', fontSize: 18 }}>
               +{parlay.insured && parlay.insuranceCost ? parlay.parlayValue - parlay.insuranceCost : parlay.parlayValue}
             </Text>
             {parlay.insured && (
-              <View className="bg-primary/15" style={{ paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
-                <Text className="text-primary text-[10px] font-semibold">INS</Text>
+              <View style={{ backgroundColor: 'rgba(251, 146, 60, 0.2)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
+                <Text style={{ color: '#fb923c', fontSize: 10, fontWeight: '600' }}>INS</Text>
               </View>
             )}
             {parlayOutcome && (
@@ -252,7 +254,7 @@ export function ParlayCard({
 
       {/* Expanded content */}
       {isExpanded && (
-        <View className="px-4 pb-4 border-t border-border">
+        <View style={{ paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
           {/* Selections - simple list showing pick and context */}
           <View style={{ gap: 8, marginTop: 12 }}>
             {parlay.selections.map((selection) => {
@@ -272,17 +274,17 @@ export function ParlayCard({
                   <View style={{ flex: 1 }}>
                     {/* Context/bet name */}
                     {sideLabels.context && (
-                      <Text className="text-muted-foreground text-[11px]" numberOfLines={1}>
+                      <Text style={{ color: '#94a3b8', fontSize: 11 }} numberOfLines={1}>
                         {sideLabels.context}
                       </Text>
                     )}
                     {!sideLabels.context && (
-                      <Text className="text-muted-foreground text-[11px]" numberOfLines={1}>
+                      <Text style={{ color: '#94a3b8', fontSize: 11 }} numberOfLines={1}>
                         {selection.game.awayTeam} @ {selection.game.homeTeam}
                       </Text>
                     )}
                     {/* Selected pick */}
-                    <Text className="text-primary text-[13px] font-semibold" numberOfLines={1}>
+                    <Text style={{ color: '#fb923c', fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
                       {selectedLabel}
                     </Text>
                   </View>

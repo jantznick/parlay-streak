@@ -31,40 +31,40 @@ export function Settings() {
   const initials = (user.username || 'P').charAt(0).toUpperCase();
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950" edges={['top', 'left', 'right']}>
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950" edges={['top', 'left', 'right']}>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 32 }}
       >
         {/* Header */}
         <View className="px-6 pt-6 pb-6">
-          <Text className="text-3xl font-bold text-white">Profile</Text>
+          <Text className="text-3xl font-bold text-slate-900 dark:text-white">Profile</Text>
         </View>
 
         <View className="px-6">
           {/* Profile Card */}
-          <View className="bg-slate-900 rounded-2xl p-4 mb-8 flex-row items-center border border-slate-800 shadow-sm">
-            <View className="h-16 w-16 rounded-full bg-slate-800 items-center justify-center mr-4 border border-slate-700">
-              <Text className="text-2xl font-bold text-slate-300">{initials}</Text>
+          <View className="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-8 flex-row items-center border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+            <View className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center mr-4 border border-slate-200 dark:border-slate-700">
+              <Text className="text-2xl font-bold text-slate-600 dark:text-slate-300">{initials}</Text>
             </View>
             <View className="flex-1">
-              <Text className="text-xl font-bold text-white mb-1">{user.username}</Text>
-              <Text className="text-slate-400 text-sm">{user.email}</Text>
+              <Text className="text-xl font-bold text-slate-900 dark:text-white mb-1">{user.username}</Text>
+              <Text className="text-slate-500 dark:text-slate-400 text-sm">{user.email}</Text>
             </View>
           </View>
 
           {/* Preferences Section */}
           <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Preferences</Text>
-          <View className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden mb-8 shadow-sm">
+          <View className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 shadow-sm dark:shadow-none">
             <View className="flex-row items-center justify-between px-4 py-4">
               <View className="flex-row items-center gap-3">
                 <View className="bg-blue-500/10 p-2 rounded-lg">
                   <Ionicons name="moon" size={20} color="#3b82f6" />
                 </View>
-                <Text className="text-white text-base font-medium">Theme</Text>
+                <Text className="text-slate-900 dark:text-white text-base font-medium">Theme</Text>
               </View>
               
-              <View className="flex-row bg-slate-800 rounded-lg p-1">
+              <View className="flex-row bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
                 {(['light', 'dark', 'system'] as const).map((t) => {
                   const isActive = theme === t;
                   return (
@@ -72,7 +72,7 @@ export function Settings() {
                         key={t}
                         onPress={() => changeTheme(t)}
                         style={{
-                            backgroundColor: isActive ? '#475569' : 'transparent',
+                            backgroundColor: isActive ? (effectiveTheme === 'dark' ? '#475569' : '#ffffff') : 'transparent',
                             paddingHorizontal: 12,
                             paddingVertical: 6,
                             borderRadius: 6,
@@ -81,7 +81,7 @@ export function Settings() {
                             elevation: isActive ? 1 : 0,
                         }}
                     >
-                        <Text className={`text-xs font-semibold capitalize ${isActive ? 'text-white' : 'text-slate-400'}`}>
+                        <Text className={`text-xs font-semibold capitalize ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
                         {t}
                         </Text>
                     </TouchableOpacity>
@@ -93,21 +93,21 @@ export function Settings() {
 
           {/* Account section */}
           <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Account</Text>
-          <View className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden mb-8 shadow-sm">
-            <View className="flex-row items-center justify-between px-4 py-4 border-b border-slate-800">
-              <Text className="text-slate-300 text-base">Username</Text>
-              <Text className="text-white text-base font-medium">{user.username}</Text>
+          <View className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 shadow-sm dark:shadow-none">
+            <View className="flex-row items-center justify-between px-4 py-4 border-b border-slate-200 dark:border-slate-800">
+              <Text className="text-slate-600 dark:text-slate-300 text-base">Username</Text>
+              <Text className="text-slate-900 dark:text-white text-base font-medium">{user.username}</Text>
             </View>
-            <View className="flex-row items-center justify-between px-4 py-4 border-b border-slate-800">
-              <Text className="text-slate-300 text-base">Email</Text>
-              <Text className="text-white text-base font-medium" numberOfLines={1}>
+            <View className="flex-row items-center justify-between px-4 py-4 border-b border-slate-200 dark:border-slate-800">
+              <Text className="text-slate-600 dark:text-slate-300 text-base">Email</Text>
+              <Text className="text-slate-900 dark:text-white text-base font-medium" numberOfLines={1}>
                 {user.email}
               </Text>
             </View>
             <View className="flex-row items-center justify-between px-4 py-4">
-              <Text className="text-slate-300 text-base">Verified</Text>
+              <Text className="text-slate-600 dark:text-slate-300 text-base">Verified</Text>
               <View className={`px-2 py-1 rounded-md ${user.emailVerified ? 'bg-emerald-500/10' : 'bg-yellow-500/10'}`}>
-                <Text className={`text-xs font-bold ${user.emailVerified ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                <Text className={`text-xs font-bold ${user.emailVerified ? 'text-emerald-600 dark:text-emerald-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
                   {user.emailVerified ? 'VERIFIED' : 'PENDING'}
                 </Text>
               </View>
@@ -121,7 +121,6 @@ export function Settings() {
               style={{ maxHeight: 500 }} 
               nestedScrollEnabled={true}
               showsVerticalScrollIndicator={true}
-              className="bg-transparent rounded-2xl border-transparent"
             >
               {MOCK_STREAK_HISTORY.slice(0, visibleStreaks).map((group) => (
                 <StreakHistoryCard key={group.id} group={group} />
@@ -130,7 +129,7 @@ export function Settings() {
               {visibleStreaks < MOCK_STREAK_HISTORY.length && (
                 <TouchableOpacity
                   onPress={() => setVisibleStreaks(prev => prev + 3)}
-                  className="bg-slate-800/50 py-3 rounded-xl items-center border border-slate-700/50 mt-2 mb-2 mx-2"
+                  className="bg-slate-800/50 py-3 rounded-xl items-center border border-slate-700/50 mt-2 mb-2"
                 >
                   <Text className="text-slate-400 font-semibold">Load More</Text>
                 </TouchableOpacity>
@@ -144,7 +143,7 @@ export function Settings() {
               <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Administration</Text>
               <TouchableOpacity
                 onPress={() => navigation.navigate('AdminHome' as never)}
-                className="bg-slate-900 rounded-2xl border border-slate-800 px-4 py-4 flex-row items-center justify-between mb-8 shadow-sm"
+                className="bg-slate-900 rounded-2xl border border-slate-800 px-4 py-4 flex-row items-center justify-between mb-8"
               >
                 <View className="flex-row items-center gap-3">
                   <View className="bg-indigo-500/10 p-2 rounded-lg">
