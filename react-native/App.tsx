@@ -9,10 +9,10 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ParlayProvider } from './src/context/ParlayContext';
 import { BetsProvider } from './src/context/BetsContext';
 import { ToastProvider } from './src/context/ToastContext';
+import { ThemeProvider } from './src/context/ThemeContext';
 import { Login } from './src/pages/Login';
 import { Register } from './src/pages/Register';
 import { Dashboard } from './src/pages/Dashboard';
-import { Settings } from './src/pages/Settings';
 import { AdminHome } from './src/pages/admin/AdminHome';
 import { AdminBetBuilder } from './src/pages/admin/AdminBetBuilder';
 import { VerifyEmail } from './src/pages/VerifyEmail';
@@ -84,17 +84,19 @@ function RootNavigator() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <ParlayProvider>
-            <BetsProvider>
-              <StatusBar style="light" />
-              <RootNavigator />
-              <ParlayBuilder />
-            </BetsProvider>
-          </ParlayProvider>
-        </AuthProvider>
-      </ToastProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <ParlayProvider>
+              <BetsProvider>
+                <StatusBar style="auto" />
+                <RootNavigator />
+                <ParlayBuilder />
+              </BetsProvider>
+            </ParlayProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

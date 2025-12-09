@@ -325,7 +325,7 @@ export function Dashboard() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950" edges={['top', 'left', 'right']}>
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950" edges={['top', 'left', 'right']}>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 32 }}
@@ -335,8 +335,8 @@ export function Dashboard() {
       >
         {/* Header Section */}
         <View className="px-6 pt-6 pb-2">
-          <Text className="text-3xl font-bold text-white">Dashboard</Text>
-          <Text className="text-slate-400 text-sm mt-1">
+          <Text className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</Text>
+          <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1">
             Welcome back, {user?.username}
           </Text>
         </View>
@@ -372,15 +372,15 @@ export function Dashboard() {
 
               {/* Status banner - only show when no bets/parlays placed */}
               {streakTitle && streakSubtitle && mySelections.length === 0 && myParlays.length === 0 && (
-                <View className="bg-slate-900 rounded-xl border border-slate-800 px-4 py-3 mb-6 flex-row items-start gap-3">
-                  <View className="bg-slate-800 p-2 rounded-full">
+                <View className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 mb-6 flex-row items-start gap-3">
+                  <View className="bg-slate-100 dark:bg-slate-800 p-2 rounded-full">
                     <Ionicons name="trending-up" size={16} color="#fb923c" />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-white text-sm font-semibold">
+                    <Text className="text-slate-900 dark:text-white text-sm font-semibold">
                       {streakTitle}
                     </Text>
-                    <Text className="text-slate-400 text-xs mt-1 leading-relaxed">
+                    <Text className="text-slate-500 dark:text-slate-400 text-xs mt-1 leading-relaxed">
                       {streakSubtitle}
                     </Text>
                   </View>
@@ -390,27 +390,27 @@ export function Dashboard() {
           )}
 
           {/* Date picker row */}
-          <View className="flex-row items-center justify-between bg-slate-900 rounded-2xl p-1.5 border border-slate-800 mb-2">
+          <View className="flex-row items-center justify-between bg-white dark:bg-slate-900 rounded-2xl p-1.5 border border-slate-200 dark:border-slate-800 mb-2">
             <TouchableOpacity
               onPress={() => shiftDate(-1)}
-              className="h-10 w-10 rounded-xl bg-slate-800 items-center justify-center"
+              className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 items-center justify-center"
             >
               <Ionicons name="chevron-back" size={20} color="#94a3b8" />
             </TouchableOpacity>
             
             <TouchableOpacity 
               onPress={() => setCalendarVisible(true)}
-              className="flex-row items-center bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-700/50"
+              className="flex-row items-center bg-slate-100 dark:bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700/50"
             >
-              <Ionicons name="calendar-outline" size={16} color="#e2e8f0" style={{ marginRight: 8 }} />
-              <Text className="text-white text-base font-semibold">
+              <Ionicons name="calendar-outline" size={16} color="#64748b" style={{ marginRight: 8 }} />
+              <Text className="text-slate-900 dark:text-white text-base font-semibold">
                 {formatDate(selectedDate)}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => shiftDate(1)}
-              className="h-10 w-10 rounded-xl bg-slate-800 items-center justify-center"
+              className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 items-center justify-center"
             >
               <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
             </TouchableOpacity>
@@ -449,7 +449,7 @@ export function Dashboard() {
         {/* My Bets section */}
         <View className="px-6 mb-6">
           <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-lg font-bold text-white">
+            <Text className="text-lg font-bold text-slate-900 dark:text-white">
               My Picks
             </Text>
           </View>
@@ -459,7 +459,7 @@ export function Dashboard() {
               <ActivityIndicator size="small" color="#e5e7eb" />
             </View>
           ) : mySelections.length === 0 && myParlays.length === 0 ? (
-            <View className="bg-slate-900/50 rounded-2xl p-6 items-center border border-slate-800 border-dashed">
+            <View className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-6 items-center border border-slate-200 dark:border-slate-800 border-dashed">
               <Ionicons name="clipboard-outline" size={32} color="#475569" />
               <Text className="text-slate-500 text-sm mt-2 text-center">
                 No active picks for this date
@@ -497,7 +497,7 @@ export function Dashboard() {
         {/* Available Bets list */}
         <View className="px-6 pb-6">
           <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-lg font-bold text-white">
+            <Text className="text-lg font-bold text-slate-900 dark:text-white">
               Available Bets
             </Text>
           </View>
@@ -508,8 +508,8 @@ export function Dashboard() {
               <Text className="text-slate-400 text-xs mt-3">Loading available bets...</Text>
             </View>
           ) : error ? (
-            <View className="bg-red-900/20 border border-red-500/30 rounded-2xl p-4">
-              <Text className="text-red-200 text-sm text-center mb-2">{error}</Text>
+            <View className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-2xl p-4">
+              <Text className="text-red-600 dark:text-red-200 text-sm text-center mb-2">{error}</Text>
               <TouchableOpacity
                 onPress={fetchTodaysBets}
                 className="self-center px-4 py-2 bg-red-600 rounded-lg"
@@ -518,9 +518,9 @@ export function Dashboard() {
               </TouchableOpacity>
             </View>
           ) : games.length === 0 ? (
-            <View className="bg-slate-900/50 rounded-2xl p-8 items-center border border-slate-800 border-dashed">
+            <View className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-8 items-center border border-slate-200 dark:border-slate-800 border-dashed">
               <Text className="text-4xl mb-3">📅</Text>
-              <Text className="text-slate-300 font-medium mb-1">
+              <Text className="text-slate-700 dark:text-slate-300 font-medium mb-1">
                 No games available
               </Text>
               <Text className="text-slate-500 text-xs text-center">
@@ -535,23 +535,23 @@ export function Dashboard() {
                 return (
                   <View
                     key={game.id}
-                    className="bg-slate-900 rounded-[20px] border border-slate-800 overflow-hidden"
+                    className="bg-white dark:bg-slate-900 rounded-[20px] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm dark:shadow-none"
                   >
                     {/* Game Header */}
-                    <View className="px-4 py-3 border-b border-slate-800 bg-slate-900/50">
+                    <View className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
                       <View className="flex-row items-center gap-3">
                         <Text className="text-xl">{getSportEmoji(game.sport)}</Text>
                         <View className="flex-1">
-                          <Text className="text-sm font-bold text-white">
+                          <Text className="text-sm font-bold text-slate-900 dark:text-white">
                             {game.awayTeam} @ {game.homeTeam}
                           </Text>
                           <View className="flex-row items-center gap-2 mt-0.5">
-                            <Text className="text-[11px] text-slate-400 font-medium">
+                            <Text className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                               {formatTime(game.startTime)}
                             </Text>
                             {game.status !== 'scheduled' && (
-                              <View className="bg-slate-800 px-1.5 py-0.5 rounded">
-                                <Text className="text-[10px] text-slate-300 capitalize">
+                              <View className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                                <Text className="text-[10px] text-slate-600 dark:text-slate-300 capitalize">
                                   {game.status}
                                 </Text>
                               </View>
