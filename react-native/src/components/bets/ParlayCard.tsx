@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Parlay, ParlaySelection } from '../../interfaces/parlay';
 import { LockTimer } from '../common/LockTimer';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ParlayCardProps {
   parlay: Parlay;
@@ -156,6 +157,8 @@ export function ParlayCard({
   collapsible = true
 }: ParlayCardProps) {
   const [isExpanded, setIsExpanded] = useState(initiallyExpanded);
+  const { effectiveTheme } = useTheme();
+  const isDark = effectiveTheme === 'dark';
   
   const isLocked = parlay.lockedAt !== null && parlay.lockedAt !== undefined;
   const canModify = !isLocked && parlay.status === 'building';
@@ -196,13 +199,7 @@ export function ParlayCard({
 
   return (
     <View 
-      style={{ 
-        backgroundColor: '#0f172a',
-        borderWidth: 1,
-        borderColor: '#1e293b',
-        borderRadius: 16,
-        overflow: 'hidden',
-      }}
+      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-lg shadow-slate-900/10"
     >
       {/* Header - always visible, tap to expand */}
       <TouchableOpacity 
@@ -212,13 +209,13 @@ export function ParlayCard({
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-            <View style={{ backgroundColor: '#2563eb', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}>
-              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 13 }}>
+            <View className="bg-blue-600 dark:bg-blue-600" style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}>
+              <Text className="text-white font-bold text-[13px]">
                 {parlay.betCount} Leg
               </Text>
             </View>
             <Text style={{ fontSize: 14 }}>{sportEmojis}</Text>
-            <Text style={{ color: '#94a3b8', fontSize: 13, flex: 1 }} numberOfLines={1}>
+            <Text className="text-slate-500 dark:text-slate-400 text-sm flex-1" numberOfLines={1}>
               {firstPick}{parlay.betCount > 1 ? '...' : ''}
             </Text>
           </View>
@@ -228,12 +225,12 @@ export function ParlayCard({
               <LockTimer startTime={earliestStartTime} status={earliestGameStatus} />
             )}
             {isLocked && !hideLockIcon && <Text style={{ fontSize: 14 }}>🔒</Text>}
-            <Text style={{ color: '#fb923c', fontWeight: 'bold', fontSize: 18 }}>
+            <Text className="text-orange-600 dark:text-orange-400 font-bold text-xl">
               +{parlay.insured && parlay.insuranceCost ? parlay.parlayValue - parlay.insuranceCost : parlay.parlayValue}
             </Text>
             {parlay.insured && (
-              <View style={{ backgroundColor: 'rgba(251, 146, 60, 0.2)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
-                <Text style={{ color: '#fb923c', fontSize: 10, fontWeight: '600' }}>INS</Text>
+              <View className="bg-orange-500/15" style={{ paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
+                <Text className="text-orange-600 dark:text-orange-400 text-[10px] font-semibold">INS</Text>
               </View>
             )}
             {parlayOutcome && (
@@ -254,7 +251,7 @@ export function ParlayCard({
 
       {/* Expanded content */}
       {isExpanded && (
-        <View style={{ paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
+        <View className="px-4 pb-4 border-t border-slate-200 dark:border-slate-800">
           {/* Selections - simple list showing pick and context */}
           <View style={{ gap: 8, marginTop: 12 }}>
             {parlay.selections.map((selection) => {
@@ -267,24 +264,24 @@ export function ParlayCard({
               return (
                 <SelectionWrapper 
                   key={selection.id} 
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}
+                  className="flex-row items-center gap-2.5 p-2 rounded-lg bg-slate-100/30 dark:bg-transparent"
                   onPress={onSelectionPress ? () => onSelectionPress(selection) : undefined}
                 >
                   <Text style={{ fontSize: 16 }}>{getSportEmoji(selection.game.sport)}</Text>
                   <View style={{ flex: 1 }}>
                     {/* Context/bet name */}
                     {sideLabels.context && (
-                      <Text style={{ color: '#94a3b8', fontSize: 11 }} numberOfLines={1}>
+                      <Text className="text-slate-500 dark:text-slate-400 text-xs" numberOfLines={1}>
                         {sideLabels.context}
                       </Text>
                     )}
                     {!sideLabels.context && (
-                      <Text style={{ color: '#94a3b8', fontSize: 11 }} numberOfLines={1}>
+                      <Text className="text-slate-500 dark:text-slate-400 text-xs" numberOfLines={1}>
                         {selection.game.awayTeam} @ {selection.game.homeTeam}
                       </Text>
                     )}
                     {/* Selected pick */}
-                    <Text style={{ color: '#fb923c', fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
+                    <Text className="text-orange-600 dark:text-orange-400 text-sm font-semibold" numberOfLines={1}>
                       {selectedLabel}
                     </Text>
                   </View>
@@ -312,12 +309,12 @@ export function ParlayCard({
               <TouchableOpacity 
                 onPress={() => onDelete(parlay.id)} 
                 disabled={deletingId === parlay.id} 
-                style={{ flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(127, 29, 29, 0.3)', borderWidth: 1, borderColor: 'rgba(127, 29, 29, 0.5)' }}
+                className="flex-1 p-3 rounded-xl items-center justify-center bg-red-100/50 dark:bg-red-900/30 border border-red-200 dark:border-red-500/30"
               >
                 {deletingId === parlay.id ? (
-                  <ActivityIndicator size="small" color="#f87171" />
+                  <ActivityIndicator size="small" color="#dc2626" />
                 ) : (
-                  <Text style={{ color: '#f87171', fontWeight: '600', fontSize: 15 }}>Delete</Text>
+                  <Text className="text-red-600 dark:text-red-400 font-semibold text-base">Delete</Text>
                 )}
               </TouchableOpacity>
             </View>

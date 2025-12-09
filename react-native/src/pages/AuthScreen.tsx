@@ -151,7 +151,7 @@ export function AuthScreen({ mode: propMode }: { mode?: AuthMode }) {
     'Reset Password';
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
+    <SafeAreaView className="flex-1 bg-light-bg dark:bg-slate-900">
       <ScrollView
         className="flex-1"
         keyboardShouldPersistTaps="handled"
@@ -160,11 +160,11 @@ export function AuthScreen({ mode: propMode }: { mode?: AuthMode }) {
         <View className="flex-1 px-6 pt-10 pb-8">
           {/* Header */}
           <View className="mb-10">
-            <Text className="text-xs font-semibold text-purple-300 tracking-[0.2em] uppercase">
+            <Text className="text-xs font-semibold text-purple-600 dark:text-purple-300 tracking-[0.2em] uppercase">
               PARLAY STREAK
             </Text>
-            <Text className="text-[30px] font-extrabold text-white mt-4">{title}</Text>
-            <Text className="text-sm text-slate-400 mt-2">{subtitle}</Text>
+            <Text className="text-[30px] font-extrabold text-slate-900 dark:text-white mt-4">{title}</Text>
+            <Text className="text-sm text-slate-800 dark:text-slate-400 mt-2">{subtitle}</Text>
           </View>
 
           {/* Form */}
@@ -183,9 +183,9 @@ export function AuthScreen({ mode: propMode }: { mode?: AuthMode }) {
 
             {isRegister && (
               <View className="space-y-2">
-                <Text className="text-slate-200 text-xs font-medium">Username</Text>
+                <Text className="text-slate-700 dark:text-slate-200 text-xs font-medium">Username</Text>
                 <TextInput
-                  className="bg-[#141626] rounded-full px-5 py-3.5 text-base text-white"
+                  className="bg-slate-100 dark:bg-[#141626] rounded-full px-5 py-3.5 text-base text-slate-900 dark:text-white shadow-sm dark:shadow-none"
                   placeholder="thenickjantz"
                   placeholderTextColor="#6b7280"
                   value={username}
@@ -197,9 +197,9 @@ export function AuthScreen({ mode: propMode }: { mode?: AuthMode }) {
 
             {(isLogin || isRegister || isForgot) && (
               <View className="space-y-2">
-                <Text className="text-slate-200 text-xs font-medium">Email</Text>
+                <Text className="text-slate-700 dark:text-slate-200 text-xs font-medium">Email</Text>
                 <TextInput
-                  className="bg-[#141626] rounded-full px-5 py-3.5 text-base text-white"
+                  className="bg-slate-100 dark:bg-[#141626] rounded-full px-5 py-3.5 text-base text-slate-900 dark:text-white shadow-sm dark:shadow-none"
                   placeholder="you@example.com"
                   placeholderTextColor="#6b7280"
                   value={email}
@@ -223,11 +223,11 @@ export function AuthScreen({ mode: propMode }: { mode?: AuthMode }) {
 
             {(isLogin || isRegister || isReset) && (
               <View className="space-y-2">
-                <Text className="text-slate-200 text-xs font-medium">
+                <Text className="text-slate-700 dark:text-slate-200 text-xs font-medium">
                   {isReset ? 'New Password' : 'Password'}
                 </Text>
                 <TextInput
-                  className="bg-[#141626] rounded-full px-5 py-3.5 text-base text-white"
+                  className="bg-slate-100 dark:bg-[#141626] rounded-full px-5 py-3.5 text-base text-slate-900 dark:text-white shadow-sm dark:shadow-none"
                   placeholder="••••••••"
                   placeholderTextColor="#6b7280"
                   value={password}
@@ -239,9 +239,9 @@ export function AuthScreen({ mode: propMode }: { mode?: AuthMode }) {
 
             {(isRegister || isReset) && (
               <View className="space-y-2">
-                <Text className="text-slate-200 text-xs font-medium">Confirm Password</Text>
+                <Text className="text-slate-700 dark:text-slate-200 text-xs font-medium">Confirm Password</Text>
                 <TextInput
-                  className="bg-[#141626] rounded-full px-5 py-3.5 text-base text-white"
+                  className="bg-slate-100 dark:bg-[#141626] rounded-full px-5 py-3.5 text-base text-slate-900 dark:text-white shadow-sm dark:shadow-none"
                   placeholder="Repeat password"
                   placeholderTextColor="#6b7280"
                   value={confirmPassword}
@@ -253,9 +253,9 @@ export function AuthScreen({ mode: propMode }: { mode?: AuthMode }) {
 
             {isReset && (
               <View className="space-y-2">
-                <Text className="text-slate-200 text-xs font-medium">Reset Token</Text>
+                <Text className="text-slate-700 dark:text-slate-200 text-xs font-medium">Reset Token</Text>
                 <TextInput
-                  className="bg-[#141626] rounded-full px-5 py-3.5 text-base text-white"
+                  className="bg-slate-100 dark:bg-[#141626] rounded-full px-5 py-3.5 text-base text-slate-900 dark:text-white shadow-sm dark:shadow-none"
                   placeholder="Paste token from your email"
                   placeholderTextColor="#6b7280"
                   value={token}
@@ -265,7 +265,7 @@ export function AuthScreen({ mode: propMode }: { mode?: AuthMode }) {
             )}
 
             <TouchableOpacity
-              className={`mt-4 rounded-full px-4 py-3.5 items-center justify-center bg-gradient-to-r from-orange-500 to-red-600 ${
+              className={`mt-4 rounded-full px-4 py-3.5 items-center justify-center bg-gradient-to-r from-orange-500 to-red-600 shadow-xl shadow-orange-500/40 dark:shadow-none ${
                 loading ? 'opacity-60' : ''
               }`}
               onPress={handlePrimary}
@@ -281,7 +281,7 @@ export function AuthScreen({ mode: propMode }: { mode?: AuthMode }) {
                 onPress={() => goToMode('forgot')}
                 className="mt-2 items-center"
               >
-                <Text className="text-xs text-slate-400">Forgot password?</Text>
+                <Text className="text-xs text-slate-800 dark:text-slate-400">Forgot password?</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -293,23 +293,23 @@ export function AuthScreen({ mode: propMode }: { mode?: AuthMode }) {
           <View className="items-center mt-8">
             {isLogin && (
               <TouchableOpacity onPress={() => goToMode('register')}>
-                <Text className="text-xs text-slate-400">
+                <Text className="text-xs text-slate-800 dark:text-slate-400">
                   Don&apos;t have an account?{' '}
-                  <Text className="text-purple-400 font-semibold">Sign up</Text>
+                  <Text className="text-purple-600 dark:text-purple-400 font-semibold">Sign up</Text>
                 </Text>
               </TouchableOpacity>
             )}
             {isRegister && (
               <TouchableOpacity onPress={() => goToMode('login')}>
-                <Text className="text-xs text-slate-400">
+                <Text className="text-xs text-slate-800 dark:text-slate-400">
                   Already have an account?{' '}
-                  <Text className="text-purple-400 font-semibold">Sign in</Text>
+                  <Text className="text-purple-600 dark:text-purple-400 font-semibold">Sign in</Text>
                 </Text>
               </TouchableOpacity>
             )}
             {(isForgot || isReset) && (
               <TouchableOpacity onPress={() => goToMode('login')}>
-                <Text className="text-xs text-slate-400">Back to login</Text>
+                <Text className="text-xs text-slate-800 dark:text-slate-400">Back to login</Text>
               </TouchableOpacity>
             )}
 

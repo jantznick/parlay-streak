@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Image } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { LockTimer } from '../common/LockTimer';
 import { useParlay } from '../../context/ParlayContext';
+import { useTheme } from '../../context/ThemeContext';
 import { BetSelection } from '../../interfaces/bet';
 import { openEspnGame } from '../../utils/espn';
 
@@ -157,6 +158,8 @@ export function SingleBetCard({
 }: SingleBetCardProps) {
   const [isExpanded, setIsExpanded] = useState(initiallyExpanded);
   const { isParlayBuilderOpen } = useParlay();
+  const { effectiveTheme } = useTheme();
+  const isDark = effectiveTheme === 'dark';
   
   // Use selection.game if available, otherwise try selection.bet.game (legacy fallback)
   const game = selection.game || (selection.bet as any).game;
@@ -178,13 +181,7 @@ export function SingleBetCard({
 
   return (
     <View
-      style={{
-        backgroundColor: '#0f172a',
-        borderWidth: 1,
-        borderColor: '#1e293b',
-        borderRadius: 16,
-        overflow: 'hidden',
-      }}
+      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-lg shadow-slate-900/10"
     >
       {/* Header - always visible, tap to expand */}
       <TouchableOpacity
@@ -203,7 +200,7 @@ export function SingleBetCard({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, marginRight: 8 }}>
             <Text style={{ fontSize: 18 }}>{getSportEmoji(game.sport)}</Text>
             {/* Show context as main text if exists, otherwise show selected pick */}
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600', flex: 1 }} numberOfLines={1}>
+            <Text className="text-slate-800 dark:text-white text-base font-bold flex-1" numberOfLines={1}>
               {sideLabels.context ? (
                 <>
                   {sideLabels.context} • <Text style={{ color: '#fb923c' }}>{isSelected1 ? sideLabels.side1.label : sideLabels.side2.label}</Text>
@@ -277,20 +274,20 @@ export function SingleBetCard({
 
       {/* Expanded content */}
       {isExpanded && (
-        <View style={{ paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
+        <View className="px-4 pb-4 border-t border-slate-200 dark:border-slate-800">
           {/* Read-Only Tabular View */}
           {!canModify && (
-            <View style={{ backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: 12, padding: 12, marginTop: 12, gap: 10 }}>
+            <View className="bg-slate-100 dark:bg-slate-800/50 rounded-xl p-3 mt-4 gap-2.5">
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Matchup</Text>
+                <Text className="text-slate-500 dark:text-slate-400 text-sm w-20">Matchup</Text>
                 <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-                    <Text style={{ color: '#fff', fontSize: 13 }}>{game.awayTeam} @ {game.homeTeam}</Text>
+                    <Text className="text-slate-700 dark:text-white text-sm text-right">{game.awayTeam} @ {game.homeTeam}</Text>
                 </View>
               </View>
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Time</Text>
-                <Text style={{ color: '#cbd5e1', fontSize: 13, textAlign: 'right' }}>
+                <Text className="text-slate-500 dark:text-slate-400 text-sm w-20">Time</Text>
+                <Text className="text-slate-600 dark:text-slate-300 text-sm text-right">
                   {formatTime(game.startTime)}
                   {game.status === 'completed' && game.homeScore !== null && game.awayScore !== null && (
                     ` • ${game.awayScore}-${game.homeScore}`
@@ -298,13 +295,13 @@ export function SingleBetCard({
                 </Text>
               </View>
               
-              <View style={{ height: 1, backgroundColor: 'rgba(51, 65, 85, 0.5)' }} />
+              <View className="h-px bg-slate-200 dark:bg-slate-700/50" />
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Selection</Text>
+                <Text className="text-slate-500 dark:text-slate-400 text-sm w-20">Selection</Text>
                 <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                   {sideLabels.context && <Text style={{ color: '#e2e8f0', fontSize: 13, textAlign: 'right', marginBottom: 2 }}>{sideLabels.context}</Text>}
-                   <Text style={{ color: '#fb923c', fontSize: 14, fontWeight: 'bold', textAlign: 'right' }}>
+                   {sideLabels.context && <Text className="text-slate-700 dark:text-e2e8f0 text-sm text-right mb-0.5">{sideLabels.context}</Text>}
+                   <Text className="text-orange-600 dark:text-orange-400 text-base font-bold text-right">
                      {isSelected1 ? sideLabels.side1.label : sideLabels.side2.label}
                    </Text>
                 </View>
@@ -312,7 +309,7 @@ export function SingleBetCard({
 
               {selection.outcome && selection.outcome !== 'pending' && (
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Result</Text>
+                  <Text className="text-slate-500 dark:text-slate-400 text-sm w-20">Result</Text>
                   <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, backgroundColor: selection.outcome === 'win' ? 'rgba(16, 185, 129, 0.2)' : selection.outcome === 'loss' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(250, 204, 21, 0.2)' }}>
                     <Text style={{ fontSize: 11, fontWeight: 'bold', color: selection.outcome === 'win' ? '#34d399' : selection.outcome === 'loss' ? '#f87171' : '#fbbf24' }}>
                         {selection.outcome.toUpperCase()}
@@ -328,10 +325,10 @@ export function SingleBetCard({
             <>
               {/* Game info row */}
               <View style={{ marginTop: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 12, flex: 1 }} numberOfLines={1}>
+                <Text className="text-slate-500 dark:text-slate-400 text-xs flex-1" numberOfLines={1}>
                   {game.awayTeam} @ {game.homeTeam}
                 </Text>
-                <Text style={{ color: '#64748b', fontSize: 12 }}>
+                <Text className="text-slate-500 dark:text-slate-500 text-xs">
                   {formatTime(game.startTime)}
                   {game.status === 'completed' && game.homeScore !== null && game.awayScore !== null && (
                     ` • ${game.awayScore}-${game.homeScore}`
@@ -342,50 +339,36 @@ export function SingleBetCard({
               {/* Selection buttons - both shown, selected one highlighted */}
               <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
                 <View
-                  style={{
-                    flex: 1,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: isSelected1 ? '#f97316' : '#334155',
-                    backgroundColor: isSelected1 ? 'rgba(249, 115, 22, 0.15)' : '#0f172a',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  className={`flex-1 p-2.5 rounded-xl border ${
+                    isSelected1 
+                      ? 'border-orange-500 bg-orange-500/10' 
+                      : 'border-slate-200 bg-slate-100/30 dark:border-slate-700 dark:bg-slate-800'
+                  } items-center justify-center`}
                 >
                   <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: isSelected1 ? '#fb923c' : '#64748b',
-                      textAlign: 'center',
-                    }}
+                    className={`text-sm font-semibold text-center ${
+                      isSelected1
+                        ? 'text-orange-600 dark:text-orange-400'
+                        : 'text-slate-500 dark:text-slate-400'
+                    }`}
                     numberOfLines={2}
                   >
                     {sideLabels.side1.label}
                   </Text>
                 </View>
                 <View
-                  style={{
-                    flex: 1,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: isSelected2 ? '#f97316' : '#334155',
-                    backgroundColor: isSelected2 ? 'rgba(249, 115, 22, 0.15)' : '#0f172a',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  className={`flex-1 p-2.5 rounded-xl border ${
+                    isSelected2 
+                      ? 'border-orange-500 bg-orange-500/10' 
+                      : 'border-slate-200 bg-slate-100/30 dark:border-slate-700 dark:bg-slate-800'
+                  } items-center justify-center`}
                 >
                   <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: isSelected2 ? '#fb923c' : '#64748b',
-                      textAlign: 'center',
-                    }}
+                    className={`text-sm font-semibold text-center ${
+                      isSelected2
+                        ? 'text-orange-600 dark:text-orange-400'
+                        : 'text-slate-500 dark:text-slate-400'
+                    }`}
                     numberOfLines={2}
                   >
                     {sideLabels.side2.label}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { BASKETBALL_CONFIG } from '@shared/config/sports/basketball';
 import type { TimePeriod } from '@shared/types/bets';
+import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 import type { Game, Player, SubjectType } from './types';
 import { ParticipantSelector } from './ParticipantSelector';
@@ -21,6 +22,8 @@ export function ComparisonBetForm({
   rosterLoading,
   onSuccess,
 }: ComparisonBetFormProps) {
+  const { effectiveTheme } = useTheme();
+  const isDark = effectiveTheme === 'dark';
   const [subjectType1, setSubjectType1] = useState<SubjectType>('TEAM');
   const [team1, setTeam1] = useState<'home' | 'away' | ''>('home');
   const [player1, setPlayer1] = useState<string>('');
@@ -232,8 +235,8 @@ export function ComparisonBetForm({
 
 
   return (
-    <View className="bg-slate-900 rounded-3xl border border-slate-700 px-4 py-4 mb-5 space-y-4">
-      <Text className="text-xs font-medium text-slate-400">Comparison bet</Text>
+    <View className={`rounded-3xl border px-4 py-4 mb-5 space-y-4 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-lg shadow-slate-900/10'} dark:shadow-none`}>
+      <Text className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>Comparison bet</Text>
 
       {error && (
         <View className="bg-red-900/40 border border-red-500/70 rounded-2xl px-4 py-3">
@@ -259,22 +262,22 @@ export function ComparisonBetForm({
         rosterLoading={rosterLoading}
       />
 
-      <View className="bg-slate-800 rounded-2xl px-3 py-3">
-        <Text className="text-[11px] font-medium text-slate-300 mb-2">Operator</Text>
-        <View className="flex-row bg-slate-900 rounded-full p-1 mb-3">
+      <View className={`rounded-2xl px-3 py-3 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+        <Text className={`text-[11px] font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Operator</Text>
+        <View className={`flex-row rounded-full p-1 mb-3 ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}>
           <TouchableOpacity
             onPress={() => setCompOperator('GREATER_THAN')}
-            className={`flex-1 rounded-full px-3 py-1 items-center ${compOperator === 'GREATER_THAN' ? 'bg-slate-100' : 'bg-transparent'}`}
+            className={`flex-1 rounded-full px-3 py-1 items-center ${compOperator === 'GREATER_THAN' ? (isDark ? 'bg-slate-100' : 'bg-orange-600') : 'bg-transparent'}`}
           >
-            <Text className={`text-[11px] font-medium ${compOperator === 'GREATER_THAN' ? 'text-slate-900' : 'text-slate-300'}`}>
+            <Text className={`text-[11px] font-medium ${compOperator === 'GREATER_THAN' ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
               Greater than (&gt;)
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setCompOperator('spread')}
-            className={`flex-1 rounded-full px-3 py-1 items-center ${compOperator === 'spread' ? 'bg-slate-100' : 'bg-transparent'}`}
+            className={`flex-1 rounded-full px-3 py-1 items-center ${compOperator === 'spread' ? (isDark ? 'bg-slate-100' : 'bg-orange-600') : 'bg-transparent'}`}
           >
-            <Text className={`text-[11px] font-medium ${compOperator === 'spread' ? 'text-slate-900' : 'text-slate-300'}`}>
+            <Text className={`text-[11px] font-medium ${compOperator === 'spread' ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
               Spread (+/-)
             </Text>
           </TouchableOpacity>
@@ -283,27 +286,27 @@ export function ComparisonBetForm({
         {compOperator === 'spread' && (
           <View className="flex-row items-center">
             <View className="mr-2">
-              <View className="flex-row bg-slate-900 rounded-full p-1">
+              <View className={`flex-row rounded-full p-1 ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}>
                 <TouchableOpacity
                   onPress={() => setSpreadDirection('+')}
-                  className={`px-3 py-1 rounded-full ${spreadDirection === '+' ? 'bg-slate-100' : 'bg-transparent'}`}
+                  className={`px-3 py-1 rounded-full ${spreadDirection === '+' ? (isDark ? 'bg-slate-100' : 'bg-orange-600') : 'bg-transparent'}`}
                 >
-                  <Text className={`text-[11px] font-medium ${spreadDirection === '+' ? 'text-slate-900' : 'text-slate-300'}`}>
+                  <Text className={`text-[11px] font-medium ${spreadDirection === '+' ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
                     +
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setSpreadDirection('-')}
-                  className={`px-3 py-1 rounded-full ${spreadDirection === '-' ? 'bg-slate-100' : 'bg-transparent'}`}
+                  className={`px-3 py-1 rounded-full ${spreadDirection === '-' ? (isDark ? 'bg-slate-100' : 'bg-orange-600') : 'bg-transparent'}`}
                 >
-                  <Text className={`text-[11px] font-medium ${spreadDirection === '-' ? 'text-slate-900' : 'text-slate-300'}`}>
+                  <Text className={`text-[11px] font-medium ${spreadDirection === '-' ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
                     -
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
             <TextInput
-              className="flex-1 bg-[#141626] rounded-full px-4 py-2 text-xs text-white"
+              className={`flex-1 rounded-full px-4 py-2 text-xs ${isDark ? 'bg-[#141626] text-white' : 'bg-slate-100 text-slate-900'}`}
               placeholder="3.5"
               placeholderTextColor="#6b7280"
               keyboardType="numeric"
@@ -332,16 +335,16 @@ export function ComparisonBetForm({
         rosterLoading={rosterLoading}
       />
 
-      <View className="mt-2 bg-slate-800 rounded-2xl px-3 py-3">
-        <Text className="text-[11px] text-slate-400 mb-1">Preview</Text>
-        <Text className="text-xs text-slate-100 font-medium">{generatePreview()}</Text>
+      <View className={`mt-2 rounded-2xl px-3 py-3 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+        <Text className={`text-[11px] mb-1 ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>Preview</Text>
+        <Text className={`text-xs font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{generatePreview()}</Text>
       </View>
 
       <View className="mt-3 items-end">
         <TouchableOpacity
           onPress={handleCreate}
           disabled={loading}
-          className={`px-4 py-2 rounded-full ${loading ? 'bg-slate-700' : 'bg-blue-600'} flex-row items-center justify-center`}
+          className={`px-4 py-2 rounded-full ${loading ? (isDark ? 'bg-slate-700' : 'bg-slate-300') : 'bg-blue-600'} flex-row items-center justify-center`}
         >
           {loading && <ActivityIndicator size="small" color="#e5e7eb" className="mr-2" />}
           <Text className="text-white text-xs font-semibold">{loading ? 'Creating…' : 'Create comparison bet'}</Text>

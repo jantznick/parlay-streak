@@ -14,6 +14,8 @@ module.exports = {
         background: '#020617', // slate-950
         foreground: '#f8fafc', // slate-50
         border: '#1e293b', // slate-800
+        'light-bg': '#d2d3db', // rgb(210,211,219) - main light background
+        'light-bg-alt': '#e4e5f1', // rgb(228,229,241) - alternative light background
       },
     },
   },

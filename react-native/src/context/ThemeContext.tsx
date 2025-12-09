@@ -50,7 +50,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     
     setEffectiveTheme(currentEffectiveTheme);
     // Sync NativeWind so Tailwind classes work
-    setNativeWindColorScheme('dark');
+    setNativeWindColorScheme(currentEffectiveTheme);
     
   }, [theme, systemAppearanceScheme, setNativeWindColorScheme]);
 

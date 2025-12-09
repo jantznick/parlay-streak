@@ -43,19 +43,19 @@ export function Settings() {
 
         <View className="px-6">
           {/* Profile Card */}
-          <View className="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-8 flex-row items-center border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
-            <View className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center mr-4 border border-slate-200 dark:border-slate-700">
-              <Text className="text-2xl font-bold text-slate-600 dark:text-slate-300">{initials}</Text>
+          <View className="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-8 flex-row items-center border border-slate-200 dark:border-slate-800 shadow-lg shadow-slate-900/10 dark:shadow-none">
+            <View style={{ backgroundColor: '#ea580c' }} className="h-16 w-16 rounded-full dark:bg-slate-800 items-center justify-center mr-4 shadow-lg shadow-orange-500/40 dark:shadow-none">
+              <Text className="text-2xl font-bold text-white dark:text-slate-300">{initials}</Text>
             </View>
             <View className="flex-1">
               <Text className="text-xl font-bold text-slate-900 dark:text-white mb-1">{user.username}</Text>
-              <Text className="text-slate-500 dark:text-slate-400 text-sm">{user.email}</Text>
+              <Text className="text-slate-700 dark:text-slate-400 text-sm">{user.email}</Text>
             </View>
           </View>
 
           {/* Preferences Section */}
-          <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Preferences</Text>
-          <View className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 shadow-sm dark:shadow-none">
+          <Text className="text-xs font-bold text-slate-700 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">Preferences</Text>
+          <View className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 shadow-lg shadow-slate-900/10 dark:shadow-none">
             <View className="flex-row items-center justify-between px-4 py-4">
               <View className="flex-row items-center gap-3">
                 <View className="bg-blue-500/10 p-2 rounded-lg">
@@ -64,7 +64,7 @@ export function Settings() {
                 <Text className="text-slate-900 dark:text-white text-base font-medium">Theme</Text>
               </View>
               
-              <View className="flex-row bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+              <View className="flex-row bg-slate-100 dark:bg-slate-800 rounded-lg p-1 shadow-sm dark:shadow-none">
                 {(['light', 'dark', 'system'] as const).map((t) => {
                   const isActive = theme === t;
                   return (
@@ -92,8 +92,8 @@ export function Settings() {
           </View>
 
           {/* Account section */}
-          <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Account</Text>
-          <View className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 shadow-sm dark:shadow-none">
+          <Text className="text-xs font-bold text-slate-700 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">Account</Text>
+          <View className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 shadow-lg shadow-slate-900/10 dark:shadow-none">
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-slate-200 dark:border-slate-800">
               <Text className="text-slate-600 dark:text-slate-300 text-base">Username</Text>
               <Text className="text-slate-900 dark:text-white text-base font-medium">{user.username}</Text>
@@ -115,7 +115,7 @@ export function Settings() {
           </View>
 
           {/* Streak History Section */}
-          <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Streak History</Text>
+          <Text className="text-xs font-bold text-slate-700 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">Streak History</Text>
           <View className="mb-8">
             <ScrollView 
               style={{ maxHeight: 500 }} 
@@ -129,9 +129,9 @@ export function Settings() {
               {visibleStreaks < MOCK_STREAK_HISTORY.length && (
                 <TouchableOpacity
                   onPress={() => setVisibleStreaks(prev => prev + 3)}
-                  className="bg-slate-800/50 py-3 rounded-xl items-center border border-slate-700/50 mt-2 mb-2"
+                  className="bg-white dark:bg-slate-800/50 py-3 rounded-xl items-center border border-slate-200 dark:border-slate-700/50 mt-2 mb-2 shadow-md shadow-slate-900/10 dark:shadow-none"
                 >
-                  <Text className="text-slate-400 font-semibold">Load More</Text>
+                  <Text className="text-slate-700 dark:text-slate-400 font-semibold">Load More</Text>
                 </TouchableOpacity>
               )}
             </ScrollView>
@@ -140,18 +140,18 @@ export function Settings() {
           {/* Admin section (only for admins) */}
           {user.isAdmin && (
             <>
-              <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Administration</Text>
+              <Text className="text-xs font-bold text-slate-700 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">Administration</Text>
               <TouchableOpacity
                 onPress={() => navigation.navigate('AdminHome' as never)}
-                className="bg-slate-900 rounded-2xl border border-slate-800 px-4 py-4 flex-row items-center justify-between mb-8"
+                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-4 flex-row items-center justify-between mb-8 shadow-lg shadow-slate-900/10 dark:shadow-none"
               >
                 <View className="flex-row items-center gap-3">
                   <View className="bg-indigo-500/10 p-2 rounded-lg">
                     <Ionicons name="shield-checkmark" size={20} color="#818cf8" />
                   </View>
                   <View>
-                    <Text className="text-white text-base font-medium">Admin Panel</Text>
-                    <Text className="text-slate-400 text-xs">Manage games & users</Text>
+                    <Text className="text-slate-900 dark:text-white text-base font-medium">Admin Panel</Text>
+                    <Text className="text-slate-800 dark:text-slate-400 text-xs">Manage games & users</Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#64748b" />
@@ -162,13 +162,13 @@ export function Settings() {
           {/* Logout */}
           <TouchableOpacity
             onPress={handleLogout}
-            className="rounded-2xl bg-red-500/10 border border-red-500/20 px-4 py-4 items-center flex-row justify-center gap-2"
+            className="rounded-2xl bg-red-500/10 border border-red-500/20 px-4 py-4 items-center flex-row justify-center gap-2 shadow-md shadow-red-500/20 dark:shadow-none"
           >
             <Ionicons name="log-out-outline" size={20} color="#f87171" />
             <Text className="text-red-400 text-base font-semibold">Sign Out</Text>
           </TouchableOpacity>
           
-          <Text className="text-slate-600 text-xs text-center mt-8 pb-4">
+          <Text className="text-slate-700 dark:text-slate-600 text-xs text-center mt-8 pb-4">
             Version 1.0.0
           </Text>
         </View>

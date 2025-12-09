@@ -82,10 +82,10 @@ function RootNavigator() {
 }
 
 function ThemedApp() {
-  // const { effectiveTheme } = useTheme(); // No longer needed here
+  const { effectiveTheme } = useTheme();
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={effectiveTheme === 'dark' ? 'light' : 'dark'} />
       <RootNavigator />
       <ParlayBuilder />
     </>
@@ -97,13 +97,13 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <ToastProvider>
-          <AuthProvider>
-            <ParlayProvider>
-              <BetsProvider>
+    <AuthProvider>
+      <ParlayProvider>
+        <BetsProvider>
                 <ThemedApp />
-              </BetsProvider>
-            </ParlayProvider>
-          </AuthProvider>
+        </BetsProvider>
+      </ParlayProvider>
+    </AuthProvider>
         </ToastProvider>
       </ThemeProvider>
     </SafeAreaProvider>

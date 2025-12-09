@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../services/api';
 
 interface Bet {
@@ -45,6 +46,8 @@ const getLocalDateString = (date: Date): string => {
 export function AdminHome() {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { effectiveTheme } = useTheme();
+  const isDark = effectiveTheme === 'dark';
   const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString(new Date()));
   const [sportsConfig, setSportsConfig] = useState<SportConfig[]>([]);
   const [selectedSport, setSelectedSport] = useState<string>('basketball');
@@ -59,8 +62,8 @@ export function AdminHome() {
   if (!user || !user.isAdmin) {
     // Simple guard for now; in future we can show a nicer unauthorized screen
     return (
-      <SafeAreaView className="flex-1 bg-[#050816] items-center justify-center px-6">
-        <Text className="text-slate-400 text-sm">
+      <SafeAreaView className={`flex-1 items-center justify-center px-6 ${isDark ? 'bg-[#050816]' : 'bg-white'}`}>
+        <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
           Admin tools are only available to admin users.
         </Text>
       </SafeAreaView>
@@ -261,40 +264,40 @@ export function AdminHome() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
-      <View className="flex-row items-center justify-between px-5 py-3 border-b border-slate-800 bg-slate-950">
+    <SafeAreaView className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-light-bg'}`}>
+      <View className={`flex-row items-center justify-between px-5 py-3 border-b ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-300 bg-light-bg-alt'}`}>
         <TouchableOpacity onPress={() => navigation.goBack()} className="pr-4 py-1">
-          <Text className="text-purple-300 text-base">‹ Back</Text>
+          <Text className={`text-base ${isDark ? 'text-purple-300' : 'text-purple-600'}`}>‹ Back</Text>
         </TouchableOpacity>
-        <Text className="text-lg font-semibold text-white">Admin</Text>
+        <Text className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Admin</Text>
         <View className="w-12" />
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16 }}>
         {/* Filters */}
-        <View className="bg-slate-800 rounded-3xl border border-slate-700 px-4 py-4 mb-5">
-          <Text className="text-xs font-medium text-slate-300 mb-3">Filters</Text>
+        <View className={`rounded-3xl border px-4 py-4 mb-5 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-lg shadow-slate-900/10'} dark:shadow-none`}>
+          <Text className={`text-xs font-medium mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Filters</Text>
           <View className="flex-row items-center justify-between mb-3">
             <TouchableOpacity
               onPress={() => shiftDate(-1)}
-              className="h-8 w-8 rounded-full bg-slate-900 items-center justify-center"
+              className={`h-8 w-8 rounded-full items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}
             >
-              <Text className="text-slate-300 text-lg">{'‹'}</Text>
+              <Text className={`text-lg ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{'‹'}</Text>
             </TouchableOpacity>
-            <Text className="text-slate-100 text-sm font-medium">
+            <Text className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
               {formatDateLabel(selectedDate)}
             </Text>
             <TouchableOpacity
               onPress={() => shiftDate(1)}
-              className="h-8 w-8 rounded-full bg-slate-900 items-center justify-center"
+              className={`h-8 w-8 rounded-full items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}
             >
-              <Text className="text-slate-300 text-lg">{'›'}</Text>
+              <Text className={`text-lg ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{'›'}</Text>
             </TouchableOpacity>
           </View>
 
           <View className="flex-row justify-between">
             <View className="flex-1 mr-2">
-              <Text className="text-[11px] text-slate-400 mb-1">Sport</Text>
+              <Text className={`text-[11px] mb-1 ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>Sport</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {sportsConfig.map((sport) => (
                   <TouchableOpacity
@@ -302,13 +305,15 @@ export function AdminHome() {
                     onPress={() => setSelectedSport(sport.sport)}
                     className={`px-3 py-1 rounded-full mr-2 border ${
                       selectedSport === sport.sport
-                        ? 'bg-slate-100 text-slate-900 border-slate-100'
-                        : 'bg-slate-900 text-slate-200 border-slate-700'
+                        ? (isDark ? 'bg-slate-100 border-slate-100' : 'bg-orange-600 border-orange-600')
+                        : (isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-100 border-slate-300')
                     }`}
                   >
                     <Text
                       className={`text-xs ${
-                        selectedSport === sport.sport ? 'text-slate-900' : 'text-slate-200'
+                        selectedSport === sport.sport 
+                          ? (isDark ? 'text-slate-900' : 'text-white')
+                          : (isDark ? 'text-slate-200' : 'text-slate-700')
                       }`}
                     >
                       {sport.sport}
@@ -321,7 +326,7 @@ export function AdminHome() {
 
           {selectedSport && (
             <View className="mt-3">
-              <Text className="text-[11px] text-slate-400 mb-1">League</Text>
+              <Text className={`text-[11px] mb-1 ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>League</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {sportsConfig
                   .find((s) => s.sport === selectedSport)
@@ -331,13 +336,15 @@ export function AdminHome() {
                       onPress={() => setSelectedLeague(league.id)}
                       className={`px-3 py-1 rounded-full mr-2 border ${
                         selectedLeague === league.id
-                          ? 'bg-slate-100 text-slate-900 border-slate-100'
-                          : 'bg-slate-900 text-slate-200 border-slate-700'
+                          ? (isDark ? 'bg-slate-100 border-slate-100' : 'bg-orange-600 border-orange-600')
+                          : (isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-100 border-slate-300')
                       }`}
                     >
                       <Text
                         className={`text-xs ${
-                          selectedLeague === league.id ? 'text-slate-900' : 'text-slate-200'
+                          selectedLeague === league.id 
+                            ? (isDark ? 'text-slate-900' : 'text-white')
+                            : (isDark ? 'text-slate-200' : 'text-slate-700')
                         }`}
                       >
                         {league.name}
@@ -353,7 +360,7 @@ export function AdminHome() {
               onPress={() => fetchGames(false)}
               disabled={loading}
               className={`flex-1 mr-2 rounded-full px-4 py-2 items-center justify-center ${
-                loading ? 'bg-slate-700' : 'bg-blue-600'
+                loading ? (isDark ? 'bg-slate-700' : 'bg-slate-300') : 'bg-blue-600'
               }`}
             >
               <Text className="text-white text-xs font-semibold">
@@ -364,7 +371,7 @@ export function AdminHome() {
               onPress={() => fetchGames(true)}
               disabled={loading}
               className={`rounded-full px-4 py-2 items-center justify-center ${
-                loading ? 'bg-slate-700' : 'bg-orange-500'
+                loading ? (isDark ? 'bg-slate-700' : 'bg-slate-300') : 'bg-orange-500'
               }`}
             >
               <Text className="text-white text-xs font-semibold">Force refresh</Text>
@@ -380,19 +387,19 @@ export function AdminHome() {
 
         {/* Games + bets list */}
         <View className="mb-6">
-          <Text className="text-xs font-medium text-slate-400 mb-2">
+              <Text className={`text-xs font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>
             Games ({games.length})
           </Text>
 
           {loading && games.length === 0 ? (
-            <View className="bg-slate-900 rounded-2xl px-4 py-6 items-center justify-center">
-              <ActivityIndicator color="#e5e7eb" />
-              <Text className="text-slate-400 text-xs mt-2">Loading games…</Text>
+            <View className={`rounded-2xl px-4 py-6 items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-white border border-slate-200 shadow-lg shadow-slate-900/10'} dark:shadow-none`}>
+              <ActivityIndicator color={isDark ? "#e5e7eb" : "#64748b"} />
+              <Text className={`text-xs mt-2 ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>Loading games…</Text>
             </View>
           ) : games.length === 0 ? (
-            <View className="bg-slate-900 rounded-2xl px-4 py-6 items-center justify-center">
-              <Text className="text-slate-300 text-sm mb-1">No games loaded</Text>
-              <Text className="text-slate-500 text-xs text-center">
+            <View className={`rounded-2xl px-4 py-6 items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-white border border-slate-200 shadow-lg shadow-slate-900/10'} dark:shadow-none`}>
+              <Text className={`text-sm mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>No games loaded</Text>
+              <Text className={`text-xs text-center ${isDark ? 'text-slate-500' : 'text-slate-800'}`}>
                 Use the filters above and tap &quot;Fetch games&quot; to load games.
               </Text>
             </View>
@@ -403,17 +410,17 @@ export function AdminHome() {
                 return (
                   <View
                     key={game.id}
-                    className="bg-slate-900 rounded-3xl border border-slate-700 px-4 py-4"
+                    className={`rounded-3xl border px-4 py-4 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-lg shadow-slate-900/10'} dark:shadow-none`}
                   >
                     <TouchableOpacity
                       onPress={() => toggleGameExpanded(game.id)}
                       className="flex-row items-center justify-between"
                     >
                       <View className="flex-1 mr-3">
-                        <Text className="text-white text-sm font-semibold" numberOfLines={1}>
+                        <Text className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`} numberOfLines={1}>
                           {game.awayTeam} @ {game.homeTeam}
                         </Text>
-                        <Text className="text-slate-400 text-[11px] mt-1">
+                        <Text className={`text-[11px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>
                           {new Date(game.startTime).toLocaleTimeString(undefined, {
                             hour: 'numeric',
                             minute: '2-digit',
@@ -424,7 +431,7 @@ export function AdminHome() {
                             day: 'numeric',
                           })}
                         </Text>
-                        <Text className="text-slate-500 text-[11px] mt-1">
+                        <Text className={`text-[11px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-800'}`}>
                           {game.bets.length} bet{game.bets.length === 1 ? '' : 's'}
                         </Text>
                       </View>
@@ -448,9 +455,9 @@ export function AdminHome() {
                     </TouchableOpacity>
 
                     {isExpanded && (
-                      <View className="mt-3 border-t border-slate-800 pt-3 space-y-2">
+                      <View className={`mt-3 border-t pt-3 space-y-2 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
                         {game.bets.length === 0 ? (
-                          <Text className="text-slate-500 text-[11px]">
+                          <Text className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
                             No bets yet. Use Quick ML above or the web admin to create more.
                           </Text>
                         ) : (
@@ -460,16 +467,16 @@ export function AdminHome() {
                             .map((bet) => (
                               <View
                                 key={bet.id}
-                                className="bg-slate-800 rounded-2xl px-3 py-2 flex-row items-center justify-between"
+                                className={`rounded-2xl px-3 py-2 flex-row items-center justify-between ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
                               >
                                 <View className="flex-1 mr-2">
                                   <Text
-                                    className="text-slate-100 text-xs font-medium"
+                                    className={`text-xs font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'}`}
                                     numberOfLines={2}
                                   >
                                     {bet.displayTextOverride || bet.displayText}
                                   </Text>
-                                  <Text className="text-slate-500 text-[10px] mt-1">
+                                  <Text className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
                                     Priority #{bet.priority} • {bet.betType}
                                   </Text>
                                 </View>

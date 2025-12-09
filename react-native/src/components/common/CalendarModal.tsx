@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../context/ThemeContext';
 
 interface CalendarModalProps {
   visible: boolean;
@@ -11,6 +12,8 @@ interface CalendarModalProps {
 
 export function CalendarModal({ visible, onClose, selectedDate, onSelectDate }: CalendarModalProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date(selectedDate));
+  const { effectiveTheme } = useTheme();
+  const isDark = effectiveTheme === 'dark';
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -68,7 +71,7 @@ export function CalendarModal({ visible, onClose, selectedDate, onSelectDate }: 
         >
           <View
             className={`w-full h-full items-center justify-center rounded-xl ${
-              isSelected ? 'bg-orange-600' : isToday ? 'bg-slate-800' : ''
+              isSelected ? 'bg-orange-600' : isToday ? 'bg-slate-100 dark:bg-slate-800' : ''
             }`}
           >
             <Text
@@ -76,8 +79,8 @@ export function CalendarModal({ visible, onClose, selectedDate, onSelectDate }: 
                 isSelected
                   ? 'text-white'
                   : isToday
-                  ? 'text-orange-400'
-                  : 'text-slate-300'
+                  ? 'text-orange-500 dark:text-orange-400'
+                  : 'text-slate-700 dark:text-slate-300'
               }`}
             >
               {i}
@@ -100,23 +103,23 @@ export function CalendarModal({ visible, onClose, selectedDate, onSelectDate }: 
       <TouchableWithoutFeedback onPress={onClose}>
         <View className="flex-1 bg-black/70 justify-center items-center px-6">
           <TouchableWithoutFeedback>
-            <View className="w-full bg-slate-900 rounded-3xl border border-slate-800 p-4">
+            <View className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 shadow-lg">
               {/* Header */}
               <View className="flex-row items-center justify-between mb-4">
                 <TouchableOpacity
                   onPress={() => shiftMonth(-1)}
-                  className="h-10 w-10 items-center justify-center rounded-full bg-slate-800"
+                  className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
                 >
-                  <Ionicons name="chevron-back" size={20} color="#e2e8f0" />
+                  <Ionicons name="chevron-back" size={20} color="#64748b" />
                 </TouchableOpacity>
-                <Text className="text-white text-lg font-bold">
+                <Text className="text-slate-900 dark:text-white text-lg font-bold">
                   {currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
                 </Text>
                 <TouchableOpacity
                   onPress={() => shiftMonth(1)}
-                  className="h-10 w-10 items-center justify-center rounded-full bg-slate-800"
+                  className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800"
                 >
-                  <Ionicons name="chevron-forward" size={20} color="#e2e8f0" />
+                  <Ionicons name="chevron-forward" size={20} color="#64748b" />
                 </TouchableOpacity>
               </View>
 
@@ -124,7 +127,7 @@ export function CalendarModal({ visible, onClose, selectedDate, onSelectDate }: 
               <View className="flex-row mb-2">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
                   <View key={index} className="w-[14.28%] items-center">
-                    <Text className="text-slate-500 text-xs font-semibold">{day}</Text>
+                    <Text className="text-slate-400 dark:text-slate-500 text-xs font-semibold">{day}</Text>
                   </View>
                 ))}
               </View>

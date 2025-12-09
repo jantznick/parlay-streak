@@ -85,6 +85,7 @@ export function Dashboard() {
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteParlayId, setConfirmDeleteParlayId] = useState<string | null>(null);
+  const [selectedBetId, setSelectedBetId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const onRefresh = React.useCallback(async () => {
@@ -330,13 +331,13 @@ export function Dashboard() {
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 32 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#e5e7eb" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#64748b" />
         }
       >
         {/* Header Section */}
         <View className="px-6 pt-6 pb-2">
           <Text className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</Text>
-          <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+              <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1">
             Welcome back, {user?.username}
           </Text>
         </View>
@@ -372,7 +373,7 @@ export function Dashboard() {
 
               {/* Status banner - only show when no bets/parlays placed */}
               {streakTitle && streakSubtitle && mySelections.length === 0 && myParlays.length === 0 && (
-                <View className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 mb-6 flex-row items-start gap-3">
+                <View className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 mb-6 flex-row items-start gap-3 shadow-md shadow-slate-900/10 dark:shadow-none">
                   <View className="bg-slate-100 dark:bg-slate-800 p-2 rounded-full">
                     <Ionicons name="trending-up" size={16} color="#fb923c" />
                   </View>
@@ -390,17 +391,17 @@ export function Dashboard() {
           )}
 
           {/* Date picker row */}
-          <View className="flex-row items-center justify-between bg-white dark:bg-slate-900 rounded-2xl p-1.5 border border-slate-200 dark:border-slate-800 mb-2">
+          <View className="flex-row items-center justify-between bg-white dark:bg-slate-900 rounded-2xl p-1.5 border border-slate-200 dark:border-slate-800 mb-2 shadow-md shadow-slate-900/10 dark:shadow-none">
             <TouchableOpacity
               onPress={() => shiftDate(-1)}
-              className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 items-center justify-center"
+              className="h-10 w-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 items-center justify-center"
             >
               <Ionicons name="chevron-back" size={20} color="#94a3b8" />
             </TouchableOpacity>
             
             <TouchableOpacity 
               onPress={() => setCalendarVisible(true)}
-              className="flex-row items-center bg-slate-100 dark:bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700/50"
+              className="flex-row items-center bg-white dark:bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-none"
             >
               <Ionicons name="calendar-outline" size={16} color="#64748b" style={{ marginRight: 8 }} />
               <Text className="text-slate-900 dark:text-white text-base font-semibold">
@@ -410,7 +411,7 @@ export function Dashboard() {
 
             <TouchableOpacity
               onPress={() => shiftDate(1)}
-              className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 items-center justify-center"
+              className="h-10 w-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 items-center justify-center"
             >
               <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
             </TouchableOpacity>
@@ -459,9 +460,9 @@ export function Dashboard() {
               <ActivityIndicator size="small" color="#e5e7eb" />
             </View>
           ) : mySelections.length === 0 && myParlays.length === 0 ? (
-            <View className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-6 items-center border border-slate-200 dark:border-slate-800 border-dashed">
-              <Ionicons name="clipboard-outline" size={32} color="#475569" />
-              <Text className="text-slate-500 text-sm mt-2 text-center">
+            <View className="bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl p-6 items-center border border-slate-200 dark:border-slate-800 border-dashed">
+              <Ionicons name="clipboard-outline" size={32} color="#94a3b8" />
+              <Text className="text-slate-500 dark:text-slate-500 text-sm mt-2 text-center">
                 No active picks for this date
               </Text>
             </View>
@@ -508,7 +509,7 @@ export function Dashboard() {
               <Text className="text-slate-400 text-xs mt-3">Loading available bets...</Text>
             </View>
           ) : error ? (
-            <View className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-2xl p-4">
+            <View className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-2xl p-4 shadow-md shadow-red-500/10">
               <Text className="text-red-600 dark:text-red-200 text-sm text-center mb-2">{error}</Text>
               <TouchableOpacity
                 onPress={fetchTodaysBets}
@@ -520,10 +521,10 @@ export function Dashboard() {
           ) : games.length === 0 ? (
             <View className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-8 items-center border border-slate-200 dark:border-slate-800 border-dashed">
               <Text className="text-4xl mb-3">📅</Text>
-              <Text className="text-slate-700 dark:text-slate-300 font-medium mb-1">
+              <Text className="text-slate-600 dark:text-slate-300 font-medium mb-1">
                 No games available
               </Text>
-              <Text className="text-slate-500 text-xs text-center">
+              <Text className="text-slate-500 dark:text-slate-500 text-xs text-center">
                 Check back later or change the date
               </Text>
             </View>
@@ -535,18 +536,18 @@ export function Dashboard() {
                 return (
                   <View
                     key={game.id}
-                    className="bg-white dark:bg-slate-900 rounded-[20px] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm dark:shadow-none"
+                    className="bg-white dark:bg-slate-900 rounded-[20px] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-lg shadow-slate-900/10"
                   >
                     {/* Game Header */}
-                    <View className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                    <View className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50">
                       <View className="flex-row items-center gap-3">
                         <Text className="text-xl">{getSportEmoji(game.sport)}</Text>
                         <View className="flex-1">
-                          <Text className="text-sm font-bold text-slate-900 dark:text-white">
+                          <Text className="text-lg font-bold text-slate-900 dark:text-white">
                             {game.awayTeam} @ {game.homeTeam}
                           </Text>
                           <View className="flex-row items-center gap-2 mt-0.5">
-                            <Text className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                            <Text className="text-sm text-slate-500 dark:text-slate-400 font-medium">
                               {formatTime(game.startTime)}
                             </Text>
                             {game.status !== 'scheduled' && (
@@ -562,9 +563,9 @@ export function Dashboard() {
                     </View>
 
                     {/* Bets */}
-                    <View className="px-4 py-4 gap-3">
+                    <View className="p-4 gap-1">
                       {sortedBets.length === 0 ? (
-                        <Text className="text-slate-500 text-[11px] text-center italic">
+                        <Text className="text-slate-500 dark:text-slate-500 text-[11px] text-center italic">
                           No bets available
                         </Text>
                       ) : (
@@ -573,7 +574,10 @@ export function Dashboard() {
                             key={bet.id}
                             bet={bet}
                             game={game}
+                            selectedBetId={selectedBetId}
+                            onBetSelected={setSelectedBetId}
                             onSelectionSaved={() => {
+                              setSelectedBetId(null);
                               fetchTodaysBets();
                               fetchMyBets();
                             }}
