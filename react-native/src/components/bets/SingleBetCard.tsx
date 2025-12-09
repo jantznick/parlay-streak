@@ -3,38 +3,17 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LockTimer } from '../common/LockTimer';
 import { useParlay } from '../../context/ParlayContext';
-
-interface BetSelection {
-  id: string;
-  betId: string;
-  selectedSide: string;
-  status: string;
-  outcome?: string;
-  bet: {
-    id: string;
-    displayText: string;
-    betType: string;
-    outcome: string;
-    config?: any;
-    game: {
-      id: string;
-      homeTeam: string;
-      awayTeam: string;
-      startTime: string;
-      status: string;
-      sport: string;
-      homeScore?: number | null;
-      awayScore?: number | null;
-      metadata?: any;
-    };
-  };
-}
+import { BetSelection } from '../../interfaces/bet';
 
 interface SingleBetCardProps {
   selection: BetSelection;
   onDelete: (id: string) => void;
   onMakeParlay: (selection: BetSelection) => void;
   deletingId: string | null;
+  collapsible?: boolean;
+  onPress?: () => void;
+  initiallyExpanded?: boolean;
+  hideLockIcon?: boolean;
 }
 
 function getSportEmoji(sport: string): string {
@@ -165,13 +144,33 @@ function getBetSideLabels(bet: any, game: any): {
   };
 }
 
-export function SingleBetCard({ selection, onDelete, onMakeParlay, deletingId }: SingleBetCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function SingleBetCard({ 
+  selection, 
+  onDelete, 
+  onMakeParlay, 
+  deletingId,
+  collapsible = true,
+  onPress,
+  initiallyExpanded = false,
+  hideLockIcon = false
+}: SingleBetCardProps) {
+  const [isExpanded, setIsExpanded] = useState(initiallyExpanded);
   const { isParlayBuilderOpen } = useParlay();
+  
+  // Use selection.game if available, otherwise try selection.bet.game (legacy fallback)
+  const game = selection.game || (selection.bet as any).game;
+  
+  if (!game) {
+    console.warn('SingleBetCard: Game data missing for selection', selection.id);
+    return null;
+  }
 
-  const game = selection.bet.game;
   const sideLabels = getBetSideLabels(selection.bet, game);
-  const canModify = selection.status !== 'locked' && game.status === 'scheduled';
+  // Ensure we have valid strings for status checks
+  const selectionStatus = selection.status || 'selected';
+  const gameStatus = game.status || 'scheduled';
+  
+  const canModify = selectionStatus !== 'locked' && gameStatus === 'scheduled';
 
   const isSelected1 = selection.selectedSide === sideLabels.side1.value;
   const isSelected2 = selection.selectedSide === sideLabels.side2.value;
@@ -188,7 +187,13 @@ export function SingleBetCard({ selection, onDelete, onMakeParlay, deletingId }:
     >
       {/* Header - always visible, tap to expand */}
       <TouchableOpacity
-        onPress={() => setIsExpanded(!isExpanded)}
+        onPress={() => {
+          if (!collapsible && onPress) {
+            onPress();
+          } else if (collapsible) {
+            setIsExpanded(!isExpanded);
+          }
+        }}
         activeOpacity={0.8}
         style={{ padding: 16 }}
       >
@@ -198,15 +203,21 @@ export function SingleBetCard({ selection, onDelete, onMakeParlay, deletingId }:
             <Text style={{ fontSize: 18 }}>{getSportEmoji(game.sport)}</Text>
             {/* Show context as main text if exists, otherwise show selected pick */}
             <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600', flex: 1 }} numberOfLines={1}>
-              {sideLabels.context || (isSelected1 ? sideLabels.side1.label : sideLabels.side2.label)}
+              {sideLabels.context ? (
+                <>
+                  {sideLabels.context} • <Text style={{ color: '#fb923c' }}>{isSelected1 ? sideLabels.side1.label : sideLabels.side2.label}</Text>
+                </>
+              ) : (
+                <Text style={{ color: '#fb923c' }}>{isSelected1 ? sideLabels.side1.label : sideLabels.side2.label}</Text>
+              )}
             </Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            {!canModify && game.status !== 'scheduled' && (
+            {!canModify && gameStatus !== 'scheduled' && !hideLockIcon && (
               <Text style={{ fontSize: 14 }}>🔒</Text>
             )}
             {canModify && (
-              <LockTimer startTime={game.startTime} status={game.status} />
+              <LockTimer startTime={game.startTime} status={gameStatus} />
             )}
             {selection.outcome && selection.outcome !== 'pending' && (
               <View
@@ -238,11 +249,13 @@ export function SingleBetCard({ selection, onDelete, onMakeParlay, deletingId }:
                 </Text>
               </View>
             )}
-            <Ionicons
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color="#64748b"
-            />
+            {collapsible && (
+              <Ionicons
+                name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color="#64748b"
+              />
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -250,72 +263,120 @@ export function SingleBetCard({ selection, onDelete, onMakeParlay, deletingId }:
       {/* Expanded content */}
       {isExpanded && (
         <View style={{ paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
-          {/* Game info row */}
-          <View style={{ marginTop: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ color: '#94a3b8', fontSize: 12, flex: 1 }} numberOfLines={1}>
-              {game.awayTeam} @ {game.homeTeam}
-            </Text>
-            <Text style={{ color: '#64748b', fontSize: 12 }}>
-              {formatTime(game.startTime)}
-              {game.status === 'completed' && game.homeScore !== null && game.awayScore !== null && (
-                ` • ${game.awayScore}-${game.homeScore}`
-              )}
-            </Text>
-          </View>
+          {/* Read-Only Tabular View */}
+          {!canModify && (
+            <View style={{ backgroundColor: 'rgba(30, 41, 59, 0.5)', borderRadius: 12, padding: 12, marginTop: 12, gap: 10 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Matchup</Text>
+                <Text style={{ color: '#fff', fontSize: 13, flex: 1, textAlign: 'right' }}>{game.awayTeam} @ {game.homeTeam}</Text>
+              </View>
 
-          {/* Selection buttons - both shown, selected one highlighted */}
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-            <View
-              style={{
-                flex: 1,
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: isSelected1 ? '#f97316' : '#334155',
-                backgroundColor: isSelected1 ? 'rgba(249, 115, 22, 0.15)' : '#0f172a',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: '600',
-                  color: isSelected1 ? '#fb923c' : '#64748b',
-                  textAlign: 'center',
-                }}
-                numberOfLines={2}
-              >
-                {sideLabels.side1.label}
-              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Time</Text>
+                <Text style={{ color: '#cbd5e1', fontSize: 13, textAlign: 'right' }}>
+                  {formatTime(game.startTime)}
+                  {game.status === 'completed' && game.homeScore !== null && game.awayScore !== null && (
+                    ` • ${game.awayScore}-${game.homeScore}`
+                  )}
+                </Text>
+              </View>
+              
+              <View style={{ height: 1, backgroundColor: 'rgba(51, 65, 85, 0.5)' }} />
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Selection</Text>
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                   {sideLabels.context && <Text style={{ color: '#e2e8f0', fontSize: 13, textAlign: 'right', marginBottom: 2 }}>{sideLabels.context}</Text>}
+                   <Text style={{ color: '#fb923c', fontSize: 14, fontWeight: 'bold', textAlign: 'right' }}>
+                     {isSelected1 ? sideLabels.side1.label : sideLabels.side2.label}
+                   </Text>
+                </View>
+              </View>
+
+              {selection.outcome && selection.outcome !== 'pending' && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ color: '#94a3b8', fontSize: 13, width: 80 }}>Result</Text>
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, backgroundColor: selection.outcome === 'win' ? 'rgba(16, 185, 129, 0.2)' : selection.outcome === 'loss' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(250, 204, 21, 0.2)' }}>
+                    <Text style={{ fontSize: 11, fontWeight: 'bold', color: selection.outcome === 'win' ? '#34d399' : selection.outcome === 'loss' ? '#f87171' : '#fbbf24' }}>
+                        {selection.outcome.toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
-            <View
-              style={{
-                flex: 1,
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: isSelected2 ? '#f97316' : '#334155',
-                backgroundColor: isSelected2 ? 'rgba(249, 115, 22, 0.15)' : '#0f172a',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: '600',
-                  color: isSelected2 ? '#fb923c' : '#64748b',
-                  textAlign: 'center',
-                }}
-                numberOfLines={2}
-              >
-                {sideLabels.side2.label}
-              </Text>
-            </View>
-          </View>
+          )}
+
+          {/* Active Bet Content */}
+          {canModify && (
+            <>
+              {/* Game info row */}
+              <View style={{ marginTop: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={{ color: '#94a3b8', fontSize: 12, flex: 1 }} numberOfLines={1}>
+                  {game.awayTeam} @ {game.homeTeam}
+                </Text>
+                <Text style={{ color: '#64748b', fontSize: 12 }}>
+                  {formatTime(game.startTime)}
+                  {game.status === 'completed' && game.homeScore !== null && game.awayScore !== null && (
+                    ` • ${game.awayScore}-${game.homeScore}`
+                  )}
+                </Text>
+              </View>
+
+              {/* Selection buttons - both shown, selected one highlighted */}
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                <View
+                  style={{
+                    flex: 1,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: isSelected1 ? '#f97316' : '#334155',
+                    backgroundColor: isSelected1 ? 'rgba(249, 115, 22, 0.15)' : '#0f172a',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '600',
+                      color: isSelected1 ? '#fb923c' : '#64748b',
+                      textAlign: 'center',
+                    }}
+                    numberOfLines={2}
+                  >
+                    {sideLabels.side1.label}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    flex: 1,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: isSelected2 ? '#f97316' : '#334155',
+                    backgroundColor: isSelected2 ? 'rgba(249, 115, 22, 0.15)' : '#0f172a',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '600',
+                      color: isSelected2 ? '#fb923c' : '#64748b',
+                      textAlign: 'center',
+                    }}
+                    numberOfLines={2}
+                  >
+                    {sideLabels.side2.label}
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
 
           {/* Actions */}
           {canModify && (

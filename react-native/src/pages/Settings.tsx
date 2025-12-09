@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import { StreakHistoryCard } from '../components/profile/StreakHistoryCard';
+import { MOCK_STREAK_HISTORY } from '../data/mockStreakData';
 
 export function Settings() {
   const navigation = useNavigation();
   const { user, logout } = useAuth();
+  const [visibleStreaks, setVisibleStreaks] = useState(3);
 
   const handleLogout = async () => {
     await logout();
@@ -63,6 +66,29 @@ export function Settings() {
                 </Text>
               </View>
             </View>
+          </View>
+
+          {/* Streak History Section */}
+          <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">Streak History</Text>
+          <View className="mb-8">
+            <ScrollView 
+              style={{ maxHeight: 500 }} 
+              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={true}
+            >
+              {MOCK_STREAK_HISTORY.slice(0, visibleStreaks).map((group) => (
+                <StreakHistoryCard key={group.id} group={group} />
+              ))}
+              
+              {visibleStreaks < MOCK_STREAK_HISTORY.length && (
+                <TouchableOpacity
+                  onPress={() => setVisibleStreaks(prev => prev + 3)}
+                  className="bg-slate-800/50 py-3 rounded-xl items-center border border-slate-700/50 mt-2 mb-2"
+                >
+                  <Text className="text-slate-400 font-semibold">Load More</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
           </View>
 
           {/* Admin section (only for admins) */}
