@@ -1,7 +1,5 @@
-export default ({ config }) => ({
-  ...config,
+module.exports = {
   expo: {
-    ...config.expo,
     name: "Parlay Streak",
     slug: "parlay-streak-mobile",
     version: "1.0.0",
@@ -50,13 +48,9 @@ export default ({ config }) => ({
     },
     owner: "nickjantz",
     "react-native-google-mobile-ads": {
-      ios_app_id:
-        process.env.ADMOB_IOS_APP_ID ||
-        "ca-app-pub-3940256099942544~1458002511",
-      android_app_id:
-        process.env.ADMOB_ANDROID_APP_ID ||
-        "ca-app-pub-3940256099942544~3347511713",
+      ios_app_id: "ca-app-pub-3940256099942544~1458002511",
+      android_app_id: "ca-app-pub-3940256099942544~3347511713",
     },
     plugins: ["expo-font", "react-native-google-mobile-ads"],
   },
-});
+};
