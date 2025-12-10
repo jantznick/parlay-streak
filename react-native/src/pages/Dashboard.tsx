@@ -14,6 +14,7 @@ import { streakMessages } from '../utils/streakMessages';
 import { useToast } from '../context/ToastContext';
 import { useParlay } from '../context/ParlayContext';
 import { useBets } from '../context/BetsContext';
+import NativeAd from '../components/ads/NativeAd';
 import type { Parlay } from '../interfaces/parlay';
 
 interface Bet {
@@ -387,6 +388,8 @@ export function Dashboard() {
                   </View>
                 </View>
               )}
+              {/* Place Ads Here */}
+              <NativeAd />
             </View>
           )}
 

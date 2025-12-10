@@ -21,6 +21,7 @@ import { ForgotPassword } from './src/pages/ForgotPassword';
 import { ResetPassword } from './src/pages/ResetPassword';
 import { LoadingScreen } from './src/components/common/LoadingScreen';
 import { ParlayBuilder } from './src/components/parlay/ParlayBuilder';
+import mobileAds from 'react-native-google-mobile-ads';
 
 const Stack = createNativeStackNavigator();
 
@@ -51,6 +52,15 @@ function AppStack() {
 
 function RootNavigator() {
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    mobileAds()
+      .initialize()
+      .then(adapterStatuses => {
+        // Initialization complete
+        console.log('Mobile ads initialized');
+      });
+  }, []);
 
   if (loading) {
     return <LoadingScreen />;
