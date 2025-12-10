@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Parlay Streak",
+    "slug": "parlay-streak-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.parlaystreak.app"
+    },
+    "android": {
+      "package": "com.parlaystreak.app"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "896a72d3-d8b2-4a41-8c11-6277fa4ffc78"
+      }
+    },
+    "owner": "nickjantz",
+    "plugins": [
+      "expo-font",
+      "react-native-google-mobile-ads"
+    ],
+    "react-native-google-mobile-ads": {
+      "android_app_id": "ca-app-pub-3940256099942544~3347511713",
+      "ios_app_id": "ca-app-pub-3940256099942544~1458002511"
+    }
+  }
+}
